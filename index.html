@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wc-data-viewer</title>
+    <link rel="stylesheet" href="https://lcvriend.github.io/wc-multi-selector/static/prism.css">
+    <script type="module" src="https://uu-asc.github.io/csa-werkvoorraad/src/darkmode-toggle.js"></script>
+    <style>
+        body {
+            margin-inline: auto;
+            margin-bottom: 4rem;
+            background-color: hsl(30, 0%, 98%);
+            font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+
+            display: grid;
+            grid-template-columns:
+                3rem [breakout-start]
+                auto [content-start]
+                720px
+                [content-end] auto
+                [breakout-end] 3rem;
+
+            &.dark-theme {
+                --background-color: hsl(210, 74%, 17%);
+                --hover-color: hsl(210, 54%, 28%);
+                background-color: var(--background-color);
+                color: hsl(30, 0%, 98%);
+            }
+        }
+        body > * {
+            grid-column: content;
+        }
+        body > .breakout {
+            grid-column: breakout;
+            display: grid;
+            justify-content: center;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #info {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+            }
+        data-viewer {
+            --cursor: pointer;
+            margin-block: 1.25em;
+        }
+        pre {
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Data-Viewer</h1>
+    <darkmode-toggle></darkmode-toggle>
+</header>
+<section id="info">
+    <section>
+        <h2>Web component</h2>
+        <p><code>&lt;data-viewer&gt;</code> is a web component for viewing table data:</p>
+        <ul>
+            <li>Vanilla JS (no dependencies)</li>
+            <li>Reads json from url</li>
+            <li>Supports multi-index data structures</li>
+        </ul>
+        <p>On this page you will find several examples of what you can do with this web component.</p>
+    </section>
+    <section id="controls">
+        <fieldset>
+            <legend>Data</legend>
+            <label for="src">Source
+                <select name="src" id="src" autocomplete="off">
+                    <option value="data/bedragen_2025.json" selected>default</option>
+                    <option value="data/multiindex_df.json">multiindex df</option>
+                    <option value="data/simple_df.json">simple df</option>
+                    <option value="data/uro_2024.json">uro[2024]</option>
+                </select>
+            </label>
+            <div>
+                <label for="calc-op">
+                    <select name="calc-op" id="calc-op">
+                        <option value="multiply">multiply</option>
+                        <option value="divide">divide</option>
+                        <option value="add">add</option>
+                        <option value="subtract">subtract</option>
+                    </select>
+                </label>
+                <label for="n">n
+                    <input type="number" name="n" id="n" autocomplete="off">
+                </label>
+            </div>
+        </fieldset>
+        <fieldset>
+            <legend>Format</legend>
+            <input type="checkbox" id="as-currency" name="as-currency" autocomplete="off" checked>
+            <label for="as-currency">as currency</label>
+            <input type="checkbox" id="sep-thousands" name="sep-thousands" autocomplete="off" checked>
+            <label for="sep-thousands">seperator</label>
+        </fieldset>
+        <fieldset>
+            <legend>Locale</legend>
+            <input type="radio" id="locale-nl" name="locale" value="nl-NL" autocomplete="off" checked>
+            <label for="locale-nl">Nederlands</label>
+            <input type="radio" id="locale-en" name="locale" value="en-US" autocomplete="off" >
+            <label for="locale-en">English</label>
+        </fieldset>
+        <fieldset>
+            <legend>Borders</legend>
+            <input type="checkbox" id="hide-group-borders" name="hide-group-borders" autocomplete="off">
+            <label for="hide-group-borders">hide group borders</label>
+            <input type="checkbox" id="hide-row-borders" name="hide-row-borders" autocomplete="off">
+            <label for="hide-row-borders">hide row borders</label>
+            <input type="checkbox" id="hide-index-border" name="hide-index-border" autocomplete="off">
+            <label for="hide-index-border">hide index border</label>
+            <input type="checkbox" id="hide-thead-border" name="hide-thead-border" autocomplete="off">
+            <label for="hide-thead-border">hide thead border</label>
+        </fieldset>
+    </section>
+</section>
+<h2>Output</h2>
+<div class="breakout">
+    <data-viewer
+        src="data/bedragen_2025.json"
+        locale="nl-NL"
+    >
+    </data-viewer>
+</div>
+<h3>Event</h3>
+<div id="event-display"><pre><code></code></pre></div>
+<h2>HTML</h2>
+<pre><code class="language-html">&lt;!-- html --&gt;
+&lt;data-viewer src="data/example.json" locale="nl-NL"&gt;&lt;/data-viewer&gt;</code></pre>
+<h3>Specifications</h3>
+<ul>
+    <li>Attributes</li>
+    <ul>
+        <li>src</li>
+        <li>locale</li>
+        <li>na-rep (default: "-")</li>
+        <li>borders:</li>
+        <ul>
+            <li>hide-group-borders</li>
+            <li>hide-row-borders</li>
+            <li>hide-thead-border</li>
+            <li>hide-index-border</li>
+        </ul>
+    </ul>
+    <li>Custom properties</li>
+    <ul>
+        <li>--hover-color</li>
+        <li>--cursor (default: auto)</li>
+        <li>--border-color (default: currentColor)</li>
+        <li>--axes-width (default: 2px)</li>
+    </ul>
+    <li>Events</li>
+    <ul>
+        <li>data-changed</li>
+        <li>cell-click</li>
+    </ul>
+</ul>
+<a href="https://github.com/lcvriend/wc-simple-table">https://github.com/lcvriend/wc-simple-table</a>
+<script src="src/viewer.js" type="module"></script>
+<script>
+    const dataViewer = document.querySelector("data-viewer")
+    const eventDisplay = document.getElementById("event-display")
+
+    function truncateJSONString(JSONString, maxLength = 1500) {
+        if (JSONString.length <= maxLength) return JSONString
+        return JSONString.slice(0,maxLength) + "[...]"
+    }
+
+    function getLocale() {
+        return document.querySelector('input[type="radio"]:checked')?.value
+    }
+
+    function getCalculation(n) {
+        const op = document.getElementById("calc-op").value
+        n = parseInt(n)
+        console.log(op)
+        switch (op) {
+            case "multiply":
+                return value => value ? value * n : null
+            case "divide":
+                return value => value ? value / n : null
+            case "add":
+                return value => value ? value + n : null
+            case "subtract":
+                return value => value ? value - n : null
+        }
+    }
+
+    function updateTable(n) {
+        const op = getCalculation(n)
+        const newValues = dataViewer.data.values.map(row => row.map(op))
+        dataViewer.data.values = newValues
+    }
+
+    function getFormatOptions() {
+        const checkboxAsCurrency = document.querySelector(`input[name="as-currency"]`)
+        const checkboxSepThousands = document.querySelector('input[name="sep-thousands"]')
+        const formatOptions = {
+            "style": checkboxAsCurrency.checked ? "currency" : "decimal",
+            "currency": "EUR",
+            "useGrouping": checkboxSepThousands.checked,
+            "minimumFractionDigits": 2,
+            "maximumFractionDigits": 2,
+            "trailingZeroDisplay": !checkboxAsCurrency.checked ? "stripIfInteger" : "auto",
+        }
+        return formatOptions
+    }
+
+    function handleFormattingChange() {
+        const formatOptions = Array(dataViewer.data.values.length).fill(getFormatOptions())
+        dataViewer.data.formatOptions = formatOptions
+    }
+
+    function handleBorderChange(event) {
+        const attr = event.target.id
+        dataViewer.toggleAttribute(attr)
+    }
+
+
+    document.addEventListener("color-scheme-change", event => {
+        event.detail.scheme === "dark"
+        ? document.body.classList.add("dark-theme")
+        : document.body.classList.remove("dark-theme")
+    })
+
+    document.getElementById("src").addEventListener("change", event => {
+        dataViewer.setAttribute("src" , event.target.value)
+    })
+
+    dataViewer.addEventListener("cell-click", event => {
+        eventDisplay.querySelector("code").innerText = JSON.stringify(event.detail)
+    })
+
+    dataViewer.addEventListener("data-changed", event => {
+        const JSONString = JSON.stringify(event.detail._rawData)
+        const truncatedContent = truncateJSONString(JSONString)
+        eventDisplay.querySelector("code").innerText = truncatedContent
+    })
+
+    document.querySelectorAll('input[name="locale"]').forEach(radio => {
+        radio.addEventListener("change", () => {
+            const locale = getLocale()
+            dataViewer.setAttribute("locale", locale)
+        })
+    })
+
+    document.getElementById("as-currency").addEventListener("change", handleFormattingChange)
+    document.getElementById("sep-thousands").addEventListener("change", handleFormattingChange)
+    document.getElementById("controls").addEventListener("change", event => {
+        if (!event.target.id.startsWith("hide")) return
+        handleBorderChange(event)
+    })
+
+    document.getElementById("n").addEventListener("change", event => {
+        updateTable(event.target.value)
+    })
+</script>
+</body>
+</html>
