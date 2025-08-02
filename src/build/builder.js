@@ -43,7 +43,7 @@ export class HTMLBuilder {
             data-groups="${groups}"
             ${isIndexEdge ? ' index-edge' : ''}
             ${isGroupEdge ? ' group-edge' : ''}
-        >${selectedValue}</td>`
+        >${selectedValue}</th>`
     }
 
     buildColumnGroupsRow(level) {
@@ -64,7 +64,7 @@ export class HTMLBuilder {
             data-group="${iloc}"
             ${isIndexEdge ? ' index-edge' : ''}
             ${isGroupEdge ? ' group-edge' : ''}
-        >${span.value[level]}</th>`
+        ><span>${span.value[level]}</span></th>`
     }
 
     // MARK: Tbody

@@ -39,12 +39,9 @@ export class Stylesheet {
                 border-collapse: separate;
                 border-spacing: 0;
             }
-            thead {
-                position: sticky;
-                top: 0;
-                z-index: 7;
+            thead th {
+                background-color: var(--background-color, white);
             }
-            thead th { background-color: var(--background-color, white); }
             tbody th { text-align: left; }
             td { text-align: right; }
             th, td { padding: .25em .5em; }
@@ -61,17 +58,22 @@ export class Stylesheet {
             thead {
                 position: sticky;
                 top: 0;
-                z-index: 2;
+                z-index: 7;
             }
             th {
-                position: sticky;
                 background: var(--background-color, white);
             }
-            thead th:where(.columnLabel, .indexLabel) {
-                left: 0;
-                z-index: 3;
+            thead th[colspan] {
+                text-align: right;
             }
+            thead th span {
+                position: sticky;
+                left: 0;
+                right: 0;
+            }
+            thead th:where(.columnLabel, .indexLabel),
             tbody th {
+                position: sticky;
                 left: 0;
                 z-index: 1;
             }
