@@ -41,7 +41,7 @@ export class View {
     }
 
     // Sorting methods
-    sortByColumn(columnIndex, direction = 'asc') {
+    sortByColumn(columnIndex, direction = "asc") {
         this.visibleIndices.sort((a, b) => {
             const valueA = this.data.values[a][columnIndex]
             const valueB = this.data.values[b][columnIndex]
@@ -51,13 +51,13 @@ export class View {
             if (valueB === null || valueB === undefined) return -1
 
             const comparison = valueA < valueB ? -1 : 1
-            return direction === 'asc' ? comparison : -comparison
+            return direction === "asc" ? comparison : -comparison
         })
         this.invalidateCache()
         return this
     }
 
-    sortByIndex(level = -1, direction = 'asc') {
+    sortByIndex(level = -1, direction = "asc") {
         this.visibleIndices.sort((a, b) => {
             const indexA = this.data.index.values[a]
             const indexB = this.data.index.values[b]
@@ -70,7 +70,7 @@ export class View {
             if (valueB === null || valueB === undefined) return -1
 
             const comparison = valueA < valueB ? -1 : 1
-            return direction === 'asc' ? comparison : -comparison
+            return direction === "asc" ? comparison : -comparison
         })
         this.invalidateCache()
         return this
@@ -78,7 +78,7 @@ export class View {
 
     // Reset to original order
     reset() {
-        this.visibleIndices = [...this.data.index.ilocs]
+        this._visibleIndices = [...this.data.index.ilocs]
         this.invalidateCache()
         return this
     }

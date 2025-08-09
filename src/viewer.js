@@ -33,6 +33,7 @@ export class DataViewer extends HTMLElement {
         this.options = { ...DataViewer.defaults }
         this.handleDataChange = this.handleDataChange.bind(this)
         this.handleTableClick = this.handleTableClick.bind(this)
+        this.handleFilterInput = this.handleFilterInput.bind(this)
         this.handleScroll = this.handleScroll.bind(this)
 
         this._data = new Data()
@@ -56,11 +57,13 @@ export class DataViewer extends HTMLElement {
 
     addEventListeners() {
         this.shadowRoot.addEventListener("click", this.handleTableClick)
+        this.shadowRoot.addEventListener("input", this.handleFilterInput)
         this.addEventListener("scroll", this.handleScroll)
     }
 
     removeEventListeners() {
         this.shadowRoot.removeEventListener("click", this.handleTableClick)
+        this.shadowRoot.removeEventListener("input", this.handleFilterInput)
         this.shadowRoot.removeEventListener("scroll", this.handleScroll)
     }
 
@@ -128,20 +131,31 @@ export class DataViewer extends HTMLElement {
 
     // MARK: render
     render() {
-        if (!this.data) return
+        if (!this.data.hasColumns) return
+
         this.shadowRoot.innerHTML = `
-            ${this._htmlBuilder.buildTable(this.options.buffer)}
+            <table>
+                <thead>${this._htmlBuilder.buildThead()}</thead>
+                <tbody></tbody>
+            </table>
         `
         this.stylesheet.setupStyles()
-        this.stylesheet.updateColumnWidths()
         this.stylesheet.updateTheadOffset()
         this.stylesheet.updateIndexOffset()
+
+        this.renderTbody()
+    }
+
+    renderTbody() {
+        const tbody = this.shadowRoot.querySelector("tbody")
+        tbody.innerHTML = this._htmlBuilder.buildTbody(0, this.options.buffer)
+        this.stylesheet.updateColumnWidths()
     }
 
     // MARK: handlers
-    handleDataChange() {
+    handleDataChange(event) {
         this._viewNeedsUpdate = true
-        this.render()
+        event.detail.isValuesOnly ? this.renderTbody() : this.render()
         this.dispatchEvent(new CustomEvent("data-changed", { detail: this.data }))
     }
 
@@ -180,6 +194,38 @@ export class DataViewer extends HTMLElement {
             bubbles: true,
             composed: true
         }))
+    }
+
+    handleFilterInput(event) {
+        const input = event.target
+        if (input.tagName !== "INPUT" || !input.closest("thead")) return
+
+        const filterInputs = this.shadowRoot.querySelectorAll("thead input[type='text']")
+        const filters = Array.from(filterInputs).map((input, index) => {
+            const th = input.closest("th")
+            const col = parseInt(th.dataset.col)
+            return {
+                col,
+                value: input.value.trim()
+            }
+        }).filter(filter => filter.value !== "") // Only keep non-empty filters
+        this.applyFilters(filters)
+    }
+
+    applyFilters(filters) {
+        if (filters.length === 0) {
+            this.view.reset()
+        } else {
+            const predicate = (rowValues, rowIndex) => {
+                return filters.every(filter => {
+                    const cellValue = rowValues[filter.col]
+                    return cellValue != null &&
+                        cellValue.toString().toLowerCase().includes(filter.value.toLowerCase())
+                })
+            }
+            this.view.filter(predicate)
+        }
+        this.renderTbody()
     }
 
     handleScroll(event) {

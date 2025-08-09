@@ -8,11 +8,20 @@ export class Data extends EventTarget {
         this.setData(data)
     }
 
-    _setter(prop, value) {
+    _dispatchDataChanged(isValuesOnly = false) {
+        this.dispatchEvent(new CustomEvent("data-changed", {
+            detail: {
+                data: this,
+                isValuesOnly: isValuesOnly
+            }
+        }))
+    }
+
+    _setter(prop, value, isValuesOnly = false) {
         if (this[prop] !== value) {
             this[prop] = value
             if (!this._isUpdating) {
-                this.dispatchEvent(new Event("data-changed"))
+                this._dispatchDataChanged(isValuesOnly)
             }
         }
     }
@@ -40,18 +49,22 @@ export class Data extends EventTarget {
         this._formatOptions = formatOptions
 
         this._isUpdating = false
-        this.dispatchEvent(new Event("data-changed"))
+        this._dispatchDataChanged()
     }
 
     update(changes) {
         this._isUpdating = true
+
+        const isValuesOnly = Object.keys(changes).length === 1 && "values" in changes
+
         for (const [key, value] of Object.entries(changes)) {
             if (key in this && typeof this[key] !== "function") {
                 this[key] = value
             }
         }
+
         this._isUpdating = false
-        this.dispatchEvent(new Event("data-changed"))
+        this._dispatchDataChanged(isValuesOnly)
     }
 
     // MARK: columns
@@ -76,6 +89,10 @@ export class Data extends EventTarget {
     get columnNames() { return this._columnNames }
     set columnNames(value) { this._setter("_columnNames", value) }
 
+    get hasColumns() {
+        return this.columns.length > 0
+    }
+
     // MARK: index
     get index() { return this._index }
     set index(value) { this._setter("_index", new Axis(value)) }
@@ -85,5 +102,5 @@ export class Data extends EventTarget {
 
     // MARK: values
     get values() { return this._values }
-    set values(value) { this._setter("_values", value) }
+    set values(value) { this._setter("_values", value, true) }
 }
