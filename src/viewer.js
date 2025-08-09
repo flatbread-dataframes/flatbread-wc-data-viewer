@@ -1,4 +1,5 @@
 import { Data } from "./data/data.js"
+import { View } from "./data/view.js"
 import { HTMLBuilder } from "./build/builder.js"
 import { Stylesheet } from "./build/stylesheet.js"
 
@@ -36,7 +37,7 @@ export class DataViewer extends HTMLElement {
 
         this._data = new Data()
         this.stylesheet = new Stylesheet(this, this.data, this.options)
-        this._htmlBuilder = new HTMLBuilder(this.data, this.options)
+        this._htmlBuilder = new HTMLBuilder(this, this.options)
     }
 
     // MARK: setup
@@ -117,6 +118,14 @@ export class DataViewer extends HTMLElement {
         this._data.setData(value)
     }
 
+    get view() {
+        if (!this._view || this._viewNeedsUpdate) {
+            this._view = new View(this.data)
+            this._viewNeedsUpdate = false
+        }
+        return this._view
+    }
+
     // MARK: render
     render() {
         if (!this.data) return
@@ -125,10 +134,13 @@ export class DataViewer extends HTMLElement {
         `
         this.stylesheet.setupStyles()
         this.stylesheet.updateColumnWidths()
+        this.stylesheet.updateTheadOffset()
+        this.stylesheet.updateIndexOffset()
     }
 
     // MARK: handlers
     handleDataChange() {
+        this._viewNeedsUpdate = true
         this.render()
         this.dispatchEvent(new CustomEvent("data-changed", { detail: this.data }))
     }

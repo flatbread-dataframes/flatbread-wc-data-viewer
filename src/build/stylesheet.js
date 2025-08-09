@@ -64,18 +64,22 @@ export class Stylesheet {
                 background: var(--background-color, white);
             }
             thead th[colspan] {
-                text-align: right;
+                text-align: left;
             }
             thead th span {
                 position: sticky;
-                left: 0;
-                right: 0;
+                left: var(--index-offset);
             }
-            thead th:where(.columnLabel, .indexLabel),
+            thead th:where(.columnLevelNameLabel, .indexLevelNameLabel),
             tbody th {
                 position: sticky;
                 left: 0;
                 z-index: 1;
+                vertical-align: top;
+            }
+            tbody th span {
+                position: sticky;
+                top: var(--thead-offset);
             }
             ${calcs.join("\n")}
         `
@@ -131,6 +135,22 @@ export class Stylesheet {
             this.host.style.setProperty(`--index-col-${index}-offset`, newWidth)
             newWidth = `${header.offsetWidth}px`
         })
+    }
+
+    updateTheadOffset() {
+        const thead = this.host.shadowRoot.querySelector("thead")
+        if (!thead) return
+
+        const newOffset = `calc(${thead.offsetHeight}px + .25em)`
+        this.host.style.setProperty(`--thead-offset`, newOffset)
+    }
+
+    updateIndexOffset() {
+        const columnLevelName = this.host.shadowRoot.querySelector(".columnLevelNameLabel")
+        if (!columnLevelName) return
+
+        const newOffset = `calc(${columnLevelName.offsetWidth}px + .5em)`
+        this.host.style.setProperty(`--index-offset`, newOffset)
     }
 
     disconnect() {

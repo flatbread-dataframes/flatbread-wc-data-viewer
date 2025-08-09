@@ -76,10 +76,10 @@
             <legend>Data</legend>
             <label for="src">Source
                 <select name="src" id="src" autocomplete="off">
-                    <option value="data/bedragen_2025.json" selected>default</option>
+                    <option value="data/bedragen_2025.json">default</option>
                     <option value="data/multiindex_df.json">multiindex df</option>
                     <option value="data/simple_df.json">simple df</option>
-                    <option value="data/uro_2024.json">uro[2024]</option>
+                    <option value="data/uro_2024.json" selected>uro[2024]</option>
                 </select>
             </label>
             <div>
@@ -126,7 +126,7 @@
 <h2>Output</h2>
 <div class="breakout">
     <data-viewer
-        src="data/bedragen_2025.json"
+        src="data/uro_2024.json"
         locale="nl-NL"
     >
     </data-viewer>
@@ -216,7 +216,7 @@
     }
 
     function handleFormattingChange() {
-        const formatOptions = Array(dataViewer.data.values.length).fill(getFormatOptions())
+        const formatOptions = Array(dataViewer.data.columns.length).fill(getFormatOptions())
         dataViewer.data.formatOptions = formatOptions
     }
 
