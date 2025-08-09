@@ -16,6 +16,10 @@ export class Stylesheet {
         if (tbody) this.resizeObserver.observe(tbody)
     }
 
+    get table() {
+        return this.host.shadowRoot.querySelector("table")
+    }
+
     getIntegratedStyleSheet() {
         const sheet = new CSSStyleSheet()
         sheet.replaceSync(`
@@ -130,27 +134,27 @@ export class Stylesheet {
 
         const indexHeaders = firstRow.querySelectorAll("th")
 
-        let newWidth = 0
+        let cumulativeWidth = 0
         indexHeaders.forEach((header, index) => {
-            this.host.style.setProperty(`--index-col-${index}-offset`, newWidth)
-            newWidth = `${header.offsetWidth}px`
+            this.table.style.setProperty(`--index-col-${index}-offset`, `${cumulativeWidth}px`)
+            cumulativeWidth += header.getBoundingClientRect().width
         })
     }
 
     updateTheadOffset() {
-        const thead = this.host.shadowRoot.querySelector("thead")
+        const thead = this.table.querySelector("thead")
         if (!thead) return
 
         const newOffset = `calc(${thead.offsetHeight}px + .25em)`
-        this.host.style.setProperty(`--thead-offset`, newOffset)
+        this.table.style.setProperty(`--thead-offset`, newOffset)
     }
 
     updateIndexOffset() {
-        const columnLevelName = this.host.shadowRoot.querySelector(".columnLevelNameLabel")
+        const columnLevelName = this.table.querySelector(".columnLevelNameLabel")
         if (!columnLevelName) return
 
         const newOffset = `calc(${columnLevelName.offsetWidth}px + .5em)`
-        this.host.style.setProperty(`--index-offset`, newOffset)
+        this.table.style.setProperty(`--index-offset`, newOffset)
     }
 
     disconnect() {
