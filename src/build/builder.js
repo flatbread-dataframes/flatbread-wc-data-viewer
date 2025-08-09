@@ -60,7 +60,10 @@ export class HTMLBuilder {
             data-groups="${groups}"
             ${isIndexEdge ? ' index-edge' : ''}
             ${isGroupEdge ? ' group-edge' : ''}
-        ><input type="text"></th>`
+            class="columnFilter"
+        >
+            <filter-input></filter-input>
+        </th>`
     }
 
     buildColumnFilterRow() {

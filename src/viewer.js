@@ -2,6 +2,7 @@ import { Data } from "./data/data.js"
 import { View } from "./data/view.js"
 import { HTMLBuilder } from "./build/builder.js"
 import { Stylesheet } from "./build/stylesheet.js"
+import "./components/filter-input.js"
 
 export class DataViewer extends HTMLElement {
     static get observedAttributes() {
@@ -57,13 +58,13 @@ export class DataViewer extends HTMLElement {
 
     addEventListeners() {
         this.shadowRoot.addEventListener("click", this.handleTableClick)
-        this.shadowRoot.addEventListener("input", this.handleFilterInput)
+        this.shadowRoot.addEventListener("filter-input", this.handleFilterInput)
         this.addEventListener("scroll", this.handleScroll)
     }
 
     removeEventListeners() {
         this.shadowRoot.removeEventListener("click", this.handleTableClick)
-        this.shadowRoot.removeEventListener("input", this.handleFilterInput)
+        this.shadowRoot.removeEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.removeEventListener("scroll", this.handleScroll)
     }
 
@@ -197,18 +198,16 @@ export class DataViewer extends HTMLElement {
     }
 
     handleFilterInput(event) {
-        const input = event.target
-        if (input.tagName !== "INPUT" || !input.closest("thead")) return
-
-        const filterInputs = this.shadowRoot.querySelectorAll("thead input[type='text']")
-        const filters = Array.from(filterInputs).map((input, index) => {
-            const th = input.closest("th")
+        const filterInputs = this.shadowRoot.querySelectorAll("thead filter-input")
+        const filters = Array.from(filterInputs).map((filterEl) => {
+            const th = filterEl.closest("th")
             const col = parseInt(th.dataset.col)
             return {
                 col,
-                value: input.value.trim()
+                value: filterEl.value.trim()
             }
-        }).filter(filter => filter.value !== "") // Only keep non-empty filters
+        }).filter(filter => filter.value !== "")
+
         this.applyFilters(filters)
     }
 
