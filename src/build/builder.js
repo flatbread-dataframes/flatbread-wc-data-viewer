@@ -96,7 +96,11 @@ export class HTMLBuilder {
             data-groups="${groups}"
             ${isIndexEdge ? ' index-edge' : ''}
             ${isGroupEdge ? ' group-edge' : ''}
-        >${selectedValue}</th>`
+        >
+            <sortable-column-header data-col="${iloc}">
+            ${selectedValue}
+            </sortable-column-header>
+        </th>`
     }
 
     buildColumnGroupsRow(level) {

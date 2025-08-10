@@ -3,6 +3,7 @@ import { View } from "./data/view.js"
 import { HTMLBuilder } from "./build/builder.js"
 import { Stylesheet } from "./build/stylesheet.js"
 import "./components/filter-input.js"
+import "./components/sortable-column-header.js"
 
 export class DataViewer extends HTMLElement {
     static get observedAttributes() {
@@ -35,6 +36,7 @@ export class DataViewer extends HTMLElement {
         this.handleDataChange = this.handleDataChange.bind(this)
         this.handleTableClick = this.handleTableClick.bind(this)
         this.handleFilterInput = this.handleFilterInput.bind(this)
+        this.handleColumnSort = this.handleColumnSort.bind(this)
         this.handleScroll = this.handleScroll.bind(this)
 
         this._data = new Data()
@@ -59,12 +61,14 @@ export class DataViewer extends HTMLElement {
     addEventListeners() {
         this.shadowRoot.addEventListener("click", this.handleTableClick)
         this.shadowRoot.addEventListener("filter-input", this.handleFilterInput)
+        this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
         this.addEventListener("scroll", this.handleScroll)
     }
 
     removeEventListeners() {
         this.shadowRoot.removeEventListener("click", this.handleTableClick)
         this.shadowRoot.removeEventListener("filter-input", this.handleFilterInput)
+        this.shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.removeEventListener("scroll", this.handleScroll)
     }
 
@@ -223,6 +227,22 @@ export class DataViewer extends HTMLElement {
                 })
             }
             this.view.filter(predicate)
+        }
+        this.renderTbody()
+    }
+
+    handleColumnSort(event) {
+        // Reset all other column headers
+        this.shadowRoot.querySelectorAll('sortable-column-header').forEach(header => {
+            if (header !== event.target) header.clearSort()
+        })
+
+        // Apply sort to view
+        const { columnIndex, sortState } = event.detail
+        if (sortState === "none") {
+            this.view.reset()
+        } else {
+            this.view.sortByColumn(columnIndex, sortState)
         }
         this.renderTbody()
     }
