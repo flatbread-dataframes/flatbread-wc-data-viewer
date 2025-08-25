@@ -1,8 +1,10 @@
-export class HTMLBuilder {
+import { Formatter } from "./formatter.js"
+
+export class TableBuilder {
     constructor(dataViewer, options) {
-        // this.dataViewer.view.= data
         this.dataViewer = dataViewer
         this.options = options
+        this.formatter = new Formatter(options)
     }
 
     buildTable(buffer) {
@@ -168,7 +170,7 @@ export class HTMLBuilder {
     buildCell(value, iloc) {
         const attrs = this.dataViewer.view.columns.attrs[iloc]
         const formatOptions = attrs.formatOptions ?? this.options
-        const formattedValue = this.formatValue(value, attrs.dtype, formatOptions)
+        const formattedValue = this.formatter.formatValue(value, attrs.dtype, formatOptions)
         const groups = attrs.groups.join(" ")
         const isIndexEdge = iloc === 0
         const isGroupEdge = this.dataViewer.view.columns.edges.slice(1).includes(iloc)
@@ -179,29 +181,5 @@ export class HTMLBuilder {
             ${isIndexEdge ? ' index-edge' : ''}
             ${isGroupEdge ? ' group-edge' : ''}
         >${formattedValue}</td>`
-    }
-
-    // MARK: formatting
-    formatValue(value, dtype, formatOptions) {
-        if (value === null || value === "") return this.options.naRep
-        if (!dtype) return value
-
-        switch (dtype) {
-            case 'int':
-            case 'float':
-                return this.formatNumber(value, formatOptions)
-            case 'datetime':
-                return this.formatDate(value, formatOptions)
-            default:
-                return value.toString()
-        }
-    }
-
-    formatNumber(value, options) {
-        return value.toLocaleString(this.options.locale, options)
-    }
-
-    formatDate(value, options) {
-        return new Date(value).toLocaleString(this.options.locale, options)
     }
 }

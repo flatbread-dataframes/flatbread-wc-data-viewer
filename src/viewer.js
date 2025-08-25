@@ -1,6 +1,6 @@
 import { Data } from "./data/data.js"
 import { View } from "./data/view.js"
-import { HTMLBuilder } from "./build/builder.js"
+import { TableBuilder } from "./build/table-builder.js"
 import { Stylesheet } from "./build/stylesheet.js"
 import "./components/control-panel.js"
 import "./components/filter-input.js"
@@ -45,7 +45,7 @@ export class DataViewer extends HTMLElement {
 
         this._data = new Data()
         this.stylesheet = new Stylesheet(this, this.data, this.options)
-        this._htmlBuilder = new HTMLBuilder(this, this.options)
+        this._tableBuilder = new TableBuilder(this, this.options)
     }
 
     // MARK: setup
@@ -160,7 +160,7 @@ export class DataViewer extends HTMLElement {
         const tableContainer = this.shadowRoot.querySelector(".table-container")
         tableContainer.innerHTML = `
             <table>
-                <thead>${this._htmlBuilder.buildThead()}</thead>
+                <thead>${this._tableBuilder.buildThead()}</thead>
                 <tbody></tbody>
             </table>
         `
@@ -173,7 +173,7 @@ export class DataViewer extends HTMLElement {
 
     renderTbody() {
         const tbody = this.shadowRoot.querySelector("tbody")
-        tbody.innerHTML = this._htmlBuilder.buildTbody(0, this.options.buffer)
+        tbody.innerHTML = this._tableBuilder.buildTbody(0, this.options.buffer)
         this.stylesheet.updateColumnWidths()
     }
 
@@ -369,7 +369,7 @@ export class DataViewer extends HTMLElement {
         if ( tableContainer.scrollHeight - (tableContainer.scrollTop + tableContainer.clientHeight) < 150 ) {
             const start = tbody.rows.length
             const end = start + this.options.buffer
-            tbody.innerHTML += this._htmlBuilder.buildTbody(start, end)
+            tbody.innerHTML += this._tableBuilder.buildTbody(start, end)
         }
     }
 
