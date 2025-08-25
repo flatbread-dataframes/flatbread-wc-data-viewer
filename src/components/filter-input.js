@@ -142,6 +142,7 @@ export class FilterInput extends HTMLElement {
 
     handleClear() {
         this.clear()
+        input.focus()
     }
 
     clear() {
@@ -154,7 +155,6 @@ export class FilterInput extends HTMLElement {
                 bubbles: true
             }))
         }
-        input.focus()
     }
 
     // Public API

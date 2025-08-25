@@ -38,6 +38,7 @@ export class DataViewer extends HTMLElement {
         this.handleDataChange = this.handleDataChange.bind(this)
         this.handleTableClick = this.handleTableClick.bind(this)
         this.handleFilterInput = this.handleFilterInput.bind(this)
+        this.handleClearAllFilters = this.handleClearAllFilters.bind(this)
         this.handleColumnSelectionChange = this.handleColumnSelectionChange.bind(this)
         this.handleColumnSort = this.handleColumnSort.bind(this)
         this.handleScroll = this.handleScroll.bind(this)
@@ -64,6 +65,7 @@ export class DataViewer extends HTMLElement {
     addEventListeners() {
         this.shadowRoot.addEventListener("click", this.handleTableClick)
         this.shadowRoot.addEventListener("filter-input", this.handleFilterInput)
+        this.shadowRoot.addEventListener("clear-all-filters", this.handleClearAllFilters)
         this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.addEventListener("column-selection-changed", this.handleColumnSelectionChange)
         this.shadowRoot.addEventListener("scroll", this.handleScroll, { capture: true })
@@ -263,6 +265,11 @@ export class DataViewer extends HTMLElement {
             this.view.filter(predicate)
         }
         this.renderTbody()
+    }
+
+    handleClearAllFilters() {
+        const filterInputs = this.shadowRoot.querySelectorAll("thead filter-input")
+            filterInputs.forEach(filterInput => filterInput.clear())
     }
 
     // MARK: @column

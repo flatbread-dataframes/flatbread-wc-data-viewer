@@ -3,6 +3,7 @@ export class ControlPanel extends HTMLElement {
         super()
         this.attachShadow({ mode: "open" })
         this.handleSelectionChange = this.handleSelectionChange.bind(this)
+        this.handleClick = this.handleClick.bind(this)
         this._columnData = []
     }
 
@@ -16,20 +17,33 @@ export class ControlPanel extends HTMLElement {
     }
 
     render() {
-
         this.shadowRoot.innerHTML = `
             <style>
                 :host {
                     display: grid;
-                    grid-template-columns: auto 1fr;
+                    grid-template-columns: auto auto 1fr;
                     gap: .5em;
                     align-items: center;
                     padding: .25em;
+                }
+                button {
+                    padding: .25em .5em;
+                    border: 1px solid;
+                    border-radius: .25em;
+                    background: transparent;
+                    font: inherit;
+                    color: inherit;
+                    cursor: pointer;
+                    opacity: 0.7;
+                }
+                button:hover {
+                    opacity: 1;
                 }
                 multi-selector::part(dropdown) {
                     background-color: var(--background-color);
                 }
             </style>
+            <button type="button" id="clear-filters">Clear filters</button>
             <label>Select columns:</label>
             <multi-selector name="columns"></multi-selector>
         `
@@ -38,10 +52,21 @@ export class ControlPanel extends HTMLElement {
 
     addEventListeners() {
         this.shadowRoot.addEventListener("change", this.handleSelectionChange)
+        this.shadowRoot.addEventListener("click", this.handleClick)
     }
 
     removeEventListeners() {
         this.shadowRoot.removeEventListener("change", this.handleSelectionChange)
+    }
+
+    handleClick(event) {
+        if (!event.target.matches("#clear-filters")) return
+
+        const newEvent = new CustomEvent("clear-all-filters", {
+            bubbles: true,
+            composed: true
+        })
+        this.dispatchEvent(newEvent)
     }
 
     handleSelectionChange(event) {
