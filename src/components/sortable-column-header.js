@@ -35,7 +35,7 @@ export class SortableColumnHeader extends HTMLElement {
                 }
 
                 :host(:focus) {
-                    outline: 2px solid;
+                    outline: 1px solid;
                     outline-offset: 2px;
                 }
 
@@ -55,7 +55,7 @@ export class SortableColumnHeader extends HTMLElement {
                 }
             </style>
             <slot></slot>
-            <span id="sort-marker">↑</span>
+            <span id="sort-marker">▲</span>
         `
         this.updateMarker()
     }

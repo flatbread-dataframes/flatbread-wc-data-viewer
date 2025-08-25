@@ -6,6 +6,7 @@ export class View {
         this.data = data
 
         this._visibleIndices = null
+        this._visibleColumnIndices = null
         this._viewIndex = null
         this._viewColumns = null
         this._viewValues = null
@@ -18,14 +19,32 @@ export class View {
         return this._visibleIndices
     }
 
-    get columns() { return this.data.columns }
+    get columns() {
+        if (this._visibleColumnIndices === null) {
+            return this.data.columns
+        }
+        // Return filtered columns based on selection
+        const filteredValues = this._visibleColumnIndices.map(i => this.data.columns.values[i])
+        const filteredDtypes = this._visibleColumnIndices.map(i => this.data.dtypes?.[i])
+        const filteredFormatOptions = this._visibleColumnIndices.map(i => this.data.formatOptions?.[i])
+
+        return new Columns(filteredValues, filteredDtypes, filteredFormatOptions)
+    }
+
     get index() {
         // Return filtered index based on visibleIndices
         const visibleIndexValues = this.visibleIndices.map(i => this.data.index.values[i])
         return new Axis(visibleIndexValues)
     }
     get values() {
-        return this.visibleIndices.map(i => this.data.values[i])
+        const rowFiltered = this.visibleIndices.map(i => this.data.values[i])
+        if (this._visibleColumnIndices === null) {
+            return rowFiltered
+        }
+        // Apply column filtering to each row
+        return rowFiltered.map(row =>
+            this._visibleColumnIndices.map(colIdx => row[colIdx])
+        )
     }
     get indexNames() { return this.data.indexNames }
     get columnNames() { return this.data.columnNames }
@@ -37,6 +56,12 @@ export class View {
     // Filtering methods
     filter(predicate) {
         this._visibleIndices = this.data.index.ilocs.filter(i => predicate(this.data.values[i], i))
+        return this
+    }
+
+    filterColumns(columnIndices) {
+        this._visibleColumnIndices = columnIndices
+        this.invalidateCache()
         return this
     }
 

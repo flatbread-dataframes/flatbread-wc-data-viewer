@@ -8,10 +8,13 @@
     <link rel="stylesheet" href="https://lcvriend.github.io/wc-multi-selector/static/prism.css">
     <script type="module" src="https://uu-asc.github.io/csa-werkvoorraad/src/darkmode-toggle.js"></script>
     <style>
+        :root {
+            --background-color: hsl(30, 0%, 98%);
+        }
         body {
             margin-inline: auto;
             margin-bottom: 4rem;
-            background-color: hsl(30, 0%, 98%);
+            background-color: var(--background-color);
             font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
 
             display: grid;
@@ -25,7 +28,6 @@
             &.dark-theme {
                 --background-color: hsl(210, 74%, 17%);
                 --hover-color: hsl(210, 54%, 28%);
-                background-color: var(--background-color);
                 color: hsl(30, 0%, 98%);
             }
         }
@@ -48,6 +50,7 @@
             }
         data-viewer {
             --cursor: pointer;
+            --background-color: inherit;
             margin-block: 1.25em;
         }
         pre {

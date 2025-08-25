@@ -2,8 +2,10 @@ import { Data } from "./data/data.js"
 import { View } from "./data/view.js"
 import { HTMLBuilder } from "./build/builder.js"
 import { Stylesheet } from "./build/stylesheet.js"
+import "./components/control-panel.js"
 import "./components/filter-input.js"
 import "./components/sortable-column-header.js"
+import "https://lcvriend.github.io/wc-multi-selector/src/wc-multi-selector.js"
 
 export class DataViewer extends HTMLElement {
     static get observedAttributes() {
@@ -36,6 +38,7 @@ export class DataViewer extends HTMLElement {
         this.handleDataChange = this.handleDataChange.bind(this)
         this.handleTableClick = this.handleTableClick.bind(this)
         this.handleFilterInput = this.handleFilterInput.bind(this)
+        this.handleColumnSelectionChange = this.handleColumnSelectionChange.bind(this)
         this.handleColumnSort = this.handleColumnSort.bind(this)
         this.handleScroll = this.handleScroll.bind(this)
 
@@ -62,13 +65,15 @@ export class DataViewer extends HTMLElement {
         this.shadowRoot.addEventListener("click", this.handleTableClick)
         this.shadowRoot.addEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
-        this.addEventListener("scroll", this.handleScroll)
+        this.shadowRoot.addEventListener("column-selection-changed", this.handleColumnSelectionChange)
+        this.shadowRoot.addEventListener("scroll", this.handleScroll, { capture: true })
     }
 
     removeEventListeners() {
         this.shadowRoot.removeEventListener("click", this.handleTableClick)
         this.shadowRoot.removeEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
+        this.shadowRoot.removeEventListener("column-selection-changed", this.handleColumnSelectionChange)
         this.shadowRoot.removeEventListener("scroll", this.handleScroll)
     }
 
@@ -117,7 +122,7 @@ export class DataViewer extends HTMLElement {
         }
     }
 
-    // MARK: getter/setter
+    // MARK: get/set
     get data() {
         return this._data
     }
@@ -136,18 +141,31 @@ export class DataViewer extends HTMLElement {
 
     // MARK: render
     render() {
+        if (!this.shadowRoot.querySelector("control-panel")) {
+            this.shadowRoot.innerHTML = `
+                <control-panel></control-panel>
+                <div class="table-container"></div>
+            `
+        }
+
+        this.updateControlPanel()
+        this.renderTable()
+    }
+
+    renderTable() {
         if (!this.data.hasColumns) return
 
-        this.shadowRoot.innerHTML = `
+        const tableContainer = this.shadowRoot.querySelector(".table-container")
+        tableContainer.innerHTML = `
             <table>
                 <thead>${this._htmlBuilder.buildThead()}</thead>
                 <tbody></tbody>
             </table>
         `
+
         this.stylesheet.setupStyles()
         this.stylesheet.updateTheadOffset()
         this.stylesheet.updateIndexOffset()
-
         this.renderTbody()
     }
 
@@ -157,10 +175,25 @@ export class DataViewer extends HTMLElement {
         this.stylesheet.updateColumnWidths()
     }
 
+    updateControlPanel() {
+        if (!this.data.hasColumns) return
+
+        const columnTree = this.buildColumnTree()
+        const controlPanel = this.shadowRoot.querySelector("control-panel")
+        controlPanel.columnData = columnTree
+    }
+
     // MARK: handlers
     handleDataChange(event) {
         this._viewNeedsUpdate = true
-        event.detail.isValuesOnly ? this.renderTbody() : this.render()
+
+        if (event.detail.isValuesOnly) {
+            this.renderTbody()
+        } else {
+            // Data structure changed - full render including control panel update
+            this.render()
+        }
+
         this.dispatchEvent(new CustomEvent("data-changed", { detail: this.data }))
     }
 
@@ -201,6 +234,7 @@ export class DataViewer extends HTMLElement {
         }))
     }
 
+    // MARK: @filter
     handleFilterInput(event) {
         const filterInputs = this.shadowRoot.querySelectorAll("thead filter-input")
         const filters = Array.from(filterInputs).map((filterEl) => {
@@ -231,6 +265,75 @@ export class DataViewer extends HTMLElement {
         this.renderTbody()
     }
 
+    // MARK: @column
+    handleColumnSelectionChange(event) {
+        const selectedColumnIndices = event.detail.selectedColumns
+        this.applyColumnFilter(selectedColumnIndices)
+    }
+
+    applyColumnFilter(selectedColumnIndices) {
+        if (selectedColumnIndices.length === 0) {
+            this.view.filterColumns(null)
+        } else {
+            this.view.filterColumns(selectedColumnIndices)
+        }
+
+        this.renderTable()
+    }
+
+    buildColumnTree() {
+        if (!this.data.columns.isMultiIndex) {
+            // Simple case: flat column structure
+            return this.data.columns.values.map((value, iloc) => ({
+                label: value,
+                value: iloc,
+                selected: true,
+                children: [],
+            }))
+        }
+        return this.buildLevel(0, 0, this.data.columns.length)
+    }
+
+    buildLevel(level, start, end) {
+        if (level === this.data.columns.nlevels - 1) {
+            // Leaf level: create actual column nodes
+            const result = []
+            for (let iloc = start; iloc < end; iloc++) {
+                const columnValue = this.data.columns.values[iloc]
+                const label = Array.isArray(columnValue) ? columnValue[level] : columnValue
+                result.push({
+                    label: label,
+                    value: iloc,
+                    selected: true,
+                    children: []
+                })
+            }
+            return result
+        }
+
+        // Intermediate level: group by spans
+        const result = []
+        const spans = this.data.columns.spans[level]
+
+        for (const span of spans) {
+            const spanEnd = span.iloc + span.count
+            if (spanEnd <= start || span.iloc >= end) continue
+
+            const spanStart = Math.max(span.iloc, start)
+            const clampedEnd = Math.min(spanEnd, end)
+
+            const children = this.buildLevel(level + 1, spanStart, clampedEnd)
+
+            result.push({
+                value: span.value[level],
+                children: children
+            })
+        }
+
+        return result
+    }
+
+    // MARK: @sort
     handleColumnSort(event) {
         // Reset all other column headers
         this.shadowRoot.querySelectorAll('sortable-column-header').forEach(header => {
@@ -247,12 +350,16 @@ export class DataViewer extends HTMLElement {
         this.renderTbody()
     }
 
+    // MARK: @scroll
     handleScroll(event) {
+        if (!event.target.matches(".table-container")) return
+        const tableContainer = event.target.closest(".table-container")
+
         event.preventDefault()
         event.stopPropagation()
-        const el = event.target
+
         const tbody = this.shadowRoot.querySelector("tbody")
-        if ( el.scrollHeight - (el.scrollTop + el.clientHeight) < 150 ) {
+        if ( tableContainer.scrollHeight - (tableContainer.scrollTop + tableContainer.clientHeight) < 150 ) {
             const start = tbody.rows.length
             const end = start + this.options.buffer
             tbody.innerHTML += this._htmlBuilder.buildTbody(start, end)

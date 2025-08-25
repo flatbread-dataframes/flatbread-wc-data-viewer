@@ -33,11 +33,20 @@ export class Stylesheet {
     getBaseStyles() {
         return `
             :host {
-                display: block;
+                display: grid;
                 cursor: var(--cursor, auto);
                 max-height: var(--height, 600px);
+            }
+            :root {
+                box-sizing: border-box;
+            }
+            .control-panel {
+                --background-color: var(--background-color);
+            }
+            .table-container {
                 overflow-y: auto;
                 overscroll-behavior: none;
+                scrollbar-gutter: stable;
             }
             table {
                 border-collapse: separate;
