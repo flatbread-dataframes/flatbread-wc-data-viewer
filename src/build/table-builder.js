@@ -34,7 +34,7 @@ export class TableBuilder {
             : ""
 
         const columnLevelNameLabelElement =
-            `<th colspan="${this.dataViewer.view.index.nlevels}"
+            `<th colspan="${this.dataViewer.view.index.nlevels + 1}"
             class="columnLevelNameLabel">${columnLevelNameLabel}</th>`
 
         return columnLevelNameLabelElement
@@ -43,10 +43,22 @@ export class TableBuilder {
     buildIndexLevelNameLabels() {
         // build the index level name labels (to be used in filter row)
         const indexLevelNameLabels =
-            this.dataViewer.view.indexNames
-            ? this.dataViewer.view.indexNames.map((name, idx) => `<th data-level="${idx}" class="indexLevelNameLabel">${name}</th>`)
-            : this.dataViewer.view.index.ilevels.map(level => `<th data-level="${level}"></th>`)
+            this.dataViewer.view.index.ilevels.map(level => this.buildIndexLevelNameLabel(level))
         return indexLevelNameLabels
+    }
+
+    buildIndexLevelNameLabel(level) {
+        const indexLevelNameLabel =
+            this.dataViewer.view.indexNames
+            ? this.dataViewer.view.indexNames.at(level) ?? ""
+            : ""
+        const colspan =
+            this.dataViewer.view.indexNames.length - 1 === level
+            ? `colspan="2"`
+            : ""
+        const indexLevelNameLabelElement =
+        `<th data-level="${level}" class="indexLevelNameLabel" ${colspan}>${indexLevelNameLabel}</th>`
+        return indexLevelNameLabelElement
     }
 
     buildColumnFilter(iloc) {
@@ -144,7 +156,11 @@ export class TableBuilder {
     }
 
     buildIndexRows(start, end) {
-        const indexRows = this.dataViewer.view.index.values.slice(start, end).map(value => [this.buildIndex(value)])
+        const indexRows =
+            this.dataViewer.view.index.values.slice(start, end).map((value, idx) => [
+                this.buildIndex(value),
+                this.buildRecordViewIcon(start + idx)
+            ])
         // Reverse levels because outer levels need to be added last
         const levelsReversed = this.dataViewer.view.index.ilevels.slice(0, -1).reverse()
         levelsReversed.forEach(level => {
@@ -165,6 +181,12 @@ export class TableBuilder {
         value = Array.isArray(value) ? value.at(-1) : value
         const level = this.dataViewer.view.index.nlevels - 1
         return `<th data-level=${level}>${value}</th>`
+    }
+
+    buildRecordViewIcon(viewRowIndex) {
+        return `<th class="recordViewIcon" data-view-row="${viewRowIndex}">
+            <button type="button" aria-label="View record details">👁</button>
+        </th>`
     }
 
     buildCell(value, iloc) {

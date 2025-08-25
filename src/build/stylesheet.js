@@ -30,6 +30,7 @@ export class Stylesheet {
         return sheet
     }
 
+    // MARK: base
     getBaseStyles() {
         return `
             :host {
@@ -59,9 +60,34 @@ export class Stylesheet {
             td { text-align: right; }
             th, td { padding: .25em .5em; }
             .columnLabel { text-align: right; }
+
+            .recordViewIcon {
+                left: var(--index-col-${this.data.index.nlevels}-offset);
+                z-index: 1;
+            }
+
+            .recordViewIcon button {
+                opacity: 0;
+                border: none;
+                background: transparent;
+                cursor: pointer;
+                font-size: 1.25em;
+                color: inherit;
+                transition: opacity 0.2s;
+            }
+
+            :where(tbody tr:hover) .recordViewIcon button {
+                opacity: 0.7;
+            }
+
+            .recordViewIcon button:hover {
+                opacity: 1;
+                background-color: var(--hover-color, #f4f3ee);
+            }
         `
     }
 
+    // MARK: sticky
     getStickyStyles() {
         const calcs = this.data.index.ilevels.map(i => `
             [data-level="${i}"] {
@@ -98,6 +124,7 @@ export class Stylesheet {
         `
     }
 
+    // MARK: composed
     getComposedStyles() {
         const styleBlocks = {
             groupBorders: `
@@ -125,7 +152,7 @@ export class Stylesheet {
                 thead th:has(+ [index-edge]) {
                     border-right: var(--axes-width, 2px) solid var(--border-color, currentColor);
                 }
-            `
+            `,
         }
 
         return Object.entries(styleBlocks)
@@ -134,6 +161,7 @@ export class Stylesheet {
             .join("\n")
     }
 
+    // MARK: updates
     updateColumnWidths() {
         const tbody = this.host.shadowRoot.querySelector("tbody")
         if (!tbody) return

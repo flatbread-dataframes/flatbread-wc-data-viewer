@@ -37,6 +37,7 @@ export class DataViewer extends HTMLElement {
         this.options = { ...DataViewer.defaults }
         this.handleDataChange = this.handleDataChange.bind(this)
         this.handleTableClick = this.handleTableClick.bind(this)
+        this.handleRecordViewClick = this.handleRecordViewClick.bind(this)
         this.handleFilterInput = this.handleFilterInput.bind(this)
         this.handleClearAllFilters = this.handleClearAllFilters.bind(this)
         this.handleColumnSelectionChange = this.handleColumnSelectionChange.bind(this)
@@ -46,6 +47,9 @@ export class DataViewer extends HTMLElement {
         this._data = new Data()
         this.stylesheet = new Stylesheet(this, this.data, this.options)
         this._tableBuilder = new TableBuilder(this, this.options)
+
+        this._viewMode = "table"
+        this._currentRecordIndex = 0
     }
 
     // MARK: setup
@@ -64,6 +68,7 @@ export class DataViewer extends HTMLElement {
 
     addEventListeners() {
         this.shadowRoot.addEventListener("click", this.handleTableClick)
+        this.shadowRoot.addEventListener("click", this.handleRecordViewClick)
         this.shadowRoot.addEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.addEventListener("clear-all-filters", this.handleClearAllFilters)
         this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
@@ -139,6 +144,30 @@ export class DataViewer extends HTMLElement {
             this._viewNeedsUpdate = false
         }
         return this._view
+    }
+
+    get viewMode() {
+        return this._viewMode
+    }
+
+    get currentRecordIndex() {
+        return this._currentRecordIndex
+    }
+
+    get currentRecord() {
+        if (this._viewMode !== "record" || this.view.visibleIndices.length === 0) {
+            return null
+        }
+
+        const originalIndex = this.view.visibleIndices[this._currentRecordIndex]
+        const values = this.view.values[this._currentRecordIndex]
+        const indexValue = this.view.index.values[this._currentRecordIndex]
+
+        return {
+            originalIndex,
+            indexValue,
+            values
+        }
     }
 
     // MARK: render
@@ -234,6 +263,54 @@ export class DataViewer extends HTMLElement {
             bubbles: true,
             composed: true
         }))
+    }
+
+    // MARK: @record
+    handleRecordViewClick(event) {
+        if (!event.target.matches(".recordViewIcon button")) return
+
+        event.stopPropagation() // Prevent triggering cell-click
+        const viewRowIndex = parseInt(event.target.closest("th").dataset.viewRow)
+        this.enterRecordView(viewRowIndex)
+    }
+
+    enterRecordView(viewRowIndex) {
+        this._currentRecordIndex = viewRowIndex
+        this._viewMode = "record"
+        this.updateViewMode()
+    }
+
+    exitRecordView() {
+        this._viewMode = "table"
+        this.updateViewMode()
+    }
+
+    navigateRecord(direction) {
+        const totalRecords = this.view.visibleIndices.length
+        if (totalRecords === 0) return
+
+        switch (direction) {
+            case "first":
+                this._currentRecordIndex = 0
+                break
+            case "prev":
+                this._currentRecordIndex = (this._currentRecordIndex - 1 + totalRecords) % totalRecords
+                break
+            case "next":
+                this._currentRecordIndex = (this._currentRecordIndex + 1) % totalRecords
+                break
+            case "last":
+                this._currentRecordIndex = totalRecords - 1
+                break
+        }
+
+        // Will need to update record display when we implement RecordBuilder
+        this.renderRecord()
+    }
+
+    updateViewMode() {
+        // Will implement when we add the dual container structure
+        console.log(`Switched to ${this._viewMode} mode, current record:`, this.currentRecord)
     }
 
     // MARK: @filter
