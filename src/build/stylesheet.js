@@ -89,7 +89,10 @@ export class Stylesheet {
             tbody th:not([rowspan]) {
                 vertical-align: middle;
             }
-            .columnLabel { text-align: right; }
+            thead th.columnLevelNameLabel {
+                text-align: right;
+                vertical-align: middle;
+            }
             /* tbody tr:hover .recordViewIcon button {
                 opacity: 0.4;
             } */
@@ -213,7 +216,7 @@ export class Stylesheet {
             th {
                 background: var(--background-color, white);
             }
-            thead th[colspan] {
+            thead th[colspan]:not(.columnLevelNameLabel) {
                 text-align: left;
             }
             thead th span {
