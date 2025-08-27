@@ -4,7 +4,10 @@ export class Stylesheet {
         this.data = data
         this.options = options
         this.updateColumnWidths = this.updateColumnWidths.bind(this)
-        this.resizeObserver = new ResizeObserver(this.updateColumnWidths)
+        this.resizeObserver = new ResizeObserver(() => {
+            this.updateColumnWidths()
+            this.updateIndexOffset()
+        })
     }
 
     setupStyles() {
@@ -218,7 +221,8 @@ export class Stylesheet {
                 left: var(--index-offset);
             }
             thead th:where(.columnLevelNameLabel, .indexLevelNameLabel),
-            tbody th {
+            tbody th,
+            .indexFilter {
                 position: sticky;
                 left: 0;
                 z-index: 1;
@@ -300,6 +304,7 @@ export class Stylesheet {
 
         const newOffset = `calc(${columnLevelName.offsetWidth}px + .5em)`
         this.table.style.setProperty(`--index-offset`, newOffset)
+        console.log(newOffset)
     }
 
     disconnect() {

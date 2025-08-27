@@ -226,13 +226,13 @@ export class DataViewer extends HTMLElement {
 
         this.stylesheet.setupStyles()
         this.stylesheet.updateTheadOffset()
-        this.stylesheet.updateIndexOffset()
         this.renderTbody()
     }
 
     renderTbody() {
         const tbody = this.shadowRoot.querySelector("tbody")
         tbody.innerHTML = this._tableBuilder.buildTbody(0, this.options.buffer)
+        this.stylesheet.updateIndexOffset()
         this.stylesheet.updateColumnWidths()
     }
 
@@ -294,7 +294,7 @@ export class DataViewer extends HTMLElement {
         }))
     }
 
-    // MARK: @mode
+    // MARK: @viewmode
     handleRecordViewClick(event) {
         if (!event.target.matches(".recordViewIcon button")) return
 
@@ -357,17 +357,7 @@ export class DataViewer extends HTMLElement {
 
     // MARK: @filter
     handleFilterInput(event) {
-        const filterInputs = this.shadowRoot.querySelectorAll("thead filter-input")
-        const filters = Array.from(filterInputs).map((filterEl) => {
-            const th = filterEl.closest("th")
-            const col = parseInt(th.dataset.col)
-            return {
-                col,
-                value: filterEl.value.trim()
-            }
-        }).filter(filter => filter.value !== "")
-
-        this.applyFilters(filters)
+        this.applyFilters()
     }
 
     // FIXME: filter state management needs architectural fix
@@ -375,30 +365,73 @@ export class DataViewer extends HTMLElement {
     // become misaligned with actual visible columns. current patch works but
     // doesn't handle filter persistence across column selection changes.
     // need to decide: preserve filters by column identity or clear on column changes?
-    applyFilters(filters) {
-        if (filters.length === 0) {
+    applyFilters() {
+        const indexFilters = this.getIndexFilters()
+        const columnFilters = this.getColumnFilters()
+
+        if (indexFilters.length === 0 && columnFilters.length === 0) {
             this.view.reset()
         } else {
-            const predicate = (rowValues, rowIndex) => {
-                return filters.every(filter => {
-                    // Map filtered column index to original column index
-                    const originalColumnIndex = this.view._visibleColumnIndices
-                        ? this.view._visibleColumnIndices[filter.col]
-                        : filter.col
+            const predicates = []
+            if (indexFilters.length > 0) predicates.push(this.createIndexPredicate(indexFilters))
+            if (columnFilters.length > 0) predicates.push(this.createColumnPredicate(columnFilters))
 
-                    const cellValue = rowValues[originalColumnIndex]
-                    return cellValue != null &&
-                        cellValue.toString().toLowerCase().includes(filter.value.toLowerCase())
-                })
+            const combinedPredicate = (rowValues, rowIndex) => {
+                return predicates.every(predicate => predicate(rowValues, rowIndex))
             }
-            this.view.filter(predicate)
+
+            this.view.filter(combinedPredicate)
         }
         this.renderTbody()
     }
 
+    getIndexFilters() {
+        const indexFilterInputs = this.shadowRoot.querySelectorAll(".indexFilter filter-input")
+        return Array.from(indexFilterInputs).map(filterEl => {
+            const th = filterEl.closest("th")
+            const level = parseInt(th.dataset.level)
+            return { level, value: filterEl.value.trim() }
+        }).filter(filter => filter.value !== "")
+    }
+
+    getColumnFilters() {
+        const columnFilterInputs = this.shadowRoot.querySelectorAll(".columnFilter filter-input")
+        return Array.from(columnFilterInputs).map(filterEl => {
+            const th = filterEl.closest("th")
+            const col = parseInt(th.dataset.col)
+            return { col, value: filterEl.value.trim() }
+        }).filter(filter => filter.value !== "")
+    }
+
+    createIndexPredicate(indexFilters) {
+        return (rowValues, rowIndex) => {
+            return indexFilters.every(filter => {
+                const indexValue = this.data.index.values[rowIndex]
+                const levelValue = Array.isArray(indexValue)
+                    ? indexValue[filter.level]
+                    : indexValue
+                return levelValue != null &&
+                    levelValue.toString().toLowerCase().includes(filter.value.toLowerCase())
+            })
+        }
+    }
+
+    createColumnPredicate(columnFilters) {
+        return (rowValues, rowIndex) => {
+            return columnFilters.every(filter => {
+                const originalColumnIndex = this.view._visibleColumnIndices
+                    ? this.view._visibleColumnIndices[filter.col]
+                    : filter.col
+                const cellValue = rowValues[originalColumnIndex]
+                return cellValue != null &&
+                    cellValue.toString().toLowerCase().includes(filter.value.toLowerCase())
+            })
+        }
+    }
+
     handleClearAllFilters() {
-        const filterInputs = this.shadowRoot.querySelectorAll("thead filter-input")
-            filterInputs.forEach(filterInput => filterInput.clear())
+        const allFilterInputs = this.shadowRoot.querySelectorAll("filter-input")
+        allFilterInputs.forEach(filterInput => filterInput.clear())
     }
 
     // MARK: @column

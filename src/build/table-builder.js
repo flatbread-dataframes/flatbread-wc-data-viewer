@@ -23,7 +23,7 @@ export class TableBuilder {
             .slice(0, -1)
             .map(level => this.buildColumnGroupsRow(level))
             .join("")
-        return `${columnGroupsRows}${this.buildColumnsRow()}${this.buildColumnFilterRow()}`
+        return `${columnGroupsRows}${this.buildColumnsRow()}${this.buildIndexLabelRow()}${this.buildFilterRow()}`
     }
 
     buildColumnLevelNameLabel(level) {
@@ -78,6 +78,46 @@ export class TableBuilder {
         >
             <filter-input></filter-input>
         </th>`
+    }
+
+    buildIndexLabelRow() {
+        const indexLevelNameLabels = this.buildIndexLevelNameLabels()
+        const emptyCells = this.dataViewer.view.columns.ilocs.map(iloc => {
+            const isIndexEdge = iloc === 0
+            const isGroupEdge = this.dataViewer.view.columns.edges.slice(1).includes(iloc)
+            return `<th
+                ${isIndexEdge ? ' index-edge' : ''}
+                ${isGroupEdge ? ' group-edge' : ''}
+            ></th>`
+        })
+        return `<tr>${indexLevelNameLabels.join("")}${emptyCells.join("")}</tr>`
+    }
+
+    buildFilterRow() {
+        const indexFilters = this.buildIndexFilters()
+        const columnFilters = this.dataViewer.view.columns.ilocs.map(iloc =>
+            this.buildColumnFilter(iloc)
+        )
+        return `<tr class="filter-row">${indexFilters.join("")}${columnFilters.join("")}</tr>`
+    }
+
+    buildIndexFilters() {
+        return this.dataViewer.view.index.ilevels.map(level => {
+            const isLastLevel = level === this.dataViewer.view.index.nlevels - 1
+            const colspan = isLastLevel ? `colspan="2"` : ""
+
+            return `<th
+                data-level="${level}"
+                class="indexFilter"
+                ${colspan}
+            >
+                <filter-input></filter-input>
+            </th>`
+        })
+    }
+
+    getIndexLevelName(level) {
+        return this.dataViewer.view.indexNames?.[level] || `Level ${level}`
     }
 
     buildColumnFilterRow() {
