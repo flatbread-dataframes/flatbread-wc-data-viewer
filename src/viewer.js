@@ -45,6 +45,7 @@ export class DataViewer extends HTMLElement {
         this.handleClearAllFilters = this.handleClearAllFilters.bind(this)
         this.handleColumnSelectionChange = this.handleColumnSelectionChange.bind(this)
         this.handleColumnSort = this.handleColumnSort.bind(this)
+        this.handleIndexSort = this.handleIndexSort.bind(this)
         this.handleScroll = this.handleScroll.bind(this)
 
         this._data = new Data()
@@ -86,6 +87,7 @@ export class DataViewer extends HTMLElement {
         this.shadowRoot.addEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.addEventListener("clear-all-filters", this.handleClearAllFilters)
         this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
+        this.shadowRoot.addEventListener("index-sort", this.handleIndexSort)
         this.shadowRoot.addEventListener("column-selection-changed", this.handleColumnSelectionChange)
         this.shadowRoot.addEventListener("scroll", this.handleScroll, { capture: true })
     }
@@ -98,6 +100,7 @@ export class DataViewer extends HTMLElement {
         this.shadowRoot.removeEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.removeEventListener("clear-all-filters", this.handleClearAllFilters)
         this.shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
+        this.shadowRoot.removeEventListener("index-sort", this.handleIndexSort)
         this.shadowRoot.removeEventListener("column-selection-changed", this.handleColumnSelectionChange)
         this.shadowRoot.removeEventListener("scroll", this.handleScroll)
     }
@@ -507,10 +510,8 @@ export class DataViewer extends HTMLElement {
 
     // MARK: @sort
     handleColumnSort(event) {
-        // reset all other column headers
-        this.shadowRoot.querySelectorAll('sortable-column-header').forEach(header => {
-            if (header !== event.target) header.clearSort()
-        })
+        this.clearAllSorts()
+        event.target.sortState = event.detail.sortState
 
         // apply sort to view
         const { columnIndex, sortState } = event.detail
@@ -520,6 +521,26 @@ export class DataViewer extends HTMLElement {
             this.view.sortByColumn(columnIndex, sortState)
         }
         this.renderTbody()
+    }
+
+    handleIndexSort(event) {
+        this.clearAllSorts()
+        event.target.sortState = event.detail.sortState
+
+        // apply sort to view
+        const { level, sortState } = event.detail
+        if (sortState === "none") {
+            this.view.reset()
+        } else {
+            this.view.sortByIndex(level, sortState)
+        }
+        this.renderTbody()
+    }
+
+    clearAllSorts() {
+        this.shadowRoot.querySelectorAll('sortable-column-header').forEach(header => {
+            header.clearSort()
+        })
     }
 
     // MARK: @scroll

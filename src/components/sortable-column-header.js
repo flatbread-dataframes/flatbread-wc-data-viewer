@@ -1,6 +1,6 @@
 export class SortableColumnHeader extends HTMLElement {
     static get observedAttributes() {
-        return ["data-col", "sort-state"]
+        return ["data-col", "data-level", "sort-state"]
     }
 
     constructor() {
@@ -94,11 +94,15 @@ export class SortableColumnHeader extends HTMLElement {
         const nextState = this.getNextSortState()
         this.sortState = nextState
 
-        this.dispatchEvent(new CustomEvent("column-sort", {
-            detail: {
-                columnIndex: parseInt(this.dataset.col),
-                sortState: nextState
-            },
+        const isColumnSort = this.hasAttribute("data-col")
+        const eventName = isColumnSort ? "column-sort" : "index-sort"
+
+        const detail = isColumnSort
+            ? { columnIndex: parseInt(this.dataset.col), sortState: nextState }
+            : { level: parseInt(this.dataset.level), sortState: nextState }
+
+        this.dispatchEvent(new CustomEvent(eventName, {
+            detail: detail,
             bubbles: true
         }))
     }
@@ -150,6 +154,14 @@ export class SortableColumnHeader extends HTMLElement {
 
     set columnIndex(value) {
         this.dataset.col = value.toString()
+    }
+
+    get level() {
+        return parseInt(this.dataset.level) ?? 0
+    }
+
+    set level(value) {
+        this.dataset.level = value.toString()
     }
 
     clearSort() {

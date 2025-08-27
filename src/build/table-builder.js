@@ -57,7 +57,11 @@ export class TableBuilder {
             ? `colspan="2"`
             : ""
         const indexLevelNameLabelElement =
-        `<th data-level="${level}" class="indexLevelNameLabel" ${colspan}>${indexLevelNameLabel}</th>`
+        `<th data-level="${level}" class="indexLevelNameLabel" ${colspan}>
+            <sortable-column-header data-level="${level}">
+                ${indexLevelNameLabel}
+            </sortable-column-header>
+        </th>`
         return indexLevelNameLabelElement
     }
 
