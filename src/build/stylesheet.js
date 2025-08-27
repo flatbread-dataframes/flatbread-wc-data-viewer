@@ -294,7 +294,7 @@ export class Stylesheet {
         const thead = this.table.querySelector("thead")
         if (!thead) return
 
-        const newOffset = `calc(${thead.offsetHeight}px + .25em)`
+        const newOffset = `calc(${thead.getBoundingClientRect().height}px + .25em)`
         this.table.style.setProperty(`--thead-offset`, newOffset)
     }
 
@@ -302,9 +302,8 @@ export class Stylesheet {
         const columnLevelName = this.table.querySelector(".columnLevelNameLabel")
         if (!columnLevelName) return
 
-        const newOffset = `calc(${columnLevelName.offsetWidth}px + .5em)`
+        const newOffset = `calc(${columnLevelName.getBoundingClientRect().width}px + .5em)`
         this.table.style.setProperty(`--index-offset`, newOffset)
-        console.log(newOffset)
     }
 
     disconnect() {
