@@ -85,26 +85,6 @@
                     <option value="data/uro_2024.json" selected>uro[2024]</option>
                 </select>
             </label>
-            <div>
-                <label for="calc-op">
-                    <select name="calc-op" id="calc-op">
-                        <option value="multiply">multiply</option>
-                        <option value="divide">divide</option>
-                        <option value="add">add</option>
-                        <option value="subtract">subtract</option>
-                    </select>
-                </label>
-                <label for="n">n
-                    <input type="number" name="n" id="n" autocomplete="off">
-                </label>
-            </div>
-        </fieldset>
-        <fieldset>
-            <legend>Format</legend>
-            <input type="checkbox" id="as-currency" name="as-currency" autocomplete="off" checked>
-            <label for="as-currency">as currency</label>
-            <input type="checkbox" id="sep-thousands" name="sep-thousands" autocomplete="off" checked>
-            <label for="sep-thousands">seperator</label>
         </fieldset>
         <fieldset>
             <legend>Locale</legend>
@@ -167,7 +147,7 @@
         <li>cell-click</li>
     </ul>
 </ul>
-<a href="https://github.com/lcvriend/wc-simple-table">https://github.com/lcvriend/wc-simple-table</a>
+<a href="https://github.com/flatbread-dataframes/flatbread-wc-data-viewer">github.com/flatbread-dataframes/flatbread-wc-data-viewer</a>
 <script src="src/viewer.js" type="module"></script>
 <script>
     const dataViewer = document.querySelector("data-viewer")
@@ -180,47 +160,6 @@
 
     function getLocale() {
         return document.querySelector('input[type="radio"]:checked')?.value
-    }
-
-    function getCalculation(n) {
-        const op = document.getElementById("calc-op").value
-        n = parseInt(n)
-        console.log(op)
-        switch (op) {
-            case "multiply":
-                return value => value ? value * n : null
-            case "divide":
-                return value => value ? value / n : null
-            case "add":
-                return value => value ? value + n : null
-            case "subtract":
-                return value => value ? value - n : null
-        }
-    }
-
-    function updateTable(n) {
-        const op = getCalculation(n)
-        const newValues = dataViewer.data.values.map(row => row.map(op))
-        dataViewer.data.values = newValues
-    }
-
-    function getFormatOptions() {
-        const checkboxAsCurrency = document.querySelector(`input[name="as-currency"]`)
-        const checkboxSepThousands = document.querySelector('input[name="sep-thousands"]')
-        const formatOptions = {
-            "style": checkboxAsCurrency.checked ? "currency" : "decimal",
-            "currency": "EUR",
-            "useGrouping": checkboxSepThousands.checked,
-            "minimumFractionDigits": 2,
-            "maximumFractionDigits": 2,
-            "trailingZeroDisplay": !checkboxAsCurrency.checked ? "stripIfInteger" : "auto",
-        }
-        return formatOptions
-    }
-
-    function handleFormattingChange() {
-        const formatOptions = Array(dataViewer.data.columns.length).fill(getFormatOptions())
-        dataViewer.data.formatOptions = formatOptions
     }
 
     function handleBorderChange(event) {
@@ -256,15 +195,9 @@
         })
     })
 
-    document.getElementById("as-currency").addEventListener("change", handleFormattingChange)
-    document.getElementById("sep-thousands").addEventListener("change", handleFormattingChange)
     document.getElementById("controls").addEventListener("change", event => {
         if (!event.target.id.startsWith("hide")) return
         handleBorderChange(event)
-    })
-
-    document.getElementById("n").addEventListener("change", event => {
-        updateTable(event.target.value)
     })
 </script>
 </body>
