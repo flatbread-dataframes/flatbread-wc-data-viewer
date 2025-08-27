@@ -11,7 +11,6 @@ export class Stylesheet {
         const sheet = this.getIntegratedStyleSheet()
         this.host.shadowRoot.adoptedStyleSheets = [sheet]
 
-        // Start observing for resize
         const tbody = this.host.shadowRoot.querySelector("tbody")
         if (tbody) this.resizeObserver.observe(tbody)
     }
@@ -33,22 +32,47 @@ export class Stylesheet {
     // MARK: base
     getBaseStyles() {
         return `
+            :root {
+                box-sizing: border-box;
+            }
             :host {
                 display: grid;
                 cursor: var(--cursor, auto);
                 max-height: var(--height, 600px);
+                grid-template-areas:
+                    "control-panel"
+                    "view";
             }
-            :root {
-                box-sizing: border-box;
-            }
-            .control-panel {
-                --background-color: var(--background-color);
-            }
-            .table-container {
+
+            .table-container,
+            .record-container {
+                grid-area: view;
                 overflow-y: auto;
                 overscroll-behavior: none;
                 scrollbar-gutter: stable;
             }
+            :host([view="record"]) {
+                .table-container {
+                    visibility: hidden;
+                }
+                .record-container {
+                    display: block;
+                }
+            }
+            :host([view="table"]) {
+                .table-container {
+                    visibility: visible;
+                }
+                .record-container {
+                    display: none;
+                }
+            }
+
+            .control-panel {
+                --background-color: var(--background-color);
+                grid-area: control-panel;
+            }
+
             table {
                 border-collapse: separate;
                 border-spacing: 0;
@@ -59,13 +83,106 @@ export class Stylesheet {
             tbody th { text-align: left; }
             td { text-align: right; }
             th, td { padding: .25em .5em; }
+            tbody th:not([rowspan]) {
+                vertical-align: middle;
+            }
             .columnLabel { text-align: right; }
+            /* tbody tr:hover .recordViewIcon button {
+                opacity: 0.4;
+            } */
+            tbody tr .recordViewIcon button:hover {
+                opacity: 1;
+                background-color: var(--hover-color, #f4f3ee);
+            }
 
+            .record-container {
+                padding: 12px;
+            }
+            .record-view {
+                margin: 0 auto;
+            }
+            .record-navigation {
+                display: grid;
+                grid-template-columns: auto 1fr auto;
+                gap: 1rem;
+                align-items: center;
+                padding: 0.5rem 0;
+                margin-bottom: 1.5rem;
+                border-bottom: 1px solid var(--border-color, currentColor);
+            }
+            .nav-buttons {
+                display: flex;
+                gap: 0.25rem;
+            }
+            .nav-buttons button,
+            .exit-button {
+                padding: 0.25rem 0.5rem;
+                border: 1px solid var(--border-color, currentColor);
+                border-radius: 0.25rem;
+                background: var(--background-color, white);
+                cursor: pointer;
+                font: inherit;
+                color: inherit;
+            }
+            .nav-buttons button:hover,
+            .exit-button:hover {
+                background-color: var(--hover-color, #f4f3ee);
+            }
+            .record-info {
+                justify-self: center;
+                display: flex;
+                align-items: center;
+                gap: 1.5em;
+            }
+            .record-position {
+                font-weight: 500;
+                font-size: 0.9em;
+                opacity: 0.8;
+            }
+            .record-index {
+                font-weight: 600;
+                font-size: 1.1em;
+            }
+            .field-group {
+                margin-bottom: 2rem;
+            }
+            .group-title {
+                margin: 0 0 1rem 0;
+                padding-bottom: 0.5rem;
+                border-bottom: 1px solid var(--border-color, currentColor);
+                font-size: 1.1em;
+                font-weight: 600;
+            }
+            .record-fields {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 1rem;
+            }
+            .record-field {
+                display: grid;
+                grid-template-columns: auto 1fr;
+                gap: 0.5rem;
+                align-items: baseline;
+            }
+            .field-label {
+                font-weight: 500;
+                text-align: right;
+                white-space: nowrap;
+            }
+            .field-value {
+                padding: 0.25rem 0.5rem;
+                background-color: var(--hover-color, #f4f3ee);
+                border-radius: 0.25rem;
+                font-family: monospace;
+            }
+            .field-value[data-dtype="int"],
+            .field-value[data-dtype="float"] {
+                text-align: right;
+            }
             .recordViewIcon {
                 left: var(--index-col-${this.data.index.nlevels}-offset);
                 z-index: 1;
             }
-
             .recordViewIcon button {
                 opacity: 0;
                 border: none;
@@ -74,15 +191,6 @@ export class Stylesheet {
                 font-size: 1.25em;
                 color: inherit;
                 transition: opacity 0.2s;
-            }
-
-            :where(tbody tr:hover) .recordViewIcon button {
-                opacity: 0.7;
-            }
-
-            .recordViewIcon button:hover {
-                opacity: 1;
-                background-color: var(--hover-color, #f4f3ee);
             }
         `
     }

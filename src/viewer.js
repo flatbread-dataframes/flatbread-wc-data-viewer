@@ -1,16 +1,18 @@
 import { Data } from "./data/data.js"
 import { View } from "./data/view.js"
 import { TableBuilder } from "./build/table-builder.js"
+import { RecordBuilder } from "./build/record-builder.js"
 import { Stylesheet } from "./build/stylesheet.js"
 import "./components/control-panel.js"
 import "./components/filter-input.js"
 import "./components/sortable-column-header.js"
 import "https://lcvriend.github.io/wc-multi-selector/src/wc-multi-selector.js"
 
+
 export class DataViewer extends HTMLElement {
     static get observedAttributes() {
         return [
-            "src", "locale", "na-rep",
+            "view", "src", "locale", "na-rep",
             "hide-group-borders", "hide-row-borders",
             "hide-thead-border", "hide-index-border",
         ]
@@ -38,6 +40,7 @@ export class DataViewer extends HTMLElement {
         this.handleDataChange = this.handleDataChange.bind(this)
         this.handleTableClick = this.handleTableClick.bind(this)
         this.handleRecordViewClick = this.handleRecordViewClick.bind(this)
+        this.handleRecordNavigation = this.handleRecordNavigation.bind(this)
         this.handleFilterInput = this.handleFilterInput.bind(this)
         this.handleClearAllFilters = this.handleClearAllFilters.bind(this)
         this.handleColumnSelectionChange = this.handleColumnSelectionChange.bind(this)
@@ -47,6 +50,7 @@ export class DataViewer extends HTMLElement {
         this._data = new Data()
         this.stylesheet = new Stylesheet(this, this.data, this.options)
         this._tableBuilder = new TableBuilder(this, this.options)
+        this._recordBuilder = new RecordBuilder(this, this.options)
 
         this._viewMode = "table"
         this._currentRecordIndex = 0
@@ -54,10 +58,18 @@ export class DataViewer extends HTMLElement {
 
     // MARK: setup
     connectedCallback() {
-        this.data.addEventListener("data-changed", this.handleDataChange)
-        this.render()
+        // set default mode if not provided
+        if (!this.hasAttribute("view")) {
+            this.setAttribute("view", "table")
+        }
+
+        // initialize internal state
+        this._viewMode = this.getAttribute("view") === "record" ? "record" : "table"
+
+        // setup
         this.addEventListeners()
         this.stylesheet.setupStyles()
+        this.render()
     }
 
     disconnectedCallback() {
@@ -67,8 +79,10 @@ export class DataViewer extends HTMLElement {
     }
 
     addEventListeners() {
+        this.data.addEventListener("data-changed", this.handleDataChange)
         this.shadowRoot.addEventListener("click", this.handleTableClick)
         this.shadowRoot.addEventListener("click", this.handleRecordViewClick)
+        this.shadowRoot.addEventListener("click", this.handleRecordNavigation)
         this.shadowRoot.addEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.addEventListener("clear-all-filters", this.handleClearAllFilters)
         this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
@@ -77,8 +91,12 @@ export class DataViewer extends HTMLElement {
     }
 
     removeEventListeners() {
+        this.data.removeEventListener("data-changed", this.handleDataChange)
         this.shadowRoot.removeEventListener("click", this.handleTableClick)
+        this.shadowRoot.removeEventListener("click", this.handleRecordViewClick)
+        this.shadowRoot.removeEventListener("click", this.handleRecordNavigation)
         this.shadowRoot.removeEventListener("filter-input", this.handleFilterInput)
+        this.shadowRoot.removeEventListener("clear-all-filters", this.handleClearAllFilters)
         this.shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.removeEventListener("column-selection-changed", this.handleColumnSelectionChange)
         this.shadowRoot.removeEventListener("scroll", this.handleScroll)
@@ -87,6 +105,13 @@ export class DataViewer extends HTMLElement {
     attributeChangedCallback(name, oldValue, newValue) {
         if (oldValue === newValue) return
         switch (name) {
+            case "view":
+                this._viewMode = newValue === "record" ? "record" : "table"
+                // only render when connected and not initializing
+                if (this.isConnected && oldValue !== null) {
+                    this.render()
+                }
+                break
             case "src":
                 this.loadDataFromSrc(newValue)
                 break
@@ -176,11 +201,16 @@ export class DataViewer extends HTMLElement {
             this.shadowRoot.innerHTML = `
                 <control-panel></control-panel>
                 <div class="table-container"></div>
+                <div class="record-container"></div>
             `
         }
 
         this.updateControlPanel()
-        this.renderTable()
+        if (this._viewMode === "table") {
+            this.renderTable()
+        } else {
+            this.renderRecord()
+        }
     }
 
     renderTable() {
@@ -206,6 +236,11 @@ export class DataViewer extends HTMLElement {
         this.stylesheet.updateColumnWidths()
     }
 
+    renderRecord() {
+        const recordContainer = this.shadowRoot.querySelector(".record-container")
+        recordContainer.innerHTML = this._recordBuilder.buildRecord()
+    }
+
     updateControlPanel() {
         if (!this.data.hasColumns) return
 
@@ -217,14 +252,8 @@ export class DataViewer extends HTMLElement {
     // MARK: handlers
     handleDataChange(event) {
         this._viewNeedsUpdate = true
-
-        if (event.detail.isValuesOnly) {
-            this.renderTbody()
-        } else {
-            // Data structure changed - full render including control panel update
-            this.render()
-        }
-
+        // if data structure changes then do full re-render
+        event.detail.isValuesOnly ? this.renderTbody() : this.render()
         this.dispatchEvent(new CustomEvent("data-changed", { detail: this.data }))
     }
 
@@ -265,24 +294,22 @@ export class DataViewer extends HTMLElement {
         }))
     }
 
-    // MARK: @record
+    // MARK: @mode
     handleRecordViewClick(event) {
         if (!event.target.matches(".recordViewIcon button")) return
 
-        event.stopPropagation() // Prevent triggering cell-click
+        event.stopPropagation() // prevent triggering cell-click
         const viewRowIndex = parseInt(event.target.closest("th").dataset.viewRow)
         this.enterRecordView(viewRowIndex)
     }
 
     enterRecordView(viewRowIndex) {
         this._currentRecordIndex = viewRowIndex
-        this._viewMode = "record"
-        this.updateViewMode()
+        this.setAttribute("view", "record")
     }
 
     exitRecordView() {
-        this._viewMode = "table"
-        this.updateViewMode()
+        this.setAttribute("view", "table")
     }
 
     navigateRecord(direction) {
@@ -304,14 +331,29 @@ export class DataViewer extends HTMLElement {
                 break
         }
 
-        // Will need to update record display when we implement RecordBuilder
         this.renderRecord()
     }
 
-    updateViewMode() {
-        // Will implement when we add the dual container structure
-        console.log(`Switched to ${this._viewMode} mode, current record:`, this.currentRecord)
-    }
+        handleRecordNavigation(event) {
+            const navButton = event.target.closest("[data-nav]")
+            if (!navButton) return
+
+            event.stopPropagation()
+
+            const action = navButton.dataset.nav
+
+            switch (action) {
+                case "first":
+                case "prev":
+                case "next":
+                case "last":
+                    this.navigateRecord(action)
+                    break
+                case "exit":
+                    this.exitRecordView()
+                    break
+            }
+        }
 
     // MARK: @filter
     handleFilterInput(event) {
@@ -328,13 +370,23 @@ export class DataViewer extends HTMLElement {
         this.applyFilters(filters)
     }
 
+    // FIXME: filter state management needs architectural fix
+    // problem: column filtering breaks row filters because filter.col indices
+    // become misaligned with actual visible columns. current patch works but
+    // doesn't handle filter persistence across column selection changes.
+    // need to decide: preserve filters by column identity or clear on column changes?
     applyFilters(filters) {
         if (filters.length === 0) {
             this.view.reset()
         } else {
             const predicate = (rowValues, rowIndex) => {
                 return filters.every(filter => {
-                    const cellValue = rowValues[filter.col]
+                    // Map filtered column index to original column index
+                    const originalColumnIndex = this.view._visibleColumnIndices
+                        ? this.view._visibleColumnIndices[filter.col]
+                        : filter.col
+
+                    const cellValue = rowValues[originalColumnIndex]
                     return cellValue != null &&
                         cellValue.toString().toLowerCase().includes(filter.value.toLowerCase())
                 })
@@ -362,25 +414,28 @@ export class DataViewer extends HTMLElement {
             this.view.filterColumns(selectedColumnIndices)
         }
 
-        this.renderTable()
+        this.render()
     }
 
     buildColumnTree() {
         if (!this.data.columns.isMultiIndex) {
-            // Simple case: flat column structure
-            return this.data.columns.values.map((value, iloc) => ({
-                label: value,
-                value: iloc,
-                selected: true,
-                children: [],
-            }))
+            return this.buildFlatColumnTree()
         }
         return this.buildLevel(0, 0, this.data.columns.length)
     }
 
+    buildFlatColumnTree() {
+        return this.data.columns.values.map((value, iloc) => ({
+            label: value,
+            value: iloc,
+            selected: true,
+            children: [],
+        }))
+    }
+
     buildLevel(level, start, end) {
         if (level === this.data.columns.nlevels - 1) {
-            // Leaf level: create actual column nodes
+            // leaf level: create actual column nodes
             const result = []
             for (let iloc = start; iloc < end; iloc++) {
                 const columnValue = this.data.columns.values[iloc]
@@ -395,7 +450,7 @@ export class DataViewer extends HTMLElement {
             return result
         }
 
-        // Intermediate level: group by spans
+        // intermediate level: group by spans
         const result = []
         const spans = this.data.columns.spans[level]
 
@@ -419,12 +474,12 @@ export class DataViewer extends HTMLElement {
 
     // MARK: @sort
     handleColumnSort(event) {
-        // Reset all other column headers
+        // reset all other column headers
         this.shadowRoot.querySelectorAll('sortable-column-header').forEach(header => {
             if (header !== event.target) header.clearSort()
         })
 
-        // Apply sort to view
+        // apply sort to view
         const { columnIndex, sortState } = event.detail
         if (sortState === "none") {
             this.view.reset()
