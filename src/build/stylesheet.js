@@ -48,7 +48,7 @@ export class Stylesheet {
             }
 
             .table-container,
-            .record-container {
+            data-record {
                 grid-area: view;
                 overflow-y: auto;
                 overscroll-behavior: none;
@@ -58,7 +58,7 @@ export class Stylesheet {
                 .table-container {
                     visibility: hidden;
                 }
-                .record-container {
+                data-record {
                     display: block;
                 }
             }
@@ -66,7 +66,7 @@ export class Stylesheet {
                 .table-container {
                     visibility: visible;
                 }
-                .record-container {
+                data-record {
                     display: none;
                 }
             }
@@ -99,91 +99,6 @@ export class Stylesheet {
             tbody tr .recordViewIcon button:hover {
                 opacity: 1;
                 background-color: var(--hover-color, #f4f3ee);
-            }
-
-            .record-container {
-                padding: 12px;
-            }
-            .record-view {
-                margin: 0 auto;
-            }
-            .record-navigation {
-                display: grid;
-                grid-template-columns: auto 1fr auto;
-                gap: 1rem;
-                align-items: center;
-                padding: 0.5rem 0;
-                margin-bottom: 1.5rem;
-                border-bottom: 1px solid var(--border-color, currentColor);
-            }
-            .nav-buttons {
-                display: flex;
-                gap: 0.25rem;
-            }
-            .nav-buttons button,
-            .exit-button {
-                padding: 0.25rem 0.5rem;
-                border: 1px solid var(--border-color, currentColor);
-                border-radius: 0.25rem;
-                background: var(--background-color, white);
-                cursor: pointer;
-                font: inherit;
-                color: inherit;
-            }
-            .nav-buttons button:hover,
-            .exit-button:hover {
-                background-color: var(--hover-color, #f4f3ee);
-            }
-            .record-info {
-                justify-self: center;
-                display: flex;
-                align-items: center;
-                gap: 1.5em;
-            }
-            .record-position {
-                font-weight: 500;
-                font-size: 0.9em;
-                opacity: 0.8;
-            }
-            .record-index {
-                font-weight: 600;
-                font-size: 1.1em;
-            }
-            .field-group {
-                margin-bottom: 2rem;
-            }
-            .group-title {
-                margin: 0 0 1rem 0;
-                padding-bottom: 0.5rem;
-                border-bottom: 1px solid var(--border-color, currentColor);
-                font-size: 1.1em;
-                font-weight: 600;
-            }
-            .record-fields {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 1rem;
-            }
-            .record-field {
-                display: grid;
-                grid-template-columns: auto 1fr;
-                gap: 0.5rem;
-                align-items: baseline;
-            }
-            .field-label {
-                font-weight: 500;
-                text-align: right;
-                white-space: nowrap;
-            }
-            .field-value {
-                padding: 0.25rem 0.5rem;
-                background-color: var(--hover-color, #f4f3ee);
-                border-radius: 0.25rem;
-                font-family: monospace;
-            }
-            .field-value[data-dtype="int"],
-            .field-value[data-dtype="float"] {
-                text-align: right;
             }
             .recordViewIcon {
                 left: var(--index-col-${this.data.index.nlevels}-offset);

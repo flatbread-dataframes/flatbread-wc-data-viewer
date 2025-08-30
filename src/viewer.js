@@ -1,8 +1,8 @@
 import { Data } from "./data/data.js"
 import { View } from "./data/view.js"
 import { TableBuilder } from "./build/table-builder.js"
-import { RecordBuilder } from "./build/record-builder.js"
 import { Stylesheet } from "./build/stylesheet.js"
+import "./components/data-record.js"
 import "./components/control-panel.js"
 import "./components/filter-input.js"
 import "./components/sortable-column-header.js"
@@ -37,24 +37,23 @@ export class DataViewer extends HTMLElement {
         super()
         this.attachShadow({ mode: "open" })
         this.options = { ...DataViewer.defaults }
+
         this.handleDataChange = this.handleDataChange.bind(this)
         this.handleTableClick = this.handleTableClick.bind(this)
-        this.handleRecordViewClick = this.handleRecordViewClick.bind(this)
-        this.handleRecordNavigation = this.handleRecordNavigation.bind(this)
+        this.handleExitRecordView = this.handleExitRecordView.bind(this)
+
         this.handleFilterInput = this.handleFilterInput.bind(this)
         this.handleClearAllFilters = this.handleClearAllFilters.bind(this)
+
         this.handleColumnSelectionChange = this.handleColumnSelectionChange.bind(this)
         this.handleColumnSort = this.handleColumnSort.bind(this)
         this.handleIndexSort = this.handleIndexSort.bind(this)
+
         this.handleScroll = this.handleScroll.bind(this)
 
         this._data = new Data()
         this.stylesheet = new Stylesheet(this, this.data, this.options)
         this._tableBuilder = new TableBuilder(this, this.options)
-        this._recordBuilder = new RecordBuilder(this, this.options)
-
-        this._viewMode = "table"
-        this._currentRecordIndex = 0
     }
 
     // MARK: setup
@@ -82,8 +81,7 @@ export class DataViewer extends HTMLElement {
     addEventListeners() {
         this.data.addEventListener("data-changed", this.handleDataChange)
         this.shadowRoot.addEventListener("click", this.handleTableClick)
-        this.shadowRoot.addEventListener("click", this.handleRecordViewClick)
-        this.shadowRoot.addEventListener("click", this.handleRecordNavigation)
+        this.shadowRoot.addEventListener("exit-record-view", this.handleExitRecordView)
         this.shadowRoot.addEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.addEventListener("clear-all-filters", this.handleClearAllFilters)
         this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
@@ -95,8 +93,7 @@ export class DataViewer extends HTMLElement {
     removeEventListeners() {
         this.data.removeEventListener("data-changed", this.handleDataChange)
         this.shadowRoot.removeEventListener("click", this.handleTableClick)
-        this.shadowRoot.removeEventListener("click", this.handleRecordViewClick)
-        this.shadowRoot.removeEventListener("click", this.handleRecordNavigation)
+        this.shadowRoot.removeEventListener("exit-record-view", this.handleExitRecordView)
         this.shadowRoot.removeEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.removeEventListener("clear-all-filters", this.handleClearAllFilters)
         this.shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
@@ -179,23 +176,13 @@ export class DataViewer extends HTMLElement {
     }
 
     get currentRecordIndex() {
-        return this._currentRecordIndex
+        const dataRecord = this.shadowRoot.querySelector("data-record")
+        return dataRecord ? dataRecord.recordIndex : 0
     }
 
     get currentRecord() {
-        if (this._viewMode !== "record" || this.view.visibleIndices.length === 0) {
-            return null
-        }
-
-        const originalIndex = this.view.visibleIndices[this._currentRecordIndex]
-        const values = this.view.values[this._currentRecordIndex]
-        const indexValue = this.view.index.values[this._currentRecordIndex]
-
-        return {
-            originalIndex,
-            indexValue,
-            values
-        }
+        const dataRecord = this.shadowRoot.querySelector("data-record")
+        return dataRecord ? dataRecord.currentRecord : null
     }
 
     // MARK: render
@@ -204,16 +191,13 @@ export class DataViewer extends HTMLElement {
             this.shadowRoot.innerHTML = `
                 <control-panel></control-panel>
                 <div class="table-container"></div>
-                <div class="record-container"></div>
+                <data-record></data-record>
             `
         }
 
         this.updateControlPanel()
-        if (this._viewMode === "table") {
-            this.renderTable()
-        } else {
-            this.renderRecord()
-        }
+        this.renderTable()
+        this.updateDataRecord()
     }
 
     renderTable() {
@@ -239,11 +223,6 @@ export class DataViewer extends HTMLElement {
         this.stylesheet.updateColumnWidths()
     }
 
-    renderRecord() {
-        const recordContainer = this.shadowRoot.querySelector(".record-container")
-        recordContainer.innerHTML = this._recordBuilder.buildRecord()
-    }
-
     updateControlPanel() {
         if (!this.data.hasColumns) return
 
@@ -261,6 +240,13 @@ export class DataViewer extends HTMLElement {
     }
 
     handleTableClick(event) {
+        if (event.target.matches(".recordViewIcon button")) {
+            event.stopPropagation()
+            const viewRowIndex = parseInt(event.target.closest("th").dataset.viewRow)
+            this.enterRecordView(viewRowIndex)
+            return
+        }
+
         const cell = event.target.closest("th, td")
         if (!cell) return
 
@@ -297,66 +283,25 @@ export class DataViewer extends HTMLElement {
         }))
     }
 
-    // MARK: @viewmode
-    handleRecordViewClick(event) {
-        if (!event.target.matches(".recordViewIcon button")) return
-
-        event.stopPropagation() // prevent triggering cell-click
-        const viewRowIndex = parseInt(event.target.closest("th").dataset.viewRow)
-        this.enterRecordView(viewRowIndex)
-    }
-
-    enterRecordView(viewRowIndex) {
-        this._currentRecordIndex = viewRowIndex
-        this.setAttribute("view", "record")
-    }
-
-    exitRecordView() {
+    handleExitRecordView(event) {
+        event.stopPropagation()
         this.setAttribute("view", "table")
     }
 
-    navigateRecord(direction) {
-        const totalRecords = this.view.visibleIndices.length
-        if (totalRecords === 0) return
-
-        switch (direction) {
-            case "first":
-                this._currentRecordIndex = 0
-                break
-            case "prev":
-                this._currentRecordIndex = (this._currentRecordIndex - 1 + totalRecords) % totalRecords
-                break
-            case "next":
-                this._currentRecordIndex = (this._currentRecordIndex + 1) % totalRecords
-                break
-            case "last":
-                this._currentRecordIndex = totalRecords - 1
-                break
+    updateDataRecord() {
+        const dataRecord = this.shadowRoot.querySelector("data-record")
+        if (dataRecord) {
+            dataRecord.dataViewer = this
         }
-
-        this.renderRecord()
     }
 
-        handleRecordNavigation(event) {
-            const navButton = event.target.closest("[data-nav]")
-            if (!navButton) return
-
-            event.stopPropagation()
-
-            const action = navButton.dataset.nav
-
-            switch (action) {
-                case "first":
-                case "prev":
-                case "next":
-                case "last":
-                    this.navigateRecord(action)
-                    break
-                case "exit":
-                    this.exitRecordView()
-                    break
-            }
+    enterRecordView(viewRowIndex) {
+        const dataRecord = this.shadowRoot.querySelector("data-record")
+        if (dataRecord) {
+            dataRecord.recordIndex = viewRowIndex
         }
+        this.setAttribute("view", "record")
+    }
 
     // MARK: @filter
     handleFilterInput(event) {

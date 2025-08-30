@@ -10,12 +10,12 @@ export class RecordBuilder {
 
     buildRecord() {
         const record = this.dataViewer.currentRecord
-        if (!record) return "<p>No record selected</p>"
+        const recordFields = record ? this.buildRecordFields() : "<p>No record selected</p>"
 
         return `
             <div class="record-view">
                 ${this.buildRecordNavigation()}
-                ${this.buildRecordFields()}
+                ${recordFields}
             </div>
         `
     }
