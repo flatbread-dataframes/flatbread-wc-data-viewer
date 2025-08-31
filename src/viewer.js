@@ -205,6 +205,10 @@ async loadDataFromSrc(src) {
                             "view";
                     }
 
+                    control-panel {
+                        grid-area: control-panel;
+                    }
+
                     data-table,
                     data-record {
                         grid-area: view;
@@ -225,12 +229,6 @@ async loadDataFromSrc(src) {
                     :host([view="table"]) data-record {
                         display: none;
                     }
-
-                    control-panel {
-                        --background-color: var(--background-color);
-                        grid-area: control-panel;
-                    }
-
                 </style>
                 <control-panel></control-panel>
                 <data-table></data-table>
@@ -240,6 +238,7 @@ async loadDataFromSrc(src) {
         if (this.data.hasColumns) {
             this.updateDataTable()
             this.updateDataRecord()
+            this.updateControlPanel()
         }
     }
 
@@ -269,6 +268,7 @@ async loadDataFromSrc(src) {
             if (dataTable) dataTable.renderTbody()
         } else {
             this.render()
+            this.updateControlPanel()
         }
 
         this.dispatchEvent(new CustomEvent("data-changed", { detail: this.data }))
@@ -381,7 +381,11 @@ async loadDataFromSrc(src) {
             this.view.filterColumns(selectedColumnIndices)
         }
 
-        this.render()
+        const dataTable = this.shadowRoot.querySelector("data-table")
+        if (dataTable) {
+            dataTable.render()
+        }
+        this.updateDataRecord()
     }
 
     buildColumnTree() {
