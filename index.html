@@ -182,6 +182,10 @@
         eventDisplay.querySelector("code").innerText = JSON.stringify(event.detail)
     })
 
+    dataViewer.addEventListener("field-click", event => {
+        eventDisplay.querySelector("code").innerText = JSON.stringify(event.detail)
+    })
+
     dataViewer.addEventListener("data-changed", event => {
         const JSONString = JSON.stringify(event.detail._rawData)
         const truncatedContent = truncateJSONString(JSONString)

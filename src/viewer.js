@@ -77,7 +77,10 @@ export class DataViewer extends HTMLElement {
         this.options = { ...DataViewer.defaults }
 
         this.handleDataChange = this.handleDataChange.bind(this)
+
         this.handleCellClick = this.handleCellClick.bind(this)
+        this.handleFieldClick = this.handleFieldClick.bind(this)
+
         this.handleEnterRecordView = this.handleEnterRecordView.bind(this)
         this.handleExitRecordView = this.handleExitRecordView.bind(this)
 
@@ -122,6 +125,7 @@ export class DataViewer extends HTMLElement {
     addEventListeners() {
         this.data.addEventListener("data-changed", this.handleDataChange)
         this.shadowRoot.addEventListener("cell-click", this.handleCellClick)
+        this.shadowRoot.addEventListener("field-click", this.handleFieldClick)
         this.shadowRoot.addEventListener("enter-record-view", this.handleEnterRecordView)
         this.shadowRoot.addEventListener("exit-record-view", this.handleExitRecordView)
         this.shadowRoot.addEventListener("filters-changed", this.handleFiltersChanged)
@@ -135,6 +139,7 @@ export class DataViewer extends HTMLElement {
     removeEventListeners() {
         this.data.removeEventListener("data-changed", this.handleDataChange)
         this.shadowRoot.removeEventListener("cell-click", this.handleCellClick)
+        this.shadowRoot.removeEventListener("field-click", this.handleFieldClick)
         this.shadowRoot.removeEventListener("enter-record-view", this.handleEnterRecordView)
         this.shadowRoot.removeEventListener("exit-record-view", this.handleExitRecordView)
         this.shadowRoot.removeEventListener("filters-changed", this.handleFiltersChanged)
@@ -286,6 +291,14 @@ async loadDataFromSrc(src) {
 
     handleCellClick(event) {
         this.dispatchEvent(new CustomEvent("cell-click", {
+            detail: event.detail,
+            bubbles: true,
+            composed: true
+        }))
+    }
+
+    handleFieldClick(event) {
+        this.dispatchEvent(new CustomEvent("field-click", {
             detail: event.detail,
             bubbles: true,
             composed: true

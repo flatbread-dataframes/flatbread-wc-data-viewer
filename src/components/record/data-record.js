@@ -102,12 +102,14 @@ export class DataRecord extends HTMLElement {
         super()
         this.attachShadow({ mode: "open" })
         this.handleRecordNavigation = this.handleRecordNavigation.bind(this)
+        this.handleFieldClick = this.handleFieldClick.bind(this)
 
         this._dataViewer = null
         this._recordBuilder = null
         this._currentRecordIndex = 0
     }
 
+    // MARK: setup
     connectedCallback() {
         this.addEventListeners()
         this.render()
@@ -119,10 +121,12 @@ export class DataRecord extends HTMLElement {
 
     addEventListeners() {
         this.shadowRoot.addEventListener("click", this.handleRecordNavigation)
+        this.shadowRoot.addEventListener("click", this.handleFieldClick)
     }
 
     removeEventListeners() {
         this.shadowRoot.removeEventListener("click", this.handleRecordNavigation)
+        this.shadowRoot.removeEventListener("click", this.handleFieldClick)
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
@@ -134,6 +138,7 @@ export class DataRecord extends HTMLElement {
         }
     }
 
+    // MARK: get/set
     get dataViewer() {
         return this._dataViewer
     }
@@ -171,6 +176,7 @@ export class DataRecord extends HTMLElement {
         }
     }
 
+    // MARK: render
     render() {
         this.shadowRoot.innerHTML = `
             <style>${DataRecord.styles}</style>
@@ -185,6 +191,7 @@ export class DataRecord extends HTMLElement {
         return this._recordBuilder.buildRecord()
     }
 
+    // MARK: handlers
     handleRecordNavigation(event) {
         const navButton = event.target.closest("[data-nav]")
         if (!navButton) return
@@ -231,6 +238,34 @@ export class DataRecord extends HTMLElement {
 
         this.recordIndex = this._currentRecordIndex
         this.render()
+    }
+
+    handleFieldClick(event) {
+        if (event.target.closest("[data-nav]")) return
+
+        const fieldElement = event.target.closest(".record-field")
+        if (!fieldElement) return
+
+        const isLabel = event.target.closest(".field-label")
+        const isValue = event.target.closest(".field-value")
+
+        if (!isLabel && !isValue) return
+
+        const label = fieldElement.querySelector(".field-label").textContent.replace(":", "")
+        const value = fieldElement.querySelector(".field-value").textContent
+        const dtype = fieldElement.querySelector(".field-value").dataset.dtype
+
+        this.dispatchEvent(new CustomEvent("field-click", {
+            detail: {
+                label,
+                value,
+                dtype,
+                source: isLabel ? "field-label" : "field-value",
+                recordIndex: this._currentRecordIndex
+            },
+            bubbles: true,
+            composed: true
+        }))
     }
 }
 
