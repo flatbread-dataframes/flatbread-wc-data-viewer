@@ -9,6 +9,45 @@ import "https://lcvriend.github.io/wc-multi-selector/src/wc-multi-selector.js"
 
 
 export class DataViewer extends HTMLElement {
+    static styles = `
+        :root {
+            box-sizing: border-box;
+        }
+        :host {
+            display: grid;
+            cursor: var(--cursor, auto);
+            max-height: var(--height, 600px);
+            grid-template-areas:
+                "control-panel"
+                "view";
+        }
+
+        control-panel {
+            grid-area: control-panel;
+        }
+
+        data-table,
+        data-record {
+            grid-area: view;
+            overflow-y: auto;
+            overscroll-behavior: none;
+            scrollbar-gutter: stable;
+        }
+
+        :host([view="record"]) data-table {
+            visibility: hidden;
+        }
+        :host([view="record"]) data-record {
+            display: block;
+        }
+        :host([view="table"]) data-table {
+            visibility: visible;
+        }
+        :host([view="table"]) data-record {
+            display: none;
+        }
+    `
+
     static get observedAttributes() {
         return [
             "view", "src", "locale", "na-rep",
@@ -192,44 +231,7 @@ async loadDataFromSrc(src) {
     render() {
         if (!this.shadowRoot.querySelector("control-panel")) {
             this.shadowRoot.innerHTML = `
-                <style>
-                    :root {
-                        box-sizing: border-box;
-                    }
-                    :host {
-                        display: grid;
-                        cursor: var(--cursor, auto);
-                        max-height: var(--height, 600px);
-                        grid-template-areas:
-                            "control-panel"
-                            "view";
-                    }
-
-                    control-panel {
-                        grid-area: control-panel;
-                    }
-
-                    data-table,
-                    data-record {
-                        grid-area: view;
-                        overflow-y: auto;
-                        overscroll-behavior: none;
-                        scrollbar-gutter: stable;
-                    }
-
-                    :host([view="record"]) data-table {
-                        visibility: hidden;
-                    }
-                    :host([view="record"]) data-record {
-                        display: block;
-                    }
-                    :host([view="table"]) data-table {
-                        visibility: visible;
-                    }
-                    :host([view="table"]) data-record {
-                        display: none;
-                    }
-                </style>
+                <style>${DataViewer.styles}</style>
                 <control-panel></control-panel>
                 <data-table></data-table>
                 <data-record></data-record>

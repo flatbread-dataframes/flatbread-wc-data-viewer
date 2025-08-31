@@ -1,4 +1,54 @@
 export class FilterInput extends HTMLElement {
+    static styles = `
+        :host {
+            box-sizing: border-box;
+            display: grid;
+            grid-template-columns: 1fr auto;
+        }
+
+        input {
+            border: 1px solid;
+            outline: none;
+            border-radius: .25em;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            background: transparent;
+            font: inherit;
+            color: inherit;
+            min-width: 0;
+        }
+
+        input:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        button {
+            display: grid;
+            place-items: center;
+            border: 1px solid;
+            border-radius: .25em;
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            border-left: none;
+            background: transparent;
+            cursor: pointer;
+            font: inherit;
+            font-size: .875em;
+            color: inherit;
+            opacity: 0.7;
+        }
+
+        button:hover {
+            opacity: 1;
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+    `
+
     static get observedAttributes() {
         return ["placeholder", "disabled"]
     }
@@ -22,55 +72,7 @@ export class FilterInput extends HTMLElement {
 
     render() {
         this.shadowRoot.innerHTML = `
-            <style>
-                :host {
-                    box-sizing: border-box;
-                    display: grid;
-                    grid-template-columns: 1fr auto;
-                }
-
-                input {
-                    border: 1px solid;
-                    outline: none;
-                    border-radius: .25em;
-                    border-top-right-radius: 0;
-                    border-bottom-right-radius: 0;
-                    background: transparent;
-                    font: inherit;
-                    color: inherit;
-                    min-width: 0;
-                }
-
-                input:disabled {
-                    opacity: 0.6;
-                    cursor: not-allowed;
-                }
-
-                button {
-                    display: grid;
-                    place-items: center;
-                    border: 1px solid;
-                    border-radius: .25em;
-                    border-top-left-radius: 0;
-                    border-bottom-left-radius: 0;
-                    border-left: none;
-                    background: transparent;
-                    cursor: pointer;
-                    font: inherit;
-                    font-size: .875em;
-                    color: inherit;
-                    opacity: 0.7;
-                }
-
-                button:hover {
-                    opacity: 1;
-                }
-
-                button:disabled {
-                    opacity: 0.3;
-                    cursor: not-allowed;
-                }
-            </style>
+            <style>${FilterInput.styles}</style>
             <input type="text">
             <button type="button" tabindex="-1">🞨</button>
         `

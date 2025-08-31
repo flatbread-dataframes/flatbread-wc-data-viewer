@@ -1,4 +1,30 @@
 export class ControlPanel extends HTMLElement {
+    static styles = `
+        :host {
+            display: grid;
+            grid-template-columns: auto auto 1fr;
+            gap: .5em;
+            align-items: center;
+            padding: .25em;
+        }
+        button {
+            padding: .25em .5em;
+            border: 1px solid;
+            border-radius: .25em;
+            background: transparent;
+            font: inherit;
+            color: inherit;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+        button:hover {
+            opacity: 1;
+        }
+        multi-selector::part(dropdown) {
+            background-color: var(--background-color);
+        }
+    `
+
     constructor() {
         super()
         this.attachShadow({ mode: "open" })
@@ -18,31 +44,7 @@ export class ControlPanel extends HTMLElement {
 
     render() {
         this.shadowRoot.innerHTML = `
-            <style>
-                :host {
-                    display: grid;
-                    grid-template-columns: auto auto 1fr;
-                    gap: .5em;
-                    align-items: center;
-                    padding: .25em;
-                }
-                button {
-                    padding: .25em .5em;
-                    border: 1px solid;
-                    border-radius: .25em;
-                    background: transparent;
-                    font: inherit;
-                    color: inherit;
-                    cursor: pointer;
-                    opacity: 0.7;
-                }
-                button:hover {
-                    opacity: 1;
-                }
-                multi-selector::part(dropdown) {
-                    background-color: var(--background-color);
-                }
-            </style>
+            <style>${ControlPanel.styles}</style>
             <button type="button" id="clear-filters">Clear filters</button>
             <label>Select columns:</label>
             <multi-selector name="columns"></multi-selector>
