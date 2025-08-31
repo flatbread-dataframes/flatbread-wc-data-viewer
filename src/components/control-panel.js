@@ -70,6 +70,15 @@ export class ControlPanel extends HTMLElement {
         this.updateStatusInfo()
     }
 
+    get showFilters() {
+        return this._showFilters
+    }
+
+    set showFilters(value) {
+        this._showFilters = value
+        this.updateToggleButton()
+    }
+
     get columnData() {
         return this._columnData
     }
@@ -83,7 +92,11 @@ export class ControlPanel extends HTMLElement {
     render() {
         this.shadowRoot.innerHTML = `
             <style>${ControlPanel.styles}</style>
-            <button type="button" id="clear-filters">Clear filters</button>
+            <div>
+                <label>Filters:</label>
+                <button type="button" id="toggle-filter-row">Toggle</button>
+                <button type="button" id="clear-filters">Clear</button>
+            </div>
             <div class="status-info">
                 <span id="row-count"></span>/
                 <span id="column-count"></span>
@@ -96,13 +109,19 @@ export class ControlPanel extends HTMLElement {
 
     // MARK: handlers
     handleClick(event) {
-        if (!event.target.matches("#clear-filters")) return
-
-        const newEvent = new CustomEvent("clear-all-filters", {
-            bubbles: true,
-            composed: true
-        })
-        this.dispatchEvent(newEvent)
+        if (event.target.matches("#clear-filters")) {
+            const newEvent = new CustomEvent("clear-all-filters", {
+                bubbles: true,
+                composed: true,
+            })
+            this.dispatchEvent(newEvent)
+        } else if (event.target.matches("#toggle-filter-row")) {
+            const newEvent = new CustomEvent("toggle-filter-row", {
+                bubbles: true,
+                composed: true,
+            })
+            this.dispatchEvent(newEvent)
+        }
     }
 
     handleSelectionChange(event) {
@@ -111,7 +130,7 @@ export class ControlPanel extends HTMLElement {
                 selectedColumns: event.detail,
             },
             bubbles: true,
-            composed: true
+            composed: true,
         }))
     }
 
@@ -136,6 +155,13 @@ export class ControlPanel extends HTMLElement {
             columnCountEl.textContent = `${totalColumns} columns`
         } else {
             columnCountEl.textContent = `${visibleColumns} of ${totalColumns} columns`
+        }
+    }
+
+    updateToggleButton() {
+        const button = this.shadowRoot.querySelector("#toggle-filter-row")
+        if (button) {
+            button.textContent = this._showFilters ? "Hide" : "Show"
         }
     }
 

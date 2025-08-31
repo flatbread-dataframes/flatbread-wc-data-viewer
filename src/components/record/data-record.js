@@ -46,6 +46,9 @@ export class DataRecord extends HTMLElement {
             display: flex;
             align-items: center;
             gap: 1.5em;
+            font-size: 0.9em;
+            font-family: monospace;
+            opacity: 0.8;
         }
         .record-position {
             font-weight: 500;

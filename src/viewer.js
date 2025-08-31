@@ -53,6 +53,7 @@ export class DataViewer extends HTMLElement {
             "view", "src", "locale", "na-rep",
             "hide-group-borders", "hide-row-borders",
             "hide-thead-border", "hide-index-border",
+            "hide-filter-row",
         ]
     }
 
@@ -67,6 +68,7 @@ export class DataViewer extends HTMLElement {
                 hoverEffect: true,
                 theadBorder: true,
                 indexBorder: true,
+                hideFilters: false,
             }
         }
     }
@@ -84,6 +86,7 @@ export class DataViewer extends HTMLElement {
         this.handleEnterRecordView = this.handleEnterRecordView.bind(this)
         this.handleExitRecordView = this.handleExitRecordView.bind(this)
 
+        this.handleToggleFilterRow = this.handleToggleFilterRow.bind(this)
         this.handleFiltersChanged = this.handleFiltersChanged.bind(this)
         this.handleClearAllFilters = this.handleClearAllFilters.bind(this)
 
@@ -128,6 +131,7 @@ export class DataViewer extends HTMLElement {
         this.shadowRoot.addEventListener("field-click", this.handleFieldClick)
         this.shadowRoot.addEventListener("enter-record-view", this.handleEnterRecordView)
         this.shadowRoot.addEventListener("exit-record-view", this.handleExitRecordView)
+        this.shadowRoot.addEventListener("toggle-filter-row", this.handleToggleFilterRow)
         this.shadowRoot.addEventListener("filters-changed", this.handleFiltersChanged)
         this.shadowRoot.addEventListener("clear-all-filters", this.handleClearAllFilters)
         this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
@@ -142,6 +146,7 @@ export class DataViewer extends HTMLElement {
         this.shadowRoot.removeEventListener("field-click", this.handleFieldClick)
         this.shadowRoot.removeEventListener("enter-record-view", this.handleEnterRecordView)
         this.shadowRoot.removeEventListener("exit-record-view", this.handleExitRecordView)
+        this.shadowRoot.removeEventListener("toggle-filter-row", this.handleToggleFilterRow)
         this.shadowRoot.removeEventListener("filters-changed", this.handleFiltersChanged)
         this.shadowRoot.removeEventListener("clear-all-filters", this.handleClearAllFilters)
         this.shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
@@ -158,35 +163,33 @@ export class DataViewer extends HTMLElement {
                 if (this.isConnected && this._data.hasColumns) { // Only render if we have data
                     this.render()
                 }
-                break
+                return
             case "src":
                 this.loadDataFromSrc(newValue)
-                break
+                return
             case "locale":
                 this.options.locale = newValue ?? DataViewer.defaults.locale
-                this.render()
                 break
             case "na-rep":
                 this.options.naRep = newValue ?? DataViewer.defaults.naRep
-                this.render()
                 break
             case "hide-group-borders":
                 this.options.styling.groupBorders = newValue === null
-                this.render()
                 break
             case "hide-row-borders":
                 this.options.styling.rowBorders = newValue === null
-                this.render()
                 break
             case "hide-index-border":
                 this.options.styling.indexBorder = newValue === null
-                this.render()
                 break
             case "hide-thead-border":
                 this.options.styling.theadBorder = newValue === null
-                this.render()
+                break
+            case "hide-filter-row":
+                this.options.styling.hideFilters = newValue !== null
                 break
         }
+        this.render()
     }
 
 async loadDataFromSrc(src) {
@@ -270,6 +273,8 @@ async loadDataFromSrc(src) {
             visibleColumns: this.view.columns.length,
             totalColumns: this.data.columns.length
         }
+
+        controlPanel.showFilters = !this.hasAttribute("hide-filter-row")
     }
 
     // MARK: handlers
@@ -332,6 +337,15 @@ async loadDataFromSrc(src) {
     }
 
     // MARK: @filter
+    handleToggleFilterRow(event) {
+        if (this.hasAttribute("hide-filter-row")) {
+            this.removeAttribute("hide-filter-row")
+        } else {
+            this.setAttribute("hide-filter-row", "")
+        }
+        this.updateControlPanel()
+    }
+
     handleFiltersChanged(event) {
         const { indexFilters, columnFilters } = event.detail
         this.applyFiltersWithData(indexFilters, columnFilters)

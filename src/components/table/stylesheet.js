@@ -146,6 +146,11 @@ export class Stylesheet {
                     border-right: var(--axes-width, 2px) solid var(--border-color, currentColor);
                 }
             `,
+            hideFilters: `
+                .filter-row filter-input {
+                    display: none;
+                }
+            `,
         }
 
         return Object.entries(styleBlocks)
