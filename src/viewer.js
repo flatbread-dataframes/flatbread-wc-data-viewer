@@ -38,7 +38,7 @@ export class DataViewer extends HTMLElement {
         this.options = { ...DataViewer.defaults }
 
         this.handleDataChange = this.handleDataChange.bind(this)
-        this.handleTableClick = this.handleTableClick.bind(this)
+        this.handleCellClick = this.handleCellClick.bind(this)
         this.handleEnterRecordView = this.handleEnterRecordView.bind(this)
         this.handleExitRecordView = this.handleExitRecordView.bind(this)
 
@@ -82,7 +82,7 @@ export class DataViewer extends HTMLElement {
 
     addEventListeners() {
         this.data.addEventListener("data-changed", this.handleDataChange)
-        this.shadowRoot.addEventListener("click", this.handleTableClick)
+        this.shadowRoot.addEventListener("cell-click", this.handleCellClick)
         this.shadowRoot.addEventListener("enter-record-view", this.handleEnterRecordView)
         this.shadowRoot.addEventListener("exit-record-view", this.handleExitRecordView)
         this.shadowRoot.addEventListener("filters-changed", this.handleFiltersChanged)
@@ -95,12 +95,15 @@ export class DataViewer extends HTMLElement {
 
     removeEventListeners() {
         this.data.removeEventListener("data-changed", this.handleDataChange)
-        this.shadowRoot.removeEventListener("click", this.handleTableClick)
+        this.shadowRoot.removeEventListener("cell-click", this.handleCellClick)
+        this.shadowRoot.removeEventListener("enter-record-view", this.handleEnterRecordView)
         this.shadowRoot.removeEventListener("exit-record-view", this.handleExitRecordView)
+        this.shadowRoot.removeEventListener("filters-changed", this.handleFiltersChanged)
         this.shadowRoot.removeEventListener("clear-all-filters", this.handleClearAllFilters)
         this.shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.removeEventListener("index-sort", this.handleIndexSort)
         this.shadowRoot.removeEventListener("column-selection-changed", this.handleColumnSelectionChange)
+        this.shadowRoot.removeEventListener("load-more-rows", this.handleLoadMoreRows)
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
@@ -269,52 +272,17 @@ async loadDataFromSrc(src) {
         }
 
         this.dispatchEvent(new CustomEvent("data-changed", { detail: this.data }))
-}
+    }
 
-    handleTableClick(event) {
-        if (event.target.matches(".recordViewIcon button")) {
-            event.stopPropagation()
-            const viewRowIndex = parseInt(event.target.closest("th").dataset.viewRow)
-            this.enterRecordView(viewRowIndex)
-            return
-        }
-
-        const cell = event.target.closest("th, td")
-        if (!cell) return
-
-        const tr = cell.closest("tr")
-        const isInHead = tr.closest("thead") !== null
-        const isInBody = tr.closest("tbody") !== null
-
-        let source, row, col
-
-        if (isInHead) {
-            source = "column"
-            row = Array.from(tr.parentNode.children).indexOf(tr)
-            col = Array.from(tr.children).indexOf(cell)
-        } else if (isInBody) {
-            if (cell.tagName === "TH") {
-                source = "index"
-                row = Array.from(tr.parentNode.children).indexOf(tr)
-                col = Array.from(tr.children).filter(c => c.tagName === "TH").indexOf(cell)
-            } else {
-                source = "values"
-                row = Array.from(tr.parentNode.children).indexOf(tr)
-                col = Array.from(tr.children).filter(c => c.tagName === "TD").indexOf(cell)
-            }
-        } else {
-            return // Not in thead or tbody, ignore
-        }
-
-        const value = cell.textContent
-
+    handleCellClick(event) {
         this.dispatchEvent(new CustomEvent("cell-click", {
-            detail: { value, source, row, col },
+            detail: event.detail,
             bubbles: true,
             composed: true
         }))
     }
 
+    // MARK: @record
     handleEnterRecordView(event) {
         const { viewRowIndex } = event.detail
         this.enterRecordView(viewRowIndex)

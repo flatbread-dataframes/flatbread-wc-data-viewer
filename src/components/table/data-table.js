@@ -108,6 +108,41 @@ export class DataTable extends HTMLElement {
             }))
             return
         }
+
+        const cell = event.target.closest("th, td")
+        if (!cell) return
+
+        const tr = cell.closest("tr")
+        const isInHead = tr.closest("thead") !== null
+        const isInBody = tr.closest("tbody") !== null
+
+        let source, row, col
+
+        if (isInHead) {
+            source = "column"
+            row = Array.from(tr.parentNode.children).indexOf(tr)
+            col = Array.from(tr.children).indexOf(cell)
+        } else if (isInBody) {
+            if (cell.tagName === "TH") {
+                source = "index"
+                row = Array.from(tr.parentNode.children).indexOf(tr)
+                col = Array.from(tr.children).filter(c => c.tagName === "TH").indexOf(cell)
+            } else {
+                source = "values"
+                row = Array.from(tr.parentNode.children).indexOf(tr)
+                col = Array.from(tr.children).filter(c => c.tagName === "TD").indexOf(cell)
+            }
+        } else {
+            return // Not in thead or tbody, ignore
+        }
+
+        const value = cell.textContent
+
+        this.dispatchEvent(new CustomEvent("cell-click", {
+            detail: { value, source, row, col },
+            bubbles: true,
+            composed: true
+        }))
     }
 
     handleFilterInput(event) {
