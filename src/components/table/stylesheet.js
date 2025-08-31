@@ -39,43 +39,9 @@ export class Stylesheet {
                 box-sizing: border-box;
             }
             :host {
-                display: grid;
-                cursor: var(--cursor, auto);
-                max-height: var(--height, 600px);
-                grid-template-areas:
-                    "control-panel"
-                    "view";
+                padding-right: 12px;
+                padding-bottom: 12px;
             }
-
-            .table-container,
-            data-record {
-                grid-area: view;
-                overflow-y: auto;
-                overscroll-behavior: none;
-                scrollbar-gutter: stable;
-            }
-            :host([view="record"]) {
-                .table-container {
-                    visibility: hidden;
-                }
-                data-record {
-                    display: block;
-                }
-            }
-            :host([view="table"]) {
-                .table-container {
-                    visibility: visible;
-                }
-                data-record {
-                    display: none;
-                }
-            }
-
-            .control-panel {
-                --background-color: var(--background-color);
-                grid-area: control-panel;
-            }
-
             table {
                 border-collapse: separate;
                 border-spacing: 0;
@@ -93,13 +59,6 @@ export class Stylesheet {
                 text-align: right;
                 vertical-align: middle;
             }
-            /* tbody tr:hover .recordViewIcon button {
-                opacity: 0.4;
-            } */
-            tbody tr .recordViewIcon button:hover {
-                opacity: 1;
-                background-color: var(--hover-color, #f4f3ee);
-            }
             .recordViewIcon {
                 left: var(--index-col-${this.data.index.nlevels}-offset);
                 z-index: 1;
@@ -112,6 +71,10 @@ export class Stylesheet {
                 font-size: 1.25em;
                 color: inherit;
                 transition: opacity 0.2s;
+            }
+            .recordViewIcon button:hover {
+                opacity: 1;
+                background-color: var(--hover-color, #f4f3ee);
             }
         `
     }

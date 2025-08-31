@@ -1,4 +1,4 @@
-import { Formatter } from "./formatter.js"
+import { Formatter } from "../../build/formatter.js"
 
 
 export class RecordBuilder {

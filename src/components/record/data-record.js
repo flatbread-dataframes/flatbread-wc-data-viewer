@@ -1,4 +1,4 @@
-import { RecordBuilder } from "../build/record-builder.js"
+import { RecordBuilder } from "./record-builder.js"
 
 export class DataRecord extends HTMLElement {
     static get observedAttributes() {
@@ -177,6 +177,9 @@ export class DataRecord extends HTMLElement {
     }
 
     buildRecord() {
+        if (!this._recordBuilder) {
+            return '<div class="record-view"><p>No record to display</p></div>'
+        }
         return this._recordBuilder.buildRecord()
     }
 

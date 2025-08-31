@@ -1,4 +1,5 @@
-import { Formatter } from "./formatter.js"
+import { Formatter } from "../../build/formatter.js"
+
 
 export class TableBuilder {
     constructor(dataViewer, options) {

@@ -1,8 +1,7 @@
 import { Data } from "./data/data.js"
 import { View } from "./data/view.js"
-import { TableBuilder } from "./build/table-builder.js"
-import { Stylesheet } from "./build/stylesheet.js"
-import "./components/data-record.js"
+import "./components/record/data-record.js"
+import "./components/table/data-table.js"
 import "./components/control-panel.js"
 import "./components/filter-input.js"
 import "./components/sortable-column-header.js"
@@ -40,20 +39,20 @@ export class DataViewer extends HTMLElement {
 
         this.handleDataChange = this.handleDataChange.bind(this)
         this.handleTableClick = this.handleTableClick.bind(this)
+        this.handleEnterRecordView = this.handleEnterRecordView.bind(this)
         this.handleExitRecordView = this.handleExitRecordView.bind(this)
 
-        this.handleFilterInput = this.handleFilterInput.bind(this)
+        this.handleFiltersChanged = this.handleFiltersChanged.bind(this)
         this.handleClearAllFilters = this.handleClearAllFilters.bind(this)
 
         this.handleColumnSelectionChange = this.handleColumnSelectionChange.bind(this)
+
         this.handleColumnSort = this.handleColumnSort.bind(this)
         this.handleIndexSort = this.handleIndexSort.bind(this)
 
-        this.handleScroll = this.handleScroll.bind(this)
+        this.handleLoadMoreRows = this.handleLoadMoreRows.bind(this)
 
         this._data = new Data()
-        this.stylesheet = new Stylesheet(this, this.data, this.options)
-        this._tableBuilder = new TableBuilder(this, this.options)
     }
 
     // MARK: setup
@@ -68,8 +67,11 @@ export class DataViewer extends HTMLElement {
 
         // setup
         this.addEventListeners()
-        this.stylesheet.setupStyles()
-        this.render()
+
+        const src = this.getAttribute("src")
+        if (src) {
+            this.loadDataFromSrc(src)
+        }
     }
 
     disconnectedCallback() {
@@ -81,25 +83,24 @@ export class DataViewer extends HTMLElement {
     addEventListeners() {
         this.data.addEventListener("data-changed", this.handleDataChange)
         this.shadowRoot.addEventListener("click", this.handleTableClick)
+        this.shadowRoot.addEventListener("enter-record-view", this.handleEnterRecordView)
         this.shadowRoot.addEventListener("exit-record-view", this.handleExitRecordView)
-        this.shadowRoot.addEventListener("filter-input", this.handleFilterInput)
+        this.shadowRoot.addEventListener("filters-changed", this.handleFiltersChanged)
         this.shadowRoot.addEventListener("clear-all-filters", this.handleClearAllFilters)
         this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.addEventListener("index-sort", this.handleIndexSort)
         this.shadowRoot.addEventListener("column-selection-changed", this.handleColumnSelectionChange)
-        this.shadowRoot.addEventListener("scroll", this.handleScroll, { capture: true })
+        this.shadowRoot.addEventListener("load-more-rows", this.handleLoadMoreRows)
     }
 
     removeEventListeners() {
         this.data.removeEventListener("data-changed", this.handleDataChange)
         this.shadowRoot.removeEventListener("click", this.handleTableClick)
         this.shadowRoot.removeEventListener("exit-record-view", this.handleExitRecordView)
-        this.shadowRoot.removeEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.removeEventListener("clear-all-filters", this.handleClearAllFilters)
         this.shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.removeEventListener("index-sort", this.handleIndexSort)
         this.shadowRoot.removeEventListener("column-selection-changed", this.handleColumnSelectionChange)
-        this.shadowRoot.removeEventListener("scroll", this.handleScroll)
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
@@ -107,8 +108,7 @@ export class DataViewer extends HTMLElement {
         switch (name) {
             case "view":
                 this._viewMode = newValue === "record" ? "record" : "table"
-                // only render when connected and not initializing
-                if (this.isConnected && oldValue !== null) {
+                if (this.isConnected && this._data.hasColumns) { // Only render if we have data
                     this.render()
                 }
                 break
@@ -142,17 +142,17 @@ export class DataViewer extends HTMLElement {
         }
     }
 
-    async loadDataFromSrc(src) {
-        try {
-            const response = await fetch(src)
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-            const rawData = await response.json()
-            this.data = rawData
-        } catch (error) {
-            console.error("Failed to fetch data:", error)
-            this.showErrorMessage("Failed to load data")
-        }
+async loadDataFromSrc(src) {
+    try {
+        const response = await fetch(src)
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+        const rawData = await response.json()
+        this.data = rawData // This should trigger handleDataChange
+    } catch (error) {
+        console.error("Failed to fetch data:", error)
+        this.showErrorMessage("Failed to load data")
     }
+}
 
     // MARK: get/set
     get data() {
@@ -189,38 +189,62 @@ export class DataViewer extends HTMLElement {
     render() {
         if (!this.shadowRoot.querySelector("control-panel")) {
             this.shadowRoot.innerHTML = `
+                <style>
+                    :root {
+                        box-sizing: border-box;
+                    }
+                    :host {
+                        display: grid;
+                        cursor: var(--cursor, auto);
+                        max-height: var(--height, 600px);
+                        grid-template-areas:
+                            "control-panel"
+                            "view";
+                    }
+
+                    data-table,
+                    data-record {
+                        grid-area: view;
+                        overflow-y: auto;
+                        overscroll-behavior: none;
+                        scrollbar-gutter: stable;
+                    }
+
+                    :host([view="record"]) data-table {
+                        visibility: hidden;
+                    }
+                    :host([view="record"]) data-record {
+                        display: block;
+                    }
+                    :host([view="table"]) data-table {
+                        visibility: visible;
+                    }
+                    :host([view="table"]) data-record {
+                        display: none;
+                    }
+
+                    control-panel {
+                        --background-color: var(--background-color);
+                        grid-area: control-panel;
+                    }
+
+                </style>
                 <control-panel></control-panel>
-                <div class="table-container"></div>
+                <data-table></data-table>
                 <data-record></data-record>
             `
         }
-
-        this.updateControlPanel()
-        this.renderTable()
-        this.updateDataRecord()
+        if (this.data.hasColumns) {
+            this.updateDataTable()
+            this.updateDataRecord()
+        }
     }
 
-    renderTable() {
-        if (!this.data.hasColumns) return
-
-        const tableContainer = this.shadowRoot.querySelector(".table-container")
-        tableContainer.innerHTML = `
-            <table>
-                <thead>${this._tableBuilder.buildThead()}</thead>
-                <tbody></tbody>
-            </table>
-        `
-
-        this.stylesheet.setupStyles()
-        this.stylesheet.updateTheadOffset()
-        this.renderTbody()
-    }
-
-    renderTbody() {
-        const tbody = this.shadowRoot.querySelector("tbody")
-        tbody.innerHTML = this._tableBuilder.buildTbody(0, this.options.buffer)
-        this.stylesheet.updateIndexOffset()
-        this.stylesheet.updateColumnWidths()
+    updateDataTable() {
+        const dataTable = this.shadowRoot.querySelector("data-table")
+        if (dataTable) {
+            dataTable.dataViewer = this
+        }
     }
 
     updateControlPanel() {
@@ -234,10 +258,18 @@ export class DataViewer extends HTMLElement {
     // MARK: handlers
     handleDataChange(event) {
         this._viewNeedsUpdate = true
-        // if data structure changes then do full re-render
-        event.detail.isValuesOnly ? this.renderTbody() : this.render()
+
+        if (event.detail.isValuesOnly) {
+            this.updateDataTable()
+            this.updateDataRecord()
+            const dataTable = this.shadowRoot.querySelector("data-table")
+            if (dataTable) dataTable.renderTbody()
+        } else {
+            this.render()
+        }
+
         this.dispatchEvent(new CustomEvent("data-changed", { detail: this.data }))
-    }
+}
 
     handleTableClick(event) {
         if (event.target.matches(".recordViewIcon button")) {
@@ -283,6 +315,19 @@ export class DataViewer extends HTMLElement {
         }))
     }
 
+    handleEnterRecordView(event) {
+        const { viewRowIndex } = event.detail
+        this.enterRecordView(viewRowIndex)
+    }
+
+    enterRecordView(viewRowIndex) {
+        const dataRecord = this.shadowRoot.querySelector("data-record")
+        if (dataRecord) {
+            dataRecord.recordIndex = viewRowIndex
+        }
+        this.setAttribute("view", "record")
+    }
+
     handleExitRecordView(event) {
         event.stopPropagation()
         this.setAttribute("view", "table")
@@ -295,28 +340,13 @@ export class DataViewer extends HTMLElement {
         }
     }
 
-    enterRecordView(viewRowIndex) {
-        const dataRecord = this.shadowRoot.querySelector("data-record")
-        if (dataRecord) {
-            dataRecord.recordIndex = viewRowIndex
-        }
-        this.setAttribute("view", "record")
-    }
-
     // MARK: @filter
-    handleFilterInput(event) {
-        this.applyFilters()
+    handleFiltersChanged(event) {
+        const { indexFilters, columnFilters } = event.detail
+        this.applyFiltersWithData(indexFilters, columnFilters)
     }
 
-    // FIXME: filter state management needs architectural fix
-    // problem: column filtering breaks row filters because filter.col indices
-    // become misaligned with actual visible columns. current patch works but
-    // doesn't handle filter persistence across column selection changes.
-    // need to decide: preserve filters by column identity or clear on column changes?
-    applyFilters() {
-        const indexFilters = this.getIndexFilters()
-        const columnFilters = this.getColumnFilters()
-
+    applyFiltersWithData(indexFilters, columnFilters) {
         if (indexFilters.length === 0 && columnFilters.length === 0) {
             this.view.reset()
         } else {
@@ -330,25 +360,11 @@ export class DataViewer extends HTMLElement {
 
             this.view.filter(combinedPredicate)
         }
-        this.renderTbody()
-    }
 
-    getIndexFilters() {
-        const indexFilterInputs = this.shadowRoot.querySelectorAll(".indexFilter filter-input")
-        return Array.from(indexFilterInputs).map(filterEl => {
-            const th = filterEl.closest("th")
-            const level = parseInt(th.dataset.level)
-            return { level, value: filterEl.value.trim() }
-        }).filter(filter => filter.value !== "")
-    }
-
-    getColumnFilters() {
-        const columnFilterInputs = this.shadowRoot.querySelectorAll(".columnFilter filter-input")
-        return Array.from(columnFilterInputs).map(filterEl => {
-            const th = filterEl.closest("th")
-            const col = parseInt(th.dataset.col)
-            return { col, value: filterEl.value.trim() }
-        }).filter(filter => filter.value !== "")
+        const dataTable = this.shadowRoot.querySelector("data-table")
+        if (dataTable) {
+            dataTable.renderTbody()
+        }
     }
 
     createIndexPredicate(indexFilters) {
@@ -378,8 +394,10 @@ export class DataViewer extends HTMLElement {
     }
 
     handleClearAllFilters() {
-        const allFilterInputs = this.shadowRoot.querySelectorAll("filter-input")
-        allFilterInputs.forEach(filterInput => filterInput.clear())
+        const dataTable = this.shadowRoot.querySelector("data-table")
+        if (dataTable) {
+            dataTable.clearAllFilters()
+        }
     }
 
     // MARK: @column
@@ -455,52 +473,45 @@ export class DataViewer extends HTMLElement {
 
     // MARK: @sort
     handleColumnSort(event) {
-        this.clearAllSorts()
-        event.target.sortState = event.detail.sortState
-
-        // apply sort to view
         const { columnIndex, sortState } = event.detail
         if (sortState === "none") {
             this.view.reset()
         } else {
             this.view.sortByColumn(columnIndex, sortState)
         }
-        this.renderTbody()
+
+        const dataTable = this.shadowRoot.querySelector("data-table")
+        if (dataTable) {
+            dataTable.renderTbody()
+        }
     }
 
     handleIndexSort(event) {
-        this.clearAllSorts()
-        event.target.sortState = event.detail.sortState
-
-        // apply sort to view
         const { level, sortState } = event.detail
         if (sortState === "none") {
             this.view.reset()
         } else {
             this.view.sortByIndex(level, sortState)
         }
-        this.renderTbody()
-    }
 
-    clearAllSorts() {
-        this.shadowRoot.querySelectorAll('sortable-column-header').forEach(header => {
-            header.clearSort()
-        })
+        const dataTable = this.shadowRoot.querySelector("data-table")
+        if (dataTable) {
+            dataTable.renderTbody()
+        }
     }
 
     // MARK: @scroll
-    handleScroll(event) {
-        if (!event.target.matches(".table-container")) return
-        const tableContainer = event.target.closest(".table-container")
+    handleLoadMoreRows(event) {
+        const { currentRowCount, bufferSize } = event.detail
 
-        event.preventDefault()
-        event.stopPropagation()
-
-        const tbody = this.shadowRoot.querySelector("tbody")
-        if ( tableContainer.scrollHeight - (tableContainer.scrollTop + tableContainer.clientHeight) < 150 ) {
-            const start = tbody.rows.length
-            const end = start + this.options.buffer
-            tbody.innerHTML += this._tableBuilder.buildTbody(start, end)
+        const dataTable = this.shadowRoot.querySelector("data-table")
+        if (dataTable) {
+            const tbody = dataTable.shadowRoot.querySelector("tbody")
+            if (tbody) {
+                const start = currentRowCount
+                const end = start + bufferSize
+                tbody.innerHTML += dataTable._tableBuilder.buildTbody(start, end)
+            }
         }
     }
 

@@ -1,0 +1,214 @@
+import { TableBuilder } from "./table-builder.js"
+import { Stylesheet } from "./stylesheet.js"
+
+export class DataTable extends HTMLElement {
+    constructor() {
+        super()
+        this.attachShadow({ mode: "open" })
+
+        this.handleClick = this.handleClick.bind(this)
+        this.handleFilterInput = this.handleFilterInput.bind(this)
+        this.handleColumnSort = this.handleColumnSort.bind(this)
+        this.handleIndexSort = this.handleIndexSort.bind(this)
+        this.handleScroll = this.handleScroll.bind(this)
+
+        this._dataViewer = null
+        this._tableBuilder = null
+        this._stylesheet = null
+    }
+
+    // MARK: setup
+    connectedCallback() {
+        this.addEventListeners()
+        this.render()
+    }
+
+    disconnectedCallback() {
+        if (this._stylesheet) {
+            this._stylesheet.disconnect()
+        }
+    }
+
+    addEventListeners() {
+        this.shadowRoot.addEventListener("click", this.handleClick)
+        this.shadowRoot.addEventListener("filter-input", this.handleFilterInput)
+        this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
+        this.shadowRoot.addEventListener("index-sort", this.handleIndexSort)
+        this.addEventListener("scroll", this.handleScroll, { capture: true })
+    }
+
+    removeEventListeners() {
+        this.shadowRoot.removeEventListener("click", this.handleClick)
+        this.shadowRoot.removeEventListener("filter-input", this.handleFilterInput)
+        this.shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
+        this.shadowRoot.removeEventListener("index-sort", this.handleIndexSort)
+        this.shadowRoot.removeEventListener("scroll", this.handleScroll)
+    }
+
+    // MARK: get/set
+    get dataViewer() {
+        return this._dataViewer
+    }
+
+    set dataViewer(value) {
+        this._dataViewer = value
+        if (value) {
+            this._tableBuilder = new TableBuilder(value, value.options)
+            this._stylesheet = new Stylesheet(this, value.data, value.options)
+            if (this.isConnected) {
+                this.render()
+            }
+        }
+    }
+
+    get view() {
+        return this._dataViewer?.view
+    }
+
+    get options() {
+        return this._dataViewer?.options
+    }
+
+    // MARK: render
+    render() {
+        if (!this.dataViewer) return
+
+        this.shadowRoot.innerHTML = `
+            <table>
+                <thead>${this._tableBuilder.buildThead()}</thead>
+                <tbody>${this._tableBuilder.buildTbody(0, this.options.buffer)}</tbody>
+            </table>
+        `
+
+        this._stylesheet.setupStyles()
+        this._stylesheet.updateTheadOffset()
+        this._stylesheet.updateIndexOffset()
+        this._stylesheet.updateColumnWidths()
+    }
+
+    renderTbody() {
+        const tbody = this.shadowRoot.querySelector("tbody")
+        if (tbody && this._tableBuilder) {
+            tbody.innerHTML = this._tableBuilder.buildTbody(0, this.options.buffer)
+            this._stylesheet.updateIndexOffset()
+            this._stylesheet.updateColumnWidths()
+        }
+    }
+
+    // MARK: handlers
+    handleClick(event) {
+        if (event.target.matches(".recordViewIcon button")) {
+            event.stopPropagation()
+            const viewRowIndex = parseInt(event.target.closest("th").dataset.viewRow)
+
+            this.dispatchEvent(new CustomEvent("enter-record-view", {
+                detail: { viewRowIndex },
+                bubbles: true,
+                composed: true
+            }))
+            return
+        }
+    }
+
+    handleFilterInput(event) {
+        const allFilters = {
+            indexFilters: this.getIndexFilters(),
+            columnFilters: this.getColumnFilters()
+        }
+
+        this.dispatchEvent(new CustomEvent("filters-changed", {
+            detail: allFilters,
+            bubbles: true,
+            composed: true
+        }))
+    }
+
+    handleColumnSort(event) {
+        this.clearAllSorts()
+        const clickedHeader = event.target
+        if (clickedHeader && event.detail.sortState !== "none") {
+            clickedHeader.sortState = event.detail.sortState
+        }
+
+        this.dispatchEvent(new CustomEvent("column-sort", {
+            detail: event.detail,
+            bubbles: true,
+            composed: true
+        }))
+    }
+
+    handleIndexSort(event) {
+        this.clearAllSorts()
+        const clickedHeader = event.target
+        if (clickedHeader && event.detail.sortState !== "none") {
+            clickedHeader.sortState = event.detail.sortState
+        }
+
+        this.dispatchEvent(new CustomEvent("index-sort", {
+            detail: event.detail,
+            bubbles: true,
+            composed: true
+        }))
+    }
+
+    handleScroll(event) {
+        const table = event.target
+        const tbody = this.shadowRoot.querySelector("tbody")
+
+        const scrollThreshold = 150
+        const nearBottom = table.scrollHeight - (table.scrollTop + table.clientHeight) < scrollThreshold
+
+        if (nearBottom && tbody) {
+            this.dispatchEvent(new CustomEvent("load-more-rows", {
+                detail: {
+                    currentRowCount: tbody.rows.length,
+                    bufferSize: this.dataViewer.options.buffer
+                },
+                bubbles: true,
+                composed: true
+            }))
+        }
+    }
+
+    // MARK: .filter
+    getIndexFilters() {
+        const indexFilterInputs = this.shadowRoot.querySelectorAll(".indexFilter filter-input")
+        return Array.from(indexFilterInputs).map(filterEl => {
+            const th = filterEl.closest("th")
+            const level = parseInt(th.dataset.level)
+            return { level, value: filterEl.value.trim() }
+        }).filter(filter => filter.value !== "")
+    }
+
+    getColumnFilters() {
+        const columnFilterInputs = this.shadowRoot.querySelectorAll(".columnFilter filter-input")
+        return Array.from(columnFilterInputs).map(filterEl => {
+            const th = filterEl.closest("th")
+            const col = parseInt(th.dataset.col)
+            return { col, value: filterEl.value.trim() }
+        }).filter(filter => filter.value !== "")
+    }
+
+    clearAllFilters() {
+        const allFilterInputs = this.shadowRoot.querySelectorAll("filter-input")
+        allFilterInputs.forEach(filterInput => filterInput.clear())
+
+        this.dispatchEvent(new CustomEvent("filters-changed", {
+            detail: {
+                indexFilters: [],
+                columnFilters: []
+            },
+            bubbles: true,
+            composed: true
+        }))
+    }
+
+    // MARK: .sort
+    clearAllSorts() {
+        this.shadowRoot.querySelectorAll('sortable-column-header').forEach(header => {
+            header.clearSort()
+        })
+    }
+}
+
+customElements.define("data-table", DataTable)
