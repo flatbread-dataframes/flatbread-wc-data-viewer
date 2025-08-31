@@ -182,6 +182,14 @@
         eventDisplay.querySelector("code").innerText = JSON.stringify(event.detail)
     })
 
+    dataViewer.addEventListener("column-data", event => {
+        eventDisplay.querySelector("code").innerText = JSON.stringify(event.detail)
+    })
+
+    dataViewer.addEventListener("row-data", event => {
+        eventDisplay.querySelector("code").innerText = JSON.stringify(event.detail)
+    })
+
     dataViewer.addEventListener("field-click", event => {
         eventDisplay.querySelector("code").innerText = JSON.stringify(event.detail)
     })

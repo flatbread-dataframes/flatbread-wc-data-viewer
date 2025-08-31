@@ -61,7 +61,10 @@ export class Stylesheet {
             }
             .recordViewIcon {
                 left: var(--index-col-${this.data.index.nlevels}-offset);
+                width: 1.5em;
                 z-index: 1;
+                text-align: center;
+                vertical-align: middle;
             }
             .recordViewIcon button {
                 opacity: 0;

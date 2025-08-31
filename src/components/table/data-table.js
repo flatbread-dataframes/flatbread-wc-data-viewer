@@ -97,6 +97,30 @@ export class DataTable extends HTMLElement {
 
     // MARK: handlers
     handleClick(event) {
+        if (event.shiftKey || event.ctrlKey) {
+            const cell = event.target.closest("th, td")
+            if (!cell) return
+
+            const tr = cell.closest("tr")
+            const isInBody = tr.closest("tbody") !== null
+
+            if (event.shiftKey && isInBody) {
+                // Dispatch entire row data
+                const viewRowIndex = Array.from(tr.parentNode.children).indexOf(tr)
+                this.dispatchRowData(viewRowIndex)
+                return
+            }
+
+            if (event.ctrlKey) {
+                // Dispatch entire column data
+                const colIndex = this.getColumnIndex(cell, tr)
+                if (colIndex !== -1) {
+                    this.dispatchColumnData(colIndex)
+                    return
+                }
+            }
+        }
+
         if (event.target.matches(".recordViewIcon button")) {
             event.stopPropagation()
             const viewRowIndex = parseInt(event.target.closest("th").dataset.viewRow)
@@ -205,7 +229,7 @@ export class DataTable extends HTMLElement {
         }
     }
 
-    // MARK: .filter
+    // MARK: @filter
     getIndexFilters() {
         const indexFilterInputs = this.shadowRoot.querySelectorAll(".indexFilter filter-input")
         return Array.from(indexFilterInputs).map(filterEl => {
@@ -238,11 +262,64 @@ export class DataTable extends HTMLElement {
         }))
     }
 
-    // MARK: .sort
+    // MARK: @sort
     clearAllSorts() {
         this.shadowRoot.querySelectorAll('sortable-column-header').forEach(header => {
             header.clearSort()
         })
+    }
+
+    // MARK: @click
+    dispatchRowData(viewRowIndex) {
+        const rowData = {
+            index: this.dataViewer.view.index.values[viewRowIndex],
+            values: this.dataViewer.view.values[viewRowIndex],
+            originalIndex: this.dataViewer.view.visibleIndices[viewRowIndex]
+        }
+
+        this.dispatchEvent(new CustomEvent("row-data", {
+            detail: rowData,
+            bubbles: true,
+            composed: true
+        }))
+    }
+
+    dispatchColumnData(colIndex) {
+        const columnValues = this.dataViewer.view.values.map(row => row[colIndex])
+        const columnData = {
+            header: this.dataViewer.view.columns.values[colIndex],
+            values: columnValues,
+            dtype: this.dataViewer.view.columns.attrs[colIndex]?.dtype
+        }
+
+        this.dispatchEvent(new CustomEvent("column-data", {
+            detail: columnData,
+            bubbles: true,
+            composed: true
+        }))
+    }
+
+    getColumnIndex(cell, tr) {
+        const isInHead = tr.closest("thead") !== null
+        const isInBody = tr.closest("tbody") !== null
+
+        if (isInHead || (isInBody && cell.tagName === "TD")) {
+            // For thead or tbody data cells, find the column index
+            const cells = Array.from(tr.children)
+            const cellIndex = cells.indexOf(cell)
+
+            if (isInBody) {
+                // In tbody, subtract the number of th elements (index columns)
+                const thCount = cells.filter(c => c.tagName === "TH").length
+                return cellIndex - thCount
+            }
+
+            // In thead, need to account for the column level name label
+            const columnLevelLabel = tr.querySelector(".columnLevelNameLabel")
+            return columnLevelLabel ? cellIndex - 1 : cellIndex
+        }
+
+        return -1 // Not a data column
     }
 }
 
