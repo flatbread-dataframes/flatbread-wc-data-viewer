@@ -2,7 +2,7 @@ export class ControlPanel extends HTMLElement {
     static styles = `
         :host {
             display: grid;
-            grid-template-columns: auto auto 1fr;
+            grid-template-columns: auto 1fr auto 1fr;
             gap: .5em;
             align-items: center;
             padding: .25em;
@@ -20,6 +20,14 @@ export class ControlPanel extends HTMLElement {
         button:hover {
             opacity: 1;
         }
+        .status-info {
+            justify-self: center;
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9em;
+            font-family: monospace;
+            opacity: 0.8;
+        }
         multi-selector::part(dropdown) {
             background-color: var(--background-color);
         }
@@ -33,6 +41,7 @@ export class ControlPanel extends HTMLElement {
         this._columnData = []
     }
 
+    // MARK: setup
     connectedCallback() {
         this.render()
         this.addEventListeners()
@@ -40,16 +49,6 @@ export class ControlPanel extends HTMLElement {
 
     disconnectedCallback() {
         this.removeEventListeners()
-    }
-
-    render() {
-        this.shadowRoot.innerHTML = `
-            <style>${ControlPanel.styles}</style>
-            <button type="button" id="clear-filters">Clear filters</button>
-            <label>Select columns:</label>
-            <multi-selector name="columns"></multi-selector>
-        `
-        this.updateMultiSelector()
     }
 
     addEventListeners() {
@@ -61,6 +60,41 @@ export class ControlPanel extends HTMLElement {
         this.shadowRoot.removeEventListener("change", this.handleSelectionChange)
     }
 
+    // MARK: get/set
+    get viewInfo() {
+        return this._viewInfo
+    }
+
+    set viewInfo(value) {
+        this._viewInfo = value
+        this.updateStatusInfo()
+    }
+
+    get columnData() {
+        return this._columnData
+    }
+
+    set columnData(value) {
+        this._columnData = value ?? []
+        this.updateMultiSelector()
+    }
+
+    // MARK: render
+    render() {
+        this.shadowRoot.innerHTML = `
+            <style>${ControlPanel.styles}</style>
+            <button type="button" id="clear-filters">Clear filters</button>
+            <div class="status-info">
+                <span id="row-count"></span>/
+                <span id="column-count"></span>
+            </div>
+            <label>Select columns:</label>
+            <multi-selector name="columns"></multi-selector>
+        `
+        this.updateMultiSelector()
+    }
+
+    // MARK: handlers
     handleClick(event) {
         if (!event.target.matches("#clear-filters")) return
 
@@ -81,6 +115,30 @@ export class ControlPanel extends HTMLElement {
         }))
     }
 
+    // MARK: updates
+    updateStatusInfo() {
+        const rowCountEl = this.shadowRoot.querySelector("#row-count")
+        const columnCountEl = this.shadowRoot.querySelector("#column-count")
+
+        if (!rowCountEl || !columnCountEl || !this._viewInfo) return
+
+        const { visibleRows, totalRows, visibleColumns, totalColumns } = this._viewInfo
+
+        // Row count logic
+        if (visibleRows === totalRows) {
+            rowCountEl.textContent = `${totalRows} rows`
+        } else {
+            rowCountEl.textContent = `${visibleRows} of ${totalRows} rows`
+        }
+
+        // Column count logic
+        if (visibleColumns === totalColumns) {
+            columnCountEl.textContent = `${totalColumns} columns`
+        } else {
+            columnCountEl.textContent = `${visibleColumns} of ${totalColumns} columns`
+        }
+    }
+
     updateMultiSelector() {
         const multiSelector = this.shadowRoot.querySelector("multi-selector")
 
@@ -89,15 +147,6 @@ export class ControlPanel extends HTMLElement {
                 multiSelector.data = this._columnData
             })
         }
-    }
-
-    get columnData() {
-        return this._columnData
-    }
-
-    set columnData(value) {
-        this._columnData = value ?? []
-        this.updateMultiSelector()
     }
 }
 

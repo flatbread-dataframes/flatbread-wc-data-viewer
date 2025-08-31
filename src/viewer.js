@@ -257,6 +257,14 @@ async loadDataFromSrc(src) {
         const columnTree = this.buildColumnTree()
         const controlPanel = this.shadowRoot.querySelector("control-panel")
         controlPanel.columnData = columnTree
+
+        // Add view info for status display
+        controlPanel.viewInfo = {
+            visibleRows: this.view.visibleIndices.length,
+            totalRows: this.data.index.length,
+            visibleColumns: this.view.columns.length,
+            totalColumns: this.data.columns.length
+        }
     }
 
     // MARK: handlers
@@ -314,6 +322,7 @@ async loadDataFromSrc(src) {
     handleFiltersChanged(event) {
         const { indexFilters, columnFilters } = event.detail
         this.applyFiltersWithData(indexFilters, columnFilters)
+        this.updateControlPanelStatus()
     }
 
     applyFiltersWithData(indexFilters, columnFilters) {
@@ -374,6 +383,7 @@ async loadDataFromSrc(src) {
     handleColumnSelectionChange(event) {
         const selectedColumnIndices = event.detail.selectedColumns
         this.applyColumnFilter(selectedColumnIndices)
+        this.updateControlPanelStatus()
     }
 
     applyColumnFilter(selectedColumnIndices) {
@@ -443,6 +453,18 @@ async loadDataFromSrc(src) {
         }
 
         return result
+    }
+
+    updateControlPanelStatus() {
+        const controlPanel = this.shadowRoot.querySelector("control-panel")
+        if (controlPanel) {
+            controlPanel.viewInfo = {
+                visibleRows: this.view.visibleIndices.length,
+                totalRows: this.data.index.length,
+                visibleColumns: this.view.columns.length,
+                totalColumns: this.data.columns.length
+            }
+        }
     }
 
     // MARK: @sort
