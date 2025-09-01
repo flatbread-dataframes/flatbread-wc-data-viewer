@@ -1,5 +1,6 @@
 import { TableBuilder } from "./table-builder.js"
 import { Stylesheet } from "./stylesheet.js"
+import { WheelHandlerMixin } from "../../mixins/wheel-handler.js"
 
 export class DataTable extends HTMLElement {
     constructor() {
@@ -11,6 +12,7 @@ export class DataTable extends HTMLElement {
         this.handleColumnSort = this.handleColumnSort.bind(this)
         this.handleIndexSort = this.handleIndexSort.bind(this)
         this.handleScroll = this.handleScroll.bind(this)
+        this.handleWheel = WheelHandlerMixin.handleWheel.bind(this)
 
         this._dataViewer = null
         this._tableBuilder = null
@@ -34,7 +36,8 @@ export class DataTable extends HTMLElement {
         this.shadowRoot.addEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.addEventListener("index-sort", this.handleIndexSort)
-        this.addEventListener("scroll", this.handleScroll, { passive: false })
+        this.addEventListener("scroll", this.handleScroll)
+        WheelHandlerMixin.addWheelHandling.call(this)
     }
 
     removeEventListeners() {
@@ -43,6 +46,7 @@ export class DataTable extends HTMLElement {
         this.shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.removeEventListener("index-sort", this.handleIndexSort)
         this.shadowRoot.removeEventListener("scroll", this.handleScroll)
+        WheelHandlerMixin.removeWheelHandling.call(this)
     }
 
     // MARK: get/set
@@ -212,7 +216,6 @@ export class DataTable extends HTMLElement {
 
     handleScroll(event) {
         event.stopPropagation()
-        event.preventDefault()
         const table = event.target
         const tbody = this.shadowRoot.querySelector("tbody")
 

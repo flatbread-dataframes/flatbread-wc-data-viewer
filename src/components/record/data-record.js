@@ -1,4 +1,5 @@
 import { RecordBuilder } from "./record-builder.js"
+import { WheelHandlerMixin } from "../../mixins/wheel-handler.js"
 
 export class DataRecord extends HTMLElement {
     static styles = `
@@ -106,6 +107,7 @@ export class DataRecord extends HTMLElement {
         this.attachShadow({ mode: "open" })
         this.handleRecordNavigation = this.handleRecordNavigation.bind(this)
         this.handleFieldClick = this.handleFieldClick.bind(this)
+        this.handleWheel = WheelHandlerMixin.handleWheel.bind(this)
 
         this._dataViewer = null
         this._recordBuilder = null
@@ -125,11 +127,13 @@ export class DataRecord extends HTMLElement {
     addEventListeners() {
         this.shadowRoot.addEventListener("click", this.handleRecordNavigation)
         this.shadowRoot.addEventListener("click", this.handleFieldClick)
+        WheelHandlerMixin.addWheelHandling.call(this)
     }
 
     removeEventListeners() {
         this.shadowRoot.removeEventListener("click", this.handleRecordNavigation)
         this.shadowRoot.removeEventListener("click", this.handleFieldClick)
+        WheelHandlerMixin.removeWheelHandling.call(this)
     }
 
     attributeChangedCallback(name, oldValue, newValue) {

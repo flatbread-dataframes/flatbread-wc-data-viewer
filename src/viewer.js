@@ -17,7 +17,6 @@ export class DataViewer extends HTMLElement {
             display: grid;
             cursor: var(--cursor, auto);
             max-height: var(--height, 600px);
-            overscroll-behavior: contain;
             grid-template-areas:
                 "control-panel"
                 "view";
@@ -31,7 +30,6 @@ export class DataViewer extends HTMLElement {
         data-record {
             grid-area: view;
             overflow-y: auto;
-            overscroll-behavior: none;
             scrollbar-gutter: stable;
         }
 
