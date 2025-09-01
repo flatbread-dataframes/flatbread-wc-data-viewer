@@ -34,7 +34,7 @@ export class DataTable extends HTMLElement {
         this.shadowRoot.addEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.addEventListener("index-sort", this.handleIndexSort)
-        this.addEventListener("scroll", this.handleScroll, { capture: true })
+        this.addEventListener("scroll", this.handleScroll)
     }
 
     removeEventListeners() {
