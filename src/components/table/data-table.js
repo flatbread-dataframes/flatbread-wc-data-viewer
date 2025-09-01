@@ -211,6 +211,7 @@ export class DataTable extends HTMLElement {
     }
 
     handleScroll(event) {
+        event.stopPropagation()
         const table = event.target
         const tbody = this.shadowRoot.querySelector("tbody")
 
