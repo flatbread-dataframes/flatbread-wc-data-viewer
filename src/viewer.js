@@ -234,6 +234,16 @@ async loadDataFromSrc(src) {
         return dataRecord ? dataRecord.currentRecord : null
     }
 
+    get resolvedColors() {
+        const background = getComputedStyle(this).backgroundColor || 'white'
+        
+        return {
+            background,
+            hover: `color-mix(in srgb, ${background} 90%, currentColor 10%)`,
+            border: 'currentColor'
+        }
+    }
+
     // MARK: render
     render() {
         if (!this.shadowRoot.querySelector("control-panel")) {
@@ -258,12 +268,20 @@ async loadDataFromSrc(src) {
         }
     }
 
+    updateDataRecord() {
+        const dataRecord = this.shadowRoot.querySelector("data-record")
+        if (dataRecord) {
+            dataRecord.dataViewer = this
+        }
+    }
+
     updateControlPanel() {
         if (!this.data.hasColumns) return
 
         const columnTree = this.buildColumnTree()
         const controlPanel = this.shadowRoot.querySelector("control-panel")
         controlPanel.columnData = columnTree
+        controlPanel.dataViewer = this
 
         // Add view info for status display
         controlPanel.viewInfo = {
@@ -326,13 +344,6 @@ async loadDataFromSrc(src) {
     handleExitRecordView(event) {
         event.stopPropagation()
         this.setAttribute("view", "table")
-    }
-
-    updateDataRecord() {
-        const dataRecord = this.shadowRoot.querySelector("data-record")
-        if (dataRecord) {
-            dataRecord.dataViewer = this
-        }
     }
 
     // MARK: @filter

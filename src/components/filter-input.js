@@ -136,6 +136,7 @@ export class FilterInput extends HTMLElement {
     }
 
     handleKeydown(event) {
+        event.stopPropagation()
         if (event.key === "Escape") {
             event.preventDefault()
             this.clear()

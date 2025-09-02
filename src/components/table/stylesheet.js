@@ -1,6 +1,6 @@
 export class Stylesheet {
-    constructor(host, data, options) {
-        this.host = host
+    constructor(dataTable, data, options) {
+        this.dataTable = dataTable
         this.data = data
         this.options = options
         this.updateColumnWidths = this.updateColumnWidths.bind(this)
@@ -10,16 +10,26 @@ export class Stylesheet {
         })
     }
 
+    // MARK: setup
     setupStyles() {
         const sheet = this.getIntegratedStyleSheet()
-        this.host.shadowRoot.adoptedStyleSheets = [sheet]
+        this.dataTable.shadowRoot.adoptedStyleSheets = [sheet]
 
-        const tbody = this.host.shadowRoot.querySelector("tbody")
+        const tbody = this.dataTable.shadowRoot.querySelector("tbody")
         if (tbody) this.resizeObserver.observe(tbody)
     }
 
+    // MARK: get/set
+    get dataViewer() {
+        return this.dataTable.dataViewer
+    }
+
     get table() {
-        return this.host.shadowRoot.querySelector("table")
+        return this.dataTable.shadowRoot.querySelector("table")
+    }
+
+    get colors() {
+        return this.dataViewer.resolvedColors
     }
 
     getIntegratedStyleSheet() {
@@ -46,8 +56,8 @@ export class Stylesheet {
                 border-collapse: separate;
                 border-spacing: 0;
             }
-            thead th {
-                background-color: var(--background-color, white);
+            th {
+                background-color: ${this.colors.background};
             }
             tbody th { text-align: left; }
             td { text-align: right; }
@@ -77,7 +87,6 @@ export class Stylesheet {
             }
             .recordViewIcon button:hover {
                 opacity: 1;
-                background-color: var(--hover-color, #f4f3ee);
             }
         `
     }
@@ -93,9 +102,6 @@ export class Stylesheet {
                 position: sticky;
                 top: 0;
                 z-index: 7;
-            }
-            th {
-                background: var(--background-color, white);
             }
             thead th[colspan]:not(.columnLevelNameLabel) {
                 text-align: left;
@@ -135,7 +141,7 @@ export class Stylesheet {
             `,
             hoverEffect: `
                 tbody tr:hover :where(td, th:not([rowspan])) {
-                    background-color: var(--hover-color, #f4f3ee);
+                    background-color: ${this.colors.hover};
                 }
             `,
             theadBorder: `
@@ -164,7 +170,7 @@ export class Stylesheet {
 
     // MARK: updates
     updateColumnWidths() {
-        const tbody = this.host.shadowRoot.querySelector("tbody")
+        const tbody = this.dataTable.shadowRoot.querySelector("tbody")
         if (!tbody) return
 
         const firstRow = tbody.querySelector("tr")

@@ -2,101 +2,103 @@ import { RecordBuilder } from "./record-builder.js"
 import { WheelHandlerMixin } from "../../mixins/wheel-handler.js"
 
 export class DataRecord extends HTMLElement {
-    static styles = `
-        :host {
-            padding-bottom: 12px;
-            padding-inline: 12px;
-            display: block;
-        }
-        .record-view {
-            margin: 0 auto;
-        }
-        .record-navigation {
-            display: grid;
-            grid-template-columns: auto 1fr auto;
-            gap: 1rem;
-            align-items: center;
-            padding: 0.5rem 0;
-            margin-bottom: 1.5rem;
-            border-bottom: 1px solid var(--border-color, currentColor);
-            position: sticky;
-            top: 0;
-            background: var(--background-color, white);
-            z-index: 10;
-        }
-        .nav-buttons {
-            display: flex;
-            gap: 0.25rem;
-        }
-        .nav-buttons button,
-        .exit-button {
-            padding: 0.25rem 0.5rem;
-            border: 1px solid var(--border-color, currentColor);
-            border-radius: 0.25rem;
-            background: var(--background-color, white);
-            cursor: pointer;
-            font: inherit;
-            color: inherit;
-        }
-        .nav-buttons button:hover,
-        .exit-button:hover {
-            background-color: var(--hover-color, #f4f3ee);
-        }
-        .record-info {
-            justify-self: center;
-            display: flex;
-            align-items: center;
-            gap: 1.5em;
-            font-size: 0.9em;
-            font-family: monospace;
-            opacity: 0.8;
-        }
-        .record-position {
-            font-weight: 500;
-            font-size: 0.9em;
-            opacity: 0.8;
-        }
-        .record-index {
-            font-weight: 600;
-            font-size: 1.1em;
-        }
-        .field-group {
-            margin-bottom: 2rem;
-        }
-        .group-title {
-            margin: 0 0 1rem 0;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--border-color, currentColor);
-            font-size: 1.1em;
-            font-weight: 600;
-        }
-        .record-fields {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-        }
-        .record-field {
-            display: grid;
-            grid-template-columns: auto 1fr;
-            gap: 0.5rem;
-            align-items: baseline;
-        }
-        .field-label {
-            font-weight: 500;
-            text-align: right;
-            white-space: nowrap;
-        }
-        .field-value {
-            padding: 0.25rem 0.5rem;
-            background-color: var(--hover-color, #f4f3ee);
-            border-radius: 0.25rem;
-            font-family: monospace;
-        }
-        .field-value[data-dtype="int"],
-        .field-value[data-dtype="float"] {
-            text-align: right;
-        }
-    `
+    get styles() {
+        return `
+            :host {
+                padding-bottom: 12px;
+                padding-inline: 12px;
+                display: block;
+            }
+            .record-view {
+                margin: 0 auto;
+            }
+            .record-navigation {
+                display: grid;
+                grid-template-columns: auto 1fr auto;
+                gap: 1rem;
+                align-items: center;
+                padding: 0.5rem 0;
+                margin-bottom: 1.5rem;
+                border-bottom: 1px solid currentColor;
+                position: sticky;
+                top: 0;
+                background: ${this.colors.background};
+                z-index: 10;
+            }
+            .nav-buttons {
+                display: flex;
+                gap: 0.25rem;
+            }
+            .nav-buttons button,
+            .exit-button {
+                padding: 0.25rem 0.5rem;
+                border: 1px solid currentColor;
+                border-radius: 0.25rem;
+                background: ${this.colors.background};
+                cursor: pointer;
+                font: inherit;
+                color: inherit;
+            }
+            .nav-buttons button:hover,
+            .exit-button:hover {
+                background-color: ${this.colors.hover};
+            }
+            .record-info {
+                justify-self: center;
+                display: flex;
+                align-items: center;
+                gap: 1.5em;
+                font-size: 0.9em;
+                font-family: monospace;
+                opacity: 0.8;
+            }
+            .record-position {
+                font-weight: 500;
+                font-size: 0.9em;
+                opacity: 0.8;
+            }
+            .record-index {
+                font-weight: 600;
+                font-size: 1.1em;
+            }
+            .field-group {
+                margin-bottom: 2rem;
+            }
+            .group-title {
+                margin: 0 0 1rem 0;
+                padding-bottom: 0.5rem;
+                border-bottom: 1px solid currentColor;
+                font-size: 1.1em;
+                font-weight: 600;
+            }
+            .record-fields {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 1rem;
+            }
+            .record-field {
+                display: grid;
+                grid-template-columns: auto 1fr;
+                gap: 0.5rem;
+                align-items: baseline;
+            }
+            .field-label {
+                font-weight: 500;
+                text-align: right;
+                white-space: nowrap;
+            }
+            .field-value {
+                padding: 0.25rem 0.5rem;
+                background-color: ${this.colors.hover};
+                border-radius: 0.25rem;
+                font-family: monospace;
+            }
+            .field-value[data-dtype="int"],
+            .field-value[data-dtype="float"] {
+                text-align: right;
+            }
+        `
+    }
 
     static get observedAttributes() {
         return ["record-index"]
@@ -117,7 +119,6 @@ export class DataRecord extends HTMLElement {
     // MARK: setup
     connectedCallback() {
         this.addEventListeners()
-        this.render()
     }
 
     disconnectedCallback() {
@@ -158,6 +159,10 @@ export class DataRecord extends HTMLElement {
         }
     }
 
+    get colors() {
+        return this.dataViewer.resolvedColors
+    }
+
     get recordIndex() {
         return this._currentRecordIndex
     }
@@ -186,7 +191,7 @@ export class DataRecord extends HTMLElement {
     // MARK: render
     render() {
         this.shadowRoot.innerHTML = `
-            <style>${DataRecord.styles}</style>
+            <style>${this.styles}</style>
             ${this.buildRecord()}
         `
     }
