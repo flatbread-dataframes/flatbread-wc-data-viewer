@@ -9,47 +9,49 @@ import "https://lcvriend.github.io/wc-multi-selector/src/wc-multi-selector.js"
 
 
 export class DataViewer extends HTMLElement {
-    static styles = `
-        :root {
-            box-sizing: border-box;
-        }
-        :host {
-            display: grid;
-            cursor: var(--cursor, auto);
-            max-height: var(--height, 600px);
-            grid-template-areas:
-                "control-panel"
-                "view";
-        }
+    get styles() {
+        return `
+            :root {
+                box-sizing: border-box;
+            }
+            :host {
+                display: grid;
+                cursor: var(--cursor, auto);
+                height: ${this.options.height};
+                grid-template-areas:
+                    "control-panel"
+                    "view";
+            }
 
-        control-panel {
-            grid-area: control-panel;
-        }
+            control-panel {
+                grid-area: control-panel;
+            }
 
-        data-table,
-        data-record {
-            grid-area: view;
-            overflow-y: auto;
-            scrollbar-gutter: stable;
-        }
+            data-table,
+            data-record {
+                grid-area: view;
+                overflow-y: auto;
+                scrollbar-gutter: stable;
+            }
 
-        :host([view="record"]) data-table {
-            visibility: hidden;
-        }
-        :host([view="record"]) data-record {
-            display: block;
-        }
-        :host([view="table"]) data-table {
-            visibility: visible;
-        }
-        :host([view="table"]) data-record {
-            display: none;
-        }
-    `
+            :host([view="record"]) data-table {
+                visibility: hidden;
+            }
+            :host([view="record"]) data-record {
+                display: block;
+            }
+            :host([view="table"]) data-table {
+                visibility: visible;
+            }
+            :host([view="table"]) data-record {
+                display: none;
+            }
+        `
+    }
 
     static get observedAttributes() {
         return [
-            "view", "src", "locale", "na-rep",
+            "view", "src", "locale", "na-rep", "height",
             "hide-group-borders", "hide-row-borders",
             "hide-thead-border", "hide-index-border",
             "hide-filter-row",
@@ -61,6 +63,7 @@ export class DataViewer extends HTMLElement {
             locale: "default",
             naRep: "-",
             buffer: 30,
+            height: "600px",
             styling: {
                 groupBorders: true,
                 rowBorders: true,
@@ -172,6 +175,9 @@ export class DataViewer extends HTMLElement {
             case "na-rep":
                 this.options.naRep = newValue ?? DataViewer.defaults.naRep
                 break
+            case "height":
+                this.options.height = newValue ?? DataViewer.defaults.height
+                break
             case "hide-group-borders":
                 this.options.styling.groupBorders = newValue === null
                 break
@@ -236,7 +242,7 @@ async loadDataFromSrc(src) {
 
     get resolvedColors() {
         const background = getComputedStyle(this).backgroundColor || 'white'
-        
+
         return {
             background,
             hover: `color-mix(in srgb, ${background} 90%, currentColor 10%)`,
@@ -248,7 +254,7 @@ async loadDataFromSrc(src) {
     render() {
         if (!this.shadowRoot.querySelector("control-panel")) {
             this.shadowRoot.innerHTML = `
-                <style>${DataViewer.styles}</style>
+                <style>${this.styles}</style>
                 <control-panel></control-panel>
                 <data-table></data-table>
                 <data-record></data-record>
@@ -280,8 +286,8 @@ async loadDataFromSrc(src) {
 
         const columnTree = this.buildColumnTree()
         const controlPanel = this.shadowRoot.querySelector("control-panel")
-        controlPanel.columnData = columnTree
         controlPanel.dataViewer = this
+        controlPanel.columnData = columnTree
 
         // Add view info for status display
         controlPanel.viewInfo = {
