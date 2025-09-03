@@ -37,6 +37,7 @@ export class FilterInput extends HTMLElement {
             font-size: .875em;
             color: inherit;
             opacity: 0.7;
+            user-select: none;
         }
 
         button:hover {
@@ -45,7 +46,7 @@ export class FilterInput extends HTMLElement {
 
         button:disabled {
             opacity: 0.3;
-            cursor: not-allowed;
+            cursor: default;
         }
     `
 

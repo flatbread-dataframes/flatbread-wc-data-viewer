@@ -358,6 +358,14 @@ async loadDataFromSrc(src) {
 
     handleFiltersChanged(event) {
         const { indexFilters, columnFilters } = event.detail
+
+        // Update control panel button state
+        const controlPanel = this.shadowRoot.querySelector("control-panel")
+        if (controlPanel) {
+            const hasActiveFilters = indexFilters.length > 0 || columnFilters.length > 0
+            controlPanel.updateClearButtonState(hasActiveFilters)
+        }
+
         this.applyFiltersWithData(indexFilters, columnFilters)
         this.updateControlPanelStatus()
     }

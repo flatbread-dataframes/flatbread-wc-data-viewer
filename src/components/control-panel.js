@@ -17,9 +17,14 @@ export class ControlPanel extends HTMLElement {
                 color: inherit;
                 cursor: pointer;
                 opacity: 0.7;
+                user-select: none;
             }
             button:hover {
                 opacity: 1;
+            }
+            button:disabled {
+                opacity: 0.3;
+                cursor: default;
             }
             .status-info {
                 justify-self: center;
@@ -111,7 +116,7 @@ export class ControlPanel extends HTMLElement {
             <div>
                 <label>Filters:</label>
                 <button type="button" id="toggle-filter-row">Toggle</button>
-                <button type="button" id="clear-filters">Clear</button>
+                <button type="button" id="clear-filters" disabled>Clear</button>
             </div>
             <div class="status-info">
                 <span id="row-count"></span>/
@@ -123,34 +128,7 @@ export class ControlPanel extends HTMLElement {
         this.updateMultiSelector()
     }
 
-    // MARK: handlers
-    handleClick(event) {
-        if (event.target.matches("#clear-filters")) {
-            const newEvent = new CustomEvent("clear-all-filters", {
-                bubbles: true,
-                composed: true,
-            })
-            this.dispatchEvent(newEvent)
-        } else if (event.target.matches("#toggle-filter-row")) {
-            const newEvent = new CustomEvent("toggle-filter-row", {
-                bubbles: true,
-                composed: true,
-            })
-            this.dispatchEvent(newEvent)
-        }
-    }
-
-    handleSelectionChange(event) {
-        this.dispatchEvent(new CustomEvent("column-selection-changed", {
-            detail: {
-                selectedColumns: event.detail,
-            },
-            bubbles: true,
-            composed: true,
-        }))
-    }
-
-    // MARK: updates
+    // MARK: update
     updateStatusInfo() {
         const rowCountEl = this.shadowRoot.querySelector("#row-count")
         const columnCountEl = this.shadowRoot.querySelector("#column-count")
@@ -181,14 +159,55 @@ export class ControlPanel extends HTMLElement {
         }
     }
 
+    updateClearButtonState(hasActiveFilters) {
+        const clearButton = this.shadowRoot.querySelector("#clear-filters")
+        if (clearButton) {
+            clearButton.disabled = !hasActiveFilters
+        }
+    }
+
     updateMultiSelector() {
         const multiSelector = this.shadowRoot.querySelector("multi-selector")
 
         if (multiSelector && this._columnData.length > 0) {
             customElements.whenDefined("multi-selector").then(() => {
                 multiSelector.data = this._columnData
+
+                if (this.dataViewer) {
+                    const viewerHeight = this.dataViewer.getBoundingClientRect().height
+                    const maxHeight = Math.floor(viewerHeight * 0.8) + 'px'
+                    console.log(maxHeight)
+                    multiSelector.style.setProperty("--ms-max-height", maxHeight)
+                }
             })
         }
+    }
+
+    // MARK: handlers
+    handleClick(event) {
+        if (event.target.matches("#clear-filters")) {
+            const newEvent = new CustomEvent("clear-all-filters", {
+                bubbles: true,
+                composed: true,
+            })
+            this.dispatchEvent(newEvent)
+        } else if (event.target.matches("#toggle-filter-row")) {
+            const newEvent = new CustomEvent("toggle-filter-row", {
+                bubbles: true,
+                composed: true,
+            })
+            this.dispatchEvent(newEvent)
+        }
+    }
+
+    handleSelectionChange(event) {
+        this.dispatchEvent(new CustomEvent("column-selection-changed", {
+            detail: {
+                selectedColumns: event.detail,
+            },
+            bubbles: true,
+            composed: true,
+        }))
     }
 }
 
