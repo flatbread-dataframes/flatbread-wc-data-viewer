@@ -1,2 +1,4 @@
 src/archive
 .vscode
+__pycache__
+notebooks
