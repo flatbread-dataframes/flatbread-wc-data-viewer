@@ -176,7 +176,6 @@ export class ControlPanel extends HTMLElement {
                 if (this.dataViewer) {
                     const viewerHeight = this.dataViewer.getBoundingClientRect().height
                     const maxHeight = Math.floor(viewerHeight * 0.8) + 'px'
-                    console.log(maxHeight)
                     multiSelector.style.setProperty("--ms-max-height", maxHeight)
                 }
             })

@@ -169,6 +169,21 @@ export class Stylesheet {
     }
 
     // MARK: updates
+    updateComposedStyles() {
+        const sheet = this.dataTable.shadowRoot.adoptedStyleSheets[0]
+        if (sheet) {
+            const baseStyles = this.getBaseStyles()
+            const stickyStyles = this.getStickyStyles()
+            const composedStyles = this.getComposedStyles()
+
+            sheet.replaceSync(`
+                ${baseStyles}
+                ${stickyStyles}
+                ${composedStyles}
+            `)
+        }
+    }
+
     updateColumnWidths() {
         const tbody = this.dataTable.shadowRoot.querySelector("tbody")
         if (!tbody) return

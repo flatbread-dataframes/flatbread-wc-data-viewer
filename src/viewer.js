@@ -5,7 +5,8 @@ import "./components/table/data-table.js"
 import "./components/control-panel.js"
 import "./components/filter-input.js"
 import "./components/sortable-column-header.js"
-import "https://lcvriend.github.io/wc-multi-selector/src/wc-multi-selector.js"
+import "./wc-multi-selector.js"
+// import "https://lcvriend.github.io/wc-multi-selector/src/wc-multi-selector.js"
 
 
 export class DataViewer extends HTMLElement {
@@ -82,6 +83,7 @@ export class DataViewer extends HTMLElement {
 
         this.handleDataChange = this.handleDataChange.bind(this)
 
+        this.handleKeydown = this.handleKeydown.bind(this)
         this.handleCellClick = this.handleCellClick.bind(this)
         this.handleFieldClick = this.handleFieldClick.bind(this)
 
@@ -109,6 +111,8 @@ export class DataViewer extends HTMLElement {
             this.setAttribute("view", "table")
         }
 
+        this.setAttribute("tabindex", "0")
+
         // initialize internal state
         this._viewMode = this.getAttribute("view") === "record" ? "record" : "table"
 
@@ -129,6 +133,7 @@ export class DataViewer extends HTMLElement {
 
     addEventListeners() {
         this.data.addEventListener("data-changed", this.handleDataChange)
+        this.addEventListener("keydown", this.handleKeydown)
         this.shadowRoot.addEventListener("cell-click", this.handleCellClick)
         this.shadowRoot.addEventListener("field-click", this.handleFieldClick)
         this.shadowRoot.addEventListener("enter-record-view", this.handleEnterRecordView)
@@ -144,6 +149,7 @@ export class DataViewer extends HTMLElement {
 
     removeEventListeners() {
         this.data.removeEventListener("data-changed", this.handleDataChange)
+        this.removeEventListener("keydown", this.handleKeydown)
         this.shadowRoot.removeEventListener("cell-click", this.handleCellClick)
         this.shadowRoot.removeEventListener("field-click", this.handleFieldClick)
         this.shadowRoot.removeEventListener("enter-record-view", this.handleEnterRecordView)
@@ -159,16 +165,46 @@ export class DataViewer extends HTMLElement {
 
     attributeChangedCallback(name, oldValue, newValue) {
         if (oldValue === newValue) return
+
+        // Handle special cases first
         switch (name) {
             case "view":
                 this._viewMode = newValue === "record" ? "record" : "table"
-                if (this.isConnected && this._data.hasColumns) { // Only render if we have data
+                if (this.isConnected && this._data.hasColumns) {
                     this.render()
                 }
                 return
             case "src":
                 this.loadDataFromSrc(newValue)
                 return
+        }
+
+        // Styling-only attributes - update stylesheet
+        const stylingAttributes = ["hide-group-borders", "hide-row-borders", "hide-index-border", "hide-thead-border", "hide-filter-row"]
+        if (stylingAttributes.includes(name)) {
+            switch (name) {
+                case "hide-group-borders":
+                    this.options.styling.groupBorders = newValue === null
+                    break
+                case "hide-row-borders":
+                    this.options.styling.rowBorders = newValue === null
+                    break
+                case "hide-index-border":
+                    this.options.styling.indexBorder = newValue === null
+                    break
+                case "hide-thead-border":
+                    this.options.styling.theadBorder = newValue === null
+                    break
+                case "hide-filter-row":
+                    this.options.styling.hideFilters = newValue !== null
+                    break
+            }
+            this.updateStylesheet()
+            return
+        }
+
+        // Attributes that require full render
+        switch (name) {
             case "locale":
                 this.options.locale = newValue ?? DataViewer.defaults.locale
                 break
@@ -177,21 +213,6 @@ export class DataViewer extends HTMLElement {
                 break
             case "height":
                 this.options.height = newValue ?? DataViewer.defaults.height
-                break
-            case "hide-group-borders":
-                this.options.styling.groupBorders = newValue === null
-                break
-            case "hide-row-borders":
-                this.options.styling.rowBorders = newValue === null
-                break
-            case "hide-index-border":
-                this.options.styling.indexBorder = newValue === null
-                break
-            case "hide-thead-border":
-                this.options.styling.theadBorder = newValue === null
-                break
-            case "hide-filter-row":
-                this.options.styling.hideFilters = newValue !== null
                 break
         }
         this.render()
@@ -228,6 +249,10 @@ async loadDataFromSrc(src) {
 
     get viewMode() {
         return this._viewMode
+    }
+
+    get dataTable() {
+        return this.shadowRoot.querySelector("data-table")
     }
 
     get currentRecordIndex() {
@@ -268,9 +293,14 @@ async loadDataFromSrc(src) {
     }
 
     updateDataTable() {
-        const dataTable = this.shadowRoot.querySelector("data-table")
-        if (dataTable) {
-            dataTable.dataViewer = this
+        if (this.dataTable) {
+            this.dataTable.dataViewer = this
+        }
+    }
+
+    updateStylesheet() {
+        if (this.dataTable && this.dataTable._stylesheet) {
+            this.dataTable._stylesheet.updateComposedStyles()
         }
     }
 
@@ -307,8 +337,7 @@ async loadDataFromSrc(src) {
         if (event.detail.isValuesOnly) {
             this.updateDataTable()
             this.updateDataRecord()
-            const dataTable = this.shadowRoot.querySelector("data-table")
-            if (dataTable) dataTable.renderTbody()
+            if (this.dataTable) this.dataTable.renderTbody()
         } else {
             this.render()
             this.updateControlPanel()
@@ -391,9 +420,8 @@ async loadDataFromSrc(src) {
             this.view.filter(combinedPredicate)
         }
 
-        const dataTable = this.shadowRoot.querySelector("data-table")
-        if (dataTable) {
-            dataTable.renderTbody()
+        if (this.dataTable) {
+            this.dataTable.renderTbody()
         }
     }
 
@@ -424,9 +452,8 @@ async loadDataFromSrc(src) {
     }
 
     handleClearAllFilters() {
-        const dataTable = this.shadowRoot.querySelector("data-table")
-        if (dataTable) {
-            dataTable.clearAllFilters()
+        if (this.dataTable) {
+            this.dataTable.clearAllFilters()
         }
     }
 
@@ -444,9 +471,8 @@ async loadDataFromSrc(src) {
             this.view.filterColumns(selectedColumnIndices)
         }
 
-        const dataTable = this.shadowRoot.querySelector("data-table")
-        if (dataTable) {
-            dataTable.render()
+        if (this.dataTable) {
+            this.dataTable.render()
         }
         this.updateDataRecord()
     }
@@ -527,9 +553,8 @@ async loadDataFromSrc(src) {
             this.view.sortByColumn(columnIndex, sortState)
         }
 
-        const dataTable = this.shadowRoot.querySelector("data-table")
-        if (dataTable) {
-            dataTable.renderTbody()
+        if (this.dataTable) {
+            this.dataTable.renderTbody()
         }
     }
 
@@ -541,9 +566,8 @@ async loadDataFromSrc(src) {
             this.view.sortByIndex(level, sortState)
         }
 
-        const dataTable = this.shadowRoot.querySelector("data-table")
-        if (dataTable) {
-            dataTable.renderTbody()
+        if (this.dataTable) {
+            this.dataTable.renderTbody()
         }
     }
 
@@ -551,17 +575,95 @@ async loadDataFromSrc(src) {
     handleLoadMoreRows(event) {
         const { currentRowCount, bufferSize } = event.detail
 
-        const dataTable = this.shadowRoot.querySelector("data-table")
-        if (dataTable) {
-            const tbody = dataTable.shadowRoot.querySelector("tbody")
+        if (this.dataTable) {
+            const tbody = this.dataTable.shadowRoot.querySelector("tbody")
             if (tbody) {
                 const start = currentRowCount
                 const end = start + bufferSize
-                tbody.innerHTML += dataTable._tableBuilder.buildTbody(start, end)
+                tbody.innerHTML += this.dataTable._tableBuilder.buildTbody(start, end)
             }
         }
     }
 
+    // MARK: @keyboard
+    handleKeydown(event) {
+        const shouldHandleGlobal =
+            document.activeElement === this ||
+            this.contains(document.activeElement) ||
+            !document.querySelector("data-viewer:focus-within")
+        if (!shouldHandleGlobal) return
+
+        if (this.handleGlobalShortcuts(event)) {
+            event.preventDefault()
+            event.stopPropagation()
+            return
+        }
+    }
+
+    handleGlobalShortcuts(event) {
+        if (!event.ctrlKey && event.key !== "Escape") return false
+
+        switch (event.key) {
+            case "h":
+                if (event.ctrlKey) {
+                    this.toggleFilterRow()
+                    return true
+                }
+                break
+            case "r":
+                if (event.ctrlKey) {
+                    this.toggleViewMode()
+                    return true
+                }
+                break
+            case "f":
+                if (event.ctrlKey) {
+                    this.focusFirstFilter()
+                    return true
+                }
+                break
+            case "Escape":
+                if (!event.ctrlKey) {
+                    this.handleClearAllFilters()
+                    return true
+                }
+                break
+        }
+        return false
+    }
+
+    toggleFilterRow() {
+        const currentFocus = this.getDeepActiveElement()
+        this.handleToggleFilterRow()
+        setTimeout(() => {
+            currentFocus.focus()
+        }, 0)
+    }
+
+    getDeepActiveElement() {
+        let activeEl = document.activeElement
+        while (activeEl && activeEl.shadowRoot && activeEl.shadowRoot.activeElement) {
+            activeEl = activeEl.shadowRoot.activeElement
+        }
+        return activeEl
+    }
+
+    toggleViewMode() {
+        const newView = this._viewMode === "table" ? "record" : "table"
+        this.setAttribute("view", newView)
+        this.focus()
+    }
+
+    focusFirstFilter() {
+        if (this.dataTable && this._viewMode === "table") {
+            const firstFilter = this.dataTable.shadowRoot.querySelector(".columnFilter filter-input")
+            if (firstFilter) {
+                firstFilter.focus()
+            }
+        }
+    }
+
+    // MARK: @error
     showErrorMessage(message) {
         this.shadowRoot.innerHTML = `
             ${this.getStyleSheet()}
