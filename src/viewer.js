@@ -172,6 +172,7 @@ export class DataViewer extends HTMLElement {
                 this._viewMode = newValue === "record" ? "record" : "table"
                 if (this.isConnected && this._data.hasColumns) {
                     this.render()
+                    this._viewMode === "record" ? this.dataRecord.focus() : this.dataTable.focus()
                 }
                 return
             case "src":
@@ -257,6 +258,10 @@ async loadDataFromSrc(src) {
 
     get dataTable() {
         return this.shadowRoot.querySelector("data-table")
+    }
+
+    get dataRecord() {
+        return this.shadowRoot.querySelector("data-record")
     }
 
     get currentRecordIndex() {
@@ -370,10 +375,6 @@ async loadDataFromSrc(src) {
     }
 
     enterRecordView(viewRowIndex) {
-        const dataRecord = this.shadowRoot.querySelector("data-record")
-        if (dataRecord) {
-            dataRecord.recordIndex = viewRowIndex
-        }
         this.setAttribute("view", "record")
     }
 
@@ -589,11 +590,7 @@ async loadDataFromSrc(src) {
 
     // MARK: @keyboard
     handleKeydown(event) {
-        const shouldHandleGlobal =
-            document.activeElement === this ||
-            this.contains(document.activeElement) ||
-            !document.querySelector("data-viewer:focus-within")
-        if (!shouldHandleGlobal) return
+        if (!event.composedPath().includes(this)) return
 
         if (this.handleGlobalShortcuts(event)) {
             event.preventDefault()
@@ -603,43 +600,24 @@ async loadDataFromSrc(src) {
     }
 
     handleGlobalShortcuts(event) {
-        if (!event.ctrlKey && event.key !== "Escape") return false
-
-        switch (event.key) {
-            case "h":
-                if (event.ctrlKey) {
-                    this.toggleFilterRow()
+        if (event.ctrlKey) {
+            switch (event.key) {
+                case "h":
+                    this.handleToggleFilterRow()
                     return true
-                }
-                break
-            case "r":
-                if (event.ctrlKey) {
+                case "r":
                     this.toggleViewMode()
                     return true
-                }
-                break
-            case "f":
-                if (event.ctrlKey) {
+                case "f":
                     this.focusFirstFilter()
                     return true
-                }
-                break
-            case "Escape":
-                if (!event.ctrlKey) {
-                    this.handleClearAllFilters()
-                    return true
-                }
-                break
+            }
+        } else if (event.key === "Escape") {
+            this.handleClearAllFilters()
+            return true
         }
-        return false
-    }
 
-    toggleFilterRow() {
-        const currentFocus = this.getDeepActiveElement()
-        this.handleToggleFilterRow()
-        setTimeout(() => {
-            currentFocus.focus()
-        }, 0)
+        return false
     }
 
     getDeepActiveElement() {
@@ -653,7 +631,6 @@ async loadDataFromSrc(src) {
     toggleViewMode() {
         const newView = this._viewMode === "table" ? "record" : "table"
         this.setAttribute("view", newView)
-        this.focus()
     }
 
     focusFirstFilter() {

@@ -110,6 +110,7 @@ export class DataRecord extends HTMLElement {
         this.handleRecordNavigation = this.handleRecordNavigation.bind(this)
         this.handleFieldClick = this.handleFieldClick.bind(this)
         this.handleWheel = WheelHandlerMixin.handleWheel.bind(this)
+        this.handleKeydown = this.handleKeydown.bind(this)
 
         this._dataViewer = null
         this._recordBuilder = null
@@ -118,6 +119,7 @@ export class DataRecord extends HTMLElement {
 
     // MARK: setup
     connectedCallback() {
+        this.setAttribute("tabindex", "0")
         this.addEventListeners()
     }
 
@@ -128,12 +130,14 @@ export class DataRecord extends HTMLElement {
     addEventListeners() {
         this.shadowRoot.addEventListener("click", this.handleRecordNavigation)
         this.shadowRoot.addEventListener("click", this.handleFieldClick)
+        this.addEventListener("keydown", this.handleKeydown)
         WheelHandlerMixin.addWheelHandling.call(this)
     }
 
     removeEventListeners() {
         this.shadowRoot.removeEventListener("click", this.handleRecordNavigation)
         this.shadowRoot.removeEventListener("click", this.handleFieldClick)
+        this.removeEventListener("keydown", this.handleKeydown)
         WheelHandlerMixin.removeWheelHandling.call(this)
     }
 
@@ -204,6 +208,49 @@ export class DataRecord extends HTMLElement {
     }
 
     // MARK: handlers
+    handleKeydown(event) {
+        if (!event.composedPath().includes(this)) return
+
+        let handled = false
+
+        switch (event.key) {
+            case "ArrowLeft":
+            case "PageUp":
+                this.navigateRecord("prev")
+                handled = true
+                break
+
+            case "ArrowRight":
+            case "PageDown":
+                this.navigateRecord("next")
+                handled = true
+                break
+
+            case "Home":
+                this.navigateRecord("first")
+                handled = true
+                break
+
+            case "End":
+                this.navigateRecord("last")
+                handled = true
+                break
+
+            case "Escape":
+                this.dispatchEvent(new CustomEvent("exit-record-view", {
+                    bubbles: true,
+                    composed: true
+                }))
+                handled = true
+                break
+        }
+
+        if (handled) {
+            event.preventDefault()
+            event.stopPropagation()
+        }
+    }
+
     handleRecordNavigation(event) {
         const navButton = event.target.closest("[data-nav]")
         if (!navButton) return
