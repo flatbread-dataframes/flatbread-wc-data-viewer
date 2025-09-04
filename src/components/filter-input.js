@@ -62,6 +62,7 @@ export class FilterInput extends HTMLElement {
         this.handleKeydown = this.handleKeydown.bind(this)
     }
 
+    // MARK: setup
     connectedCallback() {
         this.render()
         this.addEventListeners()
@@ -69,16 +70,6 @@ export class FilterInput extends HTMLElement {
 
     disconnectedCallback() {
         this.removeEventListeners()
-    }
-
-    render() {
-        this.shadowRoot.innerHTML = `
-            <style>${FilterInput.styles}</style>
-            <input type="text">
-            <button type="button" tabindex="-1">🞨</button>
-        `
-
-        this.updateAttributes()
     }
 
     addEventListeners() {
@@ -128,6 +119,23 @@ export class FilterInput extends HTMLElement {
         button.disabled = disabled
     }
 
+    // MARK: get/set
+    get input() {
+        return this.shadowRoot.querySelector("input")
+    }
+
+    // MARK: render
+    render() {
+        this.shadowRoot.innerHTML = `
+            <style>${FilterInput.styles}</style>
+            <input type="text">
+            <button type="button" tabindex="-1">🞨</button>
+        `
+
+        this.updateAttributes()
+    }
+
+    // MARK: handlers
     handleInput(event) {
         // Emit custom event from the filter-input element itself
         this.dispatchEvent(new CustomEvent("filter-input", {
@@ -146,7 +154,7 @@ export class FilterInput extends HTMLElement {
 
     handleClear() {
         this.clear()
-        input.focus()
+        this.input.focus()
     }
 
     clear() {
@@ -161,7 +169,7 @@ export class FilterInput extends HTMLElement {
         }
     }
 
-    // Public API
+    // MARK: api
     get value() {
         const input = this.shadowRoot.querySelector("input")
         return input ? input.value : ""
