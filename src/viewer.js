@@ -140,7 +140,7 @@ export class DataViewer extends HTMLElement {
         this.shadowRoot.addEventListener("exit-record-view", this.handleExitRecordView)
         this.shadowRoot.addEventListener("toggle-filter-row", this.handleToggleFilterRow)
         this.shadowRoot.addEventListener("filters-changed", this.handleFiltersChanged)
-        this.shadowRoot.addEventListener("clear-all-filters", this.handleClearAllFilters)
+        this.shadowRoot.addEventListener("clear-filters", this.handleClearAllFilters)
         this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.addEventListener("index-sort", this.handleIndexSort)
         this.shadowRoot.addEventListener("column-selection-changed", this.handleColumnSelectionChange)
@@ -156,7 +156,7 @@ export class DataViewer extends HTMLElement {
         this.shadowRoot.removeEventListener("exit-record-view", this.handleExitRecordView)
         this.shadowRoot.removeEventListener("toggle-filter-row", this.handleToggleFilterRow)
         this.shadowRoot.removeEventListener("filters-changed", this.handleFiltersChanged)
-        this.shadowRoot.removeEventListener("clear-all-filters", this.handleClearAllFilters)
+        this.shadowRoot.removeEventListener("clear-filters", this.handleClearAllFilters)
         this.shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.removeEventListener("index-sort", this.handleIndexSort)
         this.shadowRoot.removeEventListener("column-selection-changed", this.handleColumnSelectionChange)
@@ -251,6 +251,10 @@ async loadDataFromSrc(src) {
         return this._viewMode
     }
 
+    get controlPanel() {
+        return this.shadowRoot.querySelector("control-panel")
+    }
+
     get dataTable() {
         return this.shadowRoot.querySelector("data-table")
     }
@@ -315,19 +319,16 @@ async loadDataFromSrc(src) {
         if (!this.data.hasColumns) return
 
         const columnTree = this.buildColumnTree()
-        const controlPanel = this.shadowRoot.querySelector("control-panel")
-        controlPanel.dataViewer = this
-        controlPanel.columnData = columnTree
+        this.controlPanel.dataViewer = this
+        this.controlPanel.columnData = columnTree
 
         // Add view info for status display
-        controlPanel.viewInfo = {
+        this.controlPanel.viewInfo = {
             visibleRows: this.view.visibleIndices.length,
             totalRows: this.data.index.length,
             visibleColumns: this.view.columns.length,
             totalColumns: this.data.columns.length
         }
-
-        controlPanel.showFilters = !this.hasAttribute("hide-filter-row")
     }
 
     // MARK: handlers
@@ -388,7 +389,7 @@ async loadDataFromSrc(src) {
         } else {
             this.setAttribute("hide-filter-row", "")
         }
-        this.updateControlPanel()
+        this.controlPanel.showFilters = !this.hasAttribute("hide-filter-row")
     }
 
     handleFiltersChanged(event) {
@@ -455,6 +456,7 @@ async loadDataFromSrc(src) {
         if (this.dataTable) {
             this.dataTable.clearAllFilters()
         }
+        this.focus()
     }
 
     // MARK: @column

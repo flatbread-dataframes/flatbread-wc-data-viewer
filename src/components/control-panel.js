@@ -1,3 +1,5 @@
+import "./action-button.js"
+
 export class ControlPanel extends HTMLElement {
     get styles() {
         return `
@@ -7,24 +9,6 @@ export class ControlPanel extends HTMLElement {
                 gap: .5em;
                 align-items: center;
                 padding: .25em;
-            }
-            button {
-                padding: .25em .5em;
-                border: 1px solid;
-                border-radius: .25em;
-                background: transparent;
-                font: inherit;
-                color: inherit;
-                cursor: pointer;
-                opacity: 0.7;
-                user-select: none;
-            }
-            button:hover {
-                opacity: 1;
-            }
-            button:disabled {
-                opacity: 0.3;
-                cursor: default;
             }
             .status-info {
                 justify-self: center;
@@ -44,7 +28,6 @@ export class ControlPanel extends HTMLElement {
         super()
         this.attachShadow({ mode: "open" })
         this.handleSelectionChange = this.handleSelectionChange.bind(this)
-        this.handleClick = this.handleClick.bind(this)
         this._columnData = []
     }
 
@@ -59,7 +42,6 @@ export class ControlPanel extends HTMLElement {
 
     addEventListeners() {
         this.shadowRoot.addEventListener("change", this.handleSelectionChange)
-        this.shadowRoot.addEventListener("click", this.handleClick)
     }
 
     removeEventListeners() {
@@ -109,14 +91,22 @@ export class ControlPanel extends HTMLElement {
         this.updateMultiSelector()
     }
 
+    get buttonToggleFilterRow() {
+        return this.shadowRoot.querySelector(`action-button[data-action="toggle-filter-row"]`)
+    }
+
+    get buttonClearFilters() {
+        return this.shadowRoot.querySelector(`action-button[data-action="clear-filters"]`)
+    }
+
     // MARK: render
     render() {
         this.shadowRoot.innerHTML = `
             <style>${this.styles}</style>
             <div>
                 <label>Filters:</label>
-                <button type="button" id="toggle-filter-row">Toggle</button>
-                <button type="button" id="clear-filters" disabled>Clear</button>
+                <action-button data-action="toggle-filter-row">Toggle</action-button>
+                <action-button data-action="clear-filters" disabled>Clear</action-button>
             </div>
             <div class="status-info">
                 <span id="row-count"></span>/
@@ -153,16 +143,14 @@ export class ControlPanel extends HTMLElement {
     }
 
     updateToggleButton() {
-        const button = this.shadowRoot.querySelector("#toggle-filter-row")
-        if (button) {
-            button.textContent = this._showFilters ? "Hide" : "Show"
+        if (this.buttonToggleFilterRow) {
+            this.buttonToggleFilterRow.textContent = this._showFilters ? "Hide" : "Show"
         }
     }
 
     updateClearButtonState(hasActiveFilters) {
-        const clearButton = this.shadowRoot.querySelector("#clear-filters")
-        if (clearButton) {
-            clearButton.disabled = !hasActiveFilters
+        if (this.buttonClearFilters) {
+            this.buttonClearFilters.disabled = !hasActiveFilters
         }
     }
 
@@ -183,22 +171,6 @@ export class ControlPanel extends HTMLElement {
     }
 
     // MARK: handlers
-    handleClick(event) {
-        if (event.target.matches("#clear-filters")) {
-            const newEvent = new CustomEvent("clear-all-filters", {
-                bubbles: true,
-                composed: true,
-            })
-            this.dispatchEvent(newEvent)
-        } else if (event.target.matches("#toggle-filter-row")) {
-            const newEvent = new CustomEvent("toggle-filter-row", {
-                bubbles: true,
-                composed: true,
-            })
-            this.dispatchEvent(newEvent)
-        }
-    }
-
     handleSelectionChange(event) {
         this.dispatchEvent(new CustomEvent("column-selection-changed", {
             detail: {
