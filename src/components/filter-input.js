@@ -145,10 +145,37 @@ export class FilterInput extends HTMLElement {
     }
 
     handleKeydown(event) {
-        event.stopPropagation()
         if (event.key === "Escape") {
             event.preventDefault()
+            event.stopPropagation()
             this.clear()
+            return
+        }
+
+        // Check if we should handle navigation keys
+        const shouldLetThrough = this.shouldAllowNavigation(event)
+        if (!shouldLetThrough) {
+            event.stopPropagation()
+        }
+    }
+
+    shouldAllowNavigation(event) {
+        const input = this.shadowRoot.querySelector("input")
+        const cursorPos = input.selectionStart
+        const isEmpty = input.value === ""
+
+        switch(event.key) {
+            case "ArrowUp":
+            case "ArrowDown":
+                return true // Always allow vertical navigation
+            case "ArrowLeft":
+            case "Home":
+                return isEmpty || cursorPos === 0
+            case "ArrowRight":
+            case "End":
+                return isEmpty || cursorPos === input.value.length
+            default:
+                return false
         }
     }
 

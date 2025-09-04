@@ -8,6 +8,8 @@ export class DataTable extends HTMLElement {
         this.attachShadow({ mode: "open" })
 
         this.handleClick = this.handleClick.bind(this)
+        this.handleKeydown = this.handleKeydown.bind(this)
+        this.handleTheadFocusIn = this.handleTheadFocusIn.bind(this)
         this.handleFilterInput = this.handleFilterInput.bind(this)
         this.handleColumnSort = this.handleColumnSort.bind(this)
         this.handleIndexSort = this.handleIndexSort.bind(this)
@@ -17,6 +19,8 @@ export class DataTable extends HTMLElement {
         this._dataViewer = null
         this._tableBuilder = null
         this._stylesheet = null
+
+        this._theadPosition = { row: 'header', col: 0 }
     }
 
     // MARK: setup
@@ -33,6 +37,8 @@ export class DataTable extends HTMLElement {
 
     addEventListeners() {
         this.shadowRoot.addEventListener("click", this.handleClick)
+        this.addEventListener("keydown", this.handleKeydown)
+        this.shadowRoot.addEventListener("focusin", this.handleTheadFocusIn)
         this.shadowRoot.addEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.addEventListener("index-sort", this.handleIndexSort)
@@ -42,6 +48,8 @@ export class DataTable extends HTMLElement {
 
     removeEventListeners() {
         this.shadowRoot.removeEventListener("click", this.handleClick)
+        this.removeEventListener("keydown", this.handleKeydown)
+        this.shadowRoot.removeEventListener("focusin", this.handleTheadFocusIn)
         this.shadowRoot.removeEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.removeEventListener("index-sort", this.handleIndexSort)
@@ -71,6 +79,18 @@ export class DataTable extends HTMLElement {
 
     get options() {
         return this._dataViewer?.options
+    }
+
+    get theadNavigableElements() {
+        const indexHeaders = this.shadowRoot.querySelectorAll('th.indexLevelNameLabel sortable-column-header')
+        const columnHeaders = this.shadowRoot.querySelectorAll('th[data-col] sortable-column-header')
+        const indexFilters = this.shadowRoot.querySelectorAll('th.indexFilter filter-input')
+        const columnFilters = this.shadowRoot.querySelectorAll('th.columnFilter filter-input')
+
+        return {
+            headerRow: [...indexHeaders, ...columnHeaders],
+            filterRow: [...indexFilters, ...columnFilters]
+        }
     }
 
     // MARK: render
@@ -173,6 +193,23 @@ export class DataTable extends HTMLElement {
         }))
     }
 
+    handleKeydown(event) {
+        // Check if we're in thead context
+        const activeElement = this.shadowRoot.activeElement
+        const isInThead = activeElement && (
+            activeElement.matches('sortable-column-header') ||
+            activeElement.matches('filter-input') ||
+            activeElement.closest('thead')
+        )
+
+        if (isInThead && this.handleTheadNavigation(event)) {
+            event.preventDefault()
+            event.stopPropagation()
+            return
+        }
+    }
+
+    // MARK: @filter
     handleFilterInput(event) {
         const allFilters = {
             indexFilters: this.getIndexFilters(),
@@ -186,55 +223,6 @@ export class DataTable extends HTMLElement {
         }))
     }
 
-    handleColumnSort(event) {
-        this.clearAllSorts()
-        const clickedHeader = event.target
-        if (clickedHeader && event.detail.sortState !== "none") {
-            clickedHeader.sortState = event.detail.sortState
-        }
-
-        this.dispatchEvent(new CustomEvent("column-sort", {
-            detail: event.detail,
-            bubbles: true,
-            composed: true
-        }))
-    }
-
-    handleIndexSort(event) {
-        this.clearAllSorts()
-        const clickedHeader = event.target
-        if (clickedHeader && event.detail.sortState !== "none") {
-            clickedHeader.sortState = event.detail.sortState
-        }
-
-        this.dispatchEvent(new CustomEvent("index-sort", {
-            detail: event.detail,
-            bubbles: true,
-            composed: true
-        }))
-    }
-
-    handleScroll(event) {
-        event.stopPropagation()
-        const table = event.target
-        const tbody = this.shadowRoot.querySelector("tbody")
-
-        const scrollThreshold = 150
-        const nearBottom = table.scrollHeight - (table.scrollTop + table.clientHeight) < scrollThreshold
-
-        if (nearBottom && tbody) {
-            this.dispatchEvent(new CustomEvent("load-more-rows", {
-                detail: {
-                    currentRowCount: tbody.rows.length,
-                    bufferSize: this.dataViewer.options.buffer
-                },
-                bubbles: true,
-                composed: true
-            }))
-        }
-    }
-
-    // MARK: @filter
     getIndexFilters() {
         const indexFilterInputs = this.shadowRoot.querySelectorAll(".indexFilter filter-input")
         return Array.from(indexFilterInputs).map(filterEl => {
@@ -268,10 +256,59 @@ export class DataTable extends HTMLElement {
     }
 
     // MARK: @sort
+    handleIndexSort(event) {
+        this.clearAllSorts()
+        const clickedHeader = event.target
+        if (clickedHeader && event.detail.sortState !== "none") {
+            clickedHeader.sortState = event.detail.sortState
+        }
+
+        this.dispatchEvent(new CustomEvent("index-sort", {
+            detail: event.detail,
+            bubbles: true,
+            composed: true
+        }))
+    }
+
+    handleColumnSort(event) {
+        this.clearAllSorts()
+        const clickedHeader = event.target
+        if (clickedHeader && event.detail.sortState !== "none") {
+            clickedHeader.sortState = event.detail.sortState
+        }
+
+        this.dispatchEvent(new CustomEvent("column-sort", {
+            detail: event.detail,
+            bubbles: true,
+            composed: true
+        }))
+    }
+
     clearAllSorts() {
         this.shadowRoot.querySelectorAll('sortable-column-header').forEach(header => {
             header.clearSort()
         })
+    }
+
+    // MARK: @scroll
+    handleScroll(event) {
+        event.stopPropagation()
+        const table = event.target
+        const tbody = this.shadowRoot.querySelector("tbody")
+
+        const scrollThreshold = 150
+        const nearBottom = table.scrollHeight - (table.scrollTop + table.clientHeight) < scrollThreshold
+
+        if (nearBottom && tbody) {
+            this.dispatchEvent(new CustomEvent("load-more-rows", {
+                detail: {
+                    currentRowCount: tbody.rows.length,
+                    bufferSize: this.dataViewer.options.buffer
+                },
+                bubbles: true,
+                composed: true
+            }))
+        }
     }
 
     // MARK: @click
@@ -325,6 +362,102 @@ export class DataTable extends HTMLElement {
         }
 
         return -1 // Not a data column
+    }
+
+    // MARK: @thead
+    handleTheadNavigation(event) {
+        const elements = this.theadNavigableElements
+        const currentRow = elements[this._theadPosition.row + 'Row']
+
+        if (!currentRow.length) return false
+
+        let handled = false
+
+        switch (event.key) {
+            case 'ArrowLeft':
+                this._theadPosition.col = (this._theadPosition.col - 1 + currentRow.length) % currentRow.length
+                this.focusTheadElement()
+                handled = true
+                break
+
+            case 'ArrowRight':
+                this._theadPosition.col = (this._theadPosition.col + 1) % currentRow.length
+                this.focusTheadElement()
+                handled = true
+                break
+
+            case 'Home':
+                this._theadPosition.col = 0
+                this.focusTheadElement()
+                handled = true
+                break
+
+            case 'End':
+                this._theadPosition.col = currentRow.length - 1
+                this.focusTheadElement()
+                handled = true
+                break
+
+            case 'ArrowUp':
+                if (this._theadPosition.row === 'filter') {
+                    this._theadPosition.row = 'header'
+                    // Clamp column to available elements
+                    this._theadPosition.col = Math.min(this._theadPosition.col, elements.headerRow.length - 1)
+                    this.focusTheadElement()
+                    handled = true
+                }
+                break
+
+            case 'ArrowDown':
+                if (this._theadPosition.row === 'header') {
+                    this._theadPosition.row = 'filter'
+                    // Clamp column to available elements
+                    this._theadPosition.col = Math.min(this._theadPosition.col, elements.filterRow.length - 1)
+                    this.focusTheadElement()
+                    handled = true
+                } else {
+                    // At bottom of thead - emit boundary event
+                    this.dispatchEvent(new CustomEvent('navigation-boundary', {
+                        detail: { direction: 'down', from: 'thead' },
+                        bubbles: true
+                    }))
+                    handled = true
+                }
+                break
+        }
+
+        return handled
+    }
+
+    focusTheadElement() {
+        const elements = this.theadNavigableElements
+        const currentRow = elements[this._theadPosition.row + 'Row']
+        const targetElement = currentRow[this._theadPosition.col]
+
+        if (targetElement) {
+            targetElement.focus()
+        }
+    }
+
+    handleTheadFocusIn(event) {
+        const target = event.target
+        if (target.matches('sortable-column-header') || target.matches('filter-input')) {
+            this.initializeTheadPosition(target)
+        }
+    }
+
+    initializeTheadPosition(targetElement) {
+        const elements = this.theadNavigableElements
+
+        // Find which row and column the target is in
+        const headerIndex = elements.headerRow.indexOf(targetElement)
+        const filterIndex = elements.filterRow.indexOf(targetElement)
+
+        if (headerIndex !== -1) {
+            this._theadPosition = { row: 'header', col: headerIndex }
+        } else if (filterIndex !== -1) {
+            this._theadPosition = { row: 'filter', col: filterIndex }
+        }
     }
 }
 
