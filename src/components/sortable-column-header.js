@@ -89,19 +89,29 @@ export class SortableColumnHeader extends HTMLElement {
         if (event.key === "Enter" || event.key === " ") {
             event.preventDefault()
             this.cycleSort()
+        } else if (event.key === "Escape") {
+            event.preventDefault()
+            event.stopPropagation()
+            if (this._sortState !== "none") {
+                this.setSortAndNotify("none")
+            }
         }
     }
 
     cycleSort() {
         const nextState = this.getNextSortState()
-        this.sortState = nextState
+        this.setSortAndNotify(nextState)
+    }
+
+    setSortAndNotify(sortState) {
+        this.sortState = sortState
 
         const isColumnSort = this.hasAttribute("data-col")
         const eventName = isColumnSort ? "column-sort" : "index-sort"
 
         const detail = isColumnSort
-            ? { columnIndex: parseInt(this.dataset.col), sortState: nextState }
-            : { level: parseInt(this.dataset.level), sortState: nextState }
+            ? { columnIndex: parseInt(this.dataset.col), sortState }
+            : { level: parseInt(this.dataset.level), sortState }
 
         this.dispatchEvent(new CustomEvent(eventName, {
             detail: detail,
