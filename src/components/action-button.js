@@ -47,7 +47,9 @@ export class ActionButton extends HTMLElement {
         this.handleKeydown = this.handleKeydown.bind(this)
     }
 
+    // MARK: setup
     connectedCallback() {
+        this.setAttribute("tabindex", "0")
         this.render()
         this.addEventListeners()
     }
@@ -86,7 +88,7 @@ export class ActionButton extends HTMLElement {
     render() {
         this.shadowRoot.innerHTML = `
             <style>${ActionButton.styles}</style>
-            <button type="button">
+            <button type="button" tabindex="-1">
                 <slot></slot>
             </button>
         `

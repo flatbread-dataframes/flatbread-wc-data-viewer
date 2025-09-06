@@ -33,6 +33,7 @@ export class ControlPanel extends HTMLElement {
 
     // MARK: setup
     connectedCallback() {
+        this.setAttribute("tabindex", "0")
         this.addEventListeners()
     }
 
@@ -42,10 +43,12 @@ export class ControlPanel extends HTMLElement {
 
     addEventListeners() {
         this.shadowRoot.addEventListener("change", this.handleSelectionChange)
+        this.addEventListener("keydown", this.handleKeydown)
     }
 
     removeEventListeners() {
         this.shadowRoot.removeEventListener("change", this.handleSelectionChange)
+        this.removeEventListener("keydown", this.handleKeydown)
     }
 
     // MARK: get/set
@@ -62,6 +65,10 @@ export class ControlPanel extends HTMLElement {
 
     get colors() {
         return this.dataViewer?.resolvedColors ?? { background: "white" }
+    }
+
+    get navigableElements() {
+        return this.shadowRoot.querySelectorAll(":where(action-button, multi-selector):not([disabled])")
     }
 
     get viewInfo() {
@@ -113,7 +120,7 @@ export class ControlPanel extends HTMLElement {
                 <span id="column-count"></span>
             </div>
             <label>Select columns:</label>
-            <multi-selector name="columns"></multi-selector>
+            <multi-selector name="columns" tabindex="0"></multi-selector>
         `
         this.updateMultiSelector()
     }
@@ -179,6 +186,28 @@ export class ControlPanel extends HTMLElement {
             bubbles: true,
             composed: true,
         }))
+    }
+
+    handleKeydown(event) {
+        const keys = {"ArrowLeft": -1, "ArrowRight": 1}
+        if (!(event.key in keys)) return
+
+        const elements = [...this.navigableElements]
+
+        event.preventDefault()
+        event.stopPropagation()
+
+        const composedPath = event.composedPath()
+        const currentElement = elements.find(el => composedPath.includes(el))
+        const currentIndex = elements.indexOf(currentElement)
+
+        let nextIndex = currentIndex + keys[event.key]
+        nextIndex =
+            nextIndex < 0
+            ? elements.length - 1
+            : nextIndex % elements.length
+
+        elements[nextIndex].focus()
     }
 }
 

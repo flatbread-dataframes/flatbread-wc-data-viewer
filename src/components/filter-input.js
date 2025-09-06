@@ -105,7 +105,6 @@ export class FilterInput extends HTMLElement {
 
         if (!input || !button) return
 
-        // Handle placeholder
         const placeholder = this.getAttribute("placeholder")
         if (placeholder !== null) {
             input.placeholder = placeholder
@@ -113,7 +112,6 @@ export class FilterInput extends HTMLElement {
             input.removeAttribute("placeholder")
         }
 
-        // Handle disabled
         const disabled = this.hasAttribute("disabled")
         input.disabled = disabled
         button.disabled = disabled
@@ -137,11 +135,11 @@ export class FilterInput extends HTMLElement {
 
     // MARK: handlers
     handleInput(event) {
-        // Emit custom event from the filter-input element itself
-        this.dispatchEvent(new CustomEvent("filter-input", {
+        const filterInputEvent = new CustomEvent("filter-input", {
             detail: { value: event.target.value },
             bubbles: true
-        }))
+        })
+        this.dispatchEvent(filterInputEvent)
     }
 
     handleKeydown(event) {
@@ -152,9 +150,8 @@ export class FilterInput extends HTMLElement {
             return
         }
 
-        // Check if we should handle navigation keys
-        const shouldLetThrough = this.shouldAllowNavigation(event)
-        if (!shouldLetThrough) {
+        const allowNavigation = this.shouldAllowNavigation(event)
+        if (!allowNavigation) {
             event.stopPropagation()
         }
     }
@@ -167,7 +164,7 @@ export class FilterInput extends HTMLElement {
         switch(event.key) {
             case "ArrowUp":
             case "ArrowDown":
-                return true // Always allow vertical navigation
+                return true // always allow vertical navigation
             case "ArrowLeft":
             case "Home":
                 return isEmpty || cursorPos === 0
@@ -188,11 +185,11 @@ export class FilterInput extends HTMLElement {
         const input = this.shadowRoot.querySelector("input")
         if (input.value !== "") {
             input.value = ""
-            // Emit the same custom event when clearing
-            this.dispatchEvent(new CustomEvent("filter-input", {
+            const filterInputEvent = new CustomEvent("filter-input", {
                 detail: { value: "" },
                 bubbles: true
-            }))
+            })
+            this.dispatchEvent(filterInputEvent)
         }
     }
 

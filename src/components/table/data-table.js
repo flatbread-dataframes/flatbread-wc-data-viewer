@@ -194,7 +194,6 @@ export class DataTable extends HTMLElement {
     }
 
     handleKeydown(event) {
-        // Check if we're in thead context
         const activeElement = this.shadowRoot.activeElement
         const isInThead = activeElement && (
             activeElement.matches('sortable-column-header') ||
@@ -202,10 +201,19 @@ export class DataTable extends HTMLElement {
             activeElement.closest('thead')
         )
 
-        if (isInThead && this.handleTheadNavigation(event)) {
-            event.preventDefault()
-            event.stopPropagation()
-            return
+        // only handle internal thead navigation
+        // vertical navigation between levels is handled by NavigationController
+        if (isInThead) {
+            const isHorizontal = ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)
+            const isVerticalWithinThead =
+                (event.key === 'ArrowUp' && this._theadPosition.row === 'filter') ||
+                (event.key === 'ArrowDown' && this._theadPosition.row === 'header')
+
+            if ((isHorizontal || isVerticalWithinThead) && this.handleTheadNavigation(event)) {
+                event.preventDefault()
+                event.stopPropagation()
+                return
+            }
         }
     }
 
@@ -346,22 +354,22 @@ export class DataTable extends HTMLElement {
         const isInBody = tr.closest("tbody") !== null
 
         if (isInHead || (isInBody && cell.tagName === "TD")) {
-            // For thead or tbody data cells, find the column index
+            // find column index
             const cells = Array.from(tr.children)
             const cellIndex = cells.indexOf(cell)
 
             if (isInBody) {
-                // In tbody, subtract the number of th elements (index columns)
+                // subtract number of th elements (index columns)
                 const thCount = cells.filter(c => c.tagName === "TH").length
                 return cellIndex - thCount
             }
 
-            // In thead, need to account for the column level name label
+            // in thead account for column level name label
             const columnLevelLabel = tr.querySelector(".columnLevelNameLabel")
             return columnLevelLabel ? cellIndex - 1 : cellIndex
         }
 
-        return -1 // Not a data column
+        return -1 // not a data column
     }
 
     // MARK: @thead
@@ -401,9 +409,15 @@ export class DataTable extends HTMLElement {
             case 'ArrowUp':
                 if (this._theadPosition.row === 'filter') {
                     this._theadPosition.row = 'header'
-                    // Clamp column to available elements
                     this._theadPosition.col = Math.min(this._theadPosition.col, elements.headerRow.length - 1)
                     this.focusTheadElement()
+                    handled = true
+                } else {
+                    const boundaryEvent = new CustomEvent('navigation-boundary', {
+                        detail: { direction: 'up', from: 'thead' },
+                        bubbles: true
+                    })
+                    this.dispatchEvent(boundaryEvent)
                     handled = true
                 }
                 break
@@ -411,16 +425,16 @@ export class DataTable extends HTMLElement {
             case 'ArrowDown':
                 if (this._theadPosition.row === 'header') {
                     this._theadPosition.row = 'filter'
-                    // Clamp column to available elements
+                    // clamp column to available elements
                     this._theadPosition.col = Math.min(this._theadPosition.col, elements.filterRow.length - 1)
                     this.focusTheadElement()
                     handled = true
                 } else {
-                    // At bottom of thead - emit boundary event
-                    this.dispatchEvent(new CustomEvent('navigation-boundary', {
+                    const boundaryEvent = new CustomEvent('navigation-boundary', {
                         detail: { direction: 'down', from: 'thead' },
                         bubbles: true
-                    }))
+                    })
+                    this.dispatchEvent(boundaryEvent)
                     handled = true
                 }
                 break
@@ -449,7 +463,6 @@ export class DataTable extends HTMLElement {
     initializeTheadPosition(targetElement) {
         const elements = this.theadNavigableElements
 
-        // Find which row and column the target is in
         const headerIndex = elements.headerRow.indexOf(targetElement)
         const filterIndex = elements.filterRow.indexOf(targetElement)
 

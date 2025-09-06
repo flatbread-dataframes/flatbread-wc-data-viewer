@@ -1,12 +1,13 @@
 import { Data } from "./data/data.js"
 import { View } from "./data/view.js"
+import { NavigationController } from "./navigation/navigation-controller.js"
 import "./components/record/data-record.js"
 import "./components/table/data-table.js"
 import "./components/control-panel.js"
 import "./components/filter-input.js"
 import "./components/sortable-column-header.js"
-import "./wc-multi-selector.js"
-// import "https://lcvriend.github.io/wc-multi-selector/src/wc-multi-selector.js"
+// import "./wc-multi-selector.js"
+import "https://lcvriend.github.io/wc-multi-selector/src/wc-multi-selector.js"
 
 
 export class DataViewer extends HTMLElement {
@@ -83,7 +84,6 @@ export class DataViewer extends HTMLElement {
 
         this.handleDataChange = this.handleDataChange.bind(this)
 
-        this.handleKeydown = this.handleKeydown.bind(this)
         this.handleCellClick = this.handleCellClick.bind(this)
         this.handleFieldClick = this.handleFieldClick.bind(this)
 
@@ -102,6 +102,7 @@ export class DataViewer extends HTMLElement {
         this.handleLoadMoreRows = this.handleLoadMoreRows.bind(this)
 
         this._data = new Data()
+        this._navigationController = new NavigationController(this)
     }
 
     // MARK: setup
@@ -129,11 +130,11 @@ export class DataViewer extends HTMLElement {
         this.data.removeEventListener("data-changed", this.handleDataChange)
         this.removeEventListeners()
         this.stylesheet.disconnect()
+        this._navigationController.destroy()
     }
 
     addEventListeners() {
         this.data.addEventListener("data-changed", this.handleDataChange)
-        this.addEventListener("keydown", this.handleKeydown)
         this.shadowRoot.addEventListener("cell-click", this.handleCellClick)
         this.shadowRoot.addEventListener("field-click", this.handleFieldClick)
         this.shadowRoot.addEventListener("enter-record-view", this.handleEnterRecordView)
@@ -149,7 +150,6 @@ export class DataViewer extends HTMLElement {
 
     removeEventListeners() {
         this.data.removeEventListener("data-changed", this.handleDataChange)
-        this.removeEventListener("keydown", this.handleKeydown)
         this.shadowRoot.removeEventListener("cell-click", this.handleCellClick)
         this.shadowRoot.removeEventListener("field-click", this.handleFieldClick)
         this.shadowRoot.removeEventListener("enter-record-view", this.handleEnterRecordView)
@@ -250,6 +250,10 @@ async loadDataFromSrc(src) {
 
     get viewMode() {
         return this._viewMode
+    }
+
+    get navigationController() {
+        return this._navigationController
     }
 
     get controlPanel() {
@@ -589,45 +593,6 @@ async loadDataFromSrc(src) {
     }
 
     // MARK: @keyboard
-    handleKeydown(event) {
-        if (!event.composedPath().includes(this)) return
-
-        if (this.handleGlobalShortcuts(event)) {
-            event.preventDefault()
-            event.stopPropagation()
-            return
-        }
-    }
-
-    handleGlobalShortcuts(event) {
-        if (event.ctrlKey) {
-            switch (event.key) {
-                case "h":
-                    this.handleToggleFilterRow()
-                    return true
-                case "r":
-                    this.toggleViewMode()
-                    return true
-                case "f":
-                    this.focusFirstFilter()
-                    return true
-            }
-        } else if (event.key === "Escape") {
-            this.handleClearAllFilters()
-            return true
-        }
-
-        return false
-    }
-
-    getDeepActiveElement() {
-        let activeEl = document.activeElement
-        while (activeEl && activeEl.shadowRoot && activeEl.shadowRoot.activeElement) {
-            activeEl = activeEl.shadowRoot.activeElement
-        }
-        return activeEl
-    }
-
     toggleViewMode() {
         const newView = this._viewMode === "table" ? "record" : "table"
         this.setAttribute("view", newView)
