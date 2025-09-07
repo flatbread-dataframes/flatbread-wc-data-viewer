@@ -33,7 +33,6 @@ export class ControlPanel extends HTMLElement {
 
     // MARK: setup
     connectedCallback() {
-        this.setAttribute("tabindex", "0")
         this.addEventListeners()
     }
 

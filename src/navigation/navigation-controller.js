@@ -64,6 +64,12 @@ export class NavigationController {
     }
 
     handleLevelTransitions(event) {
+        if (this.getCurrentFocusedElement() === this.dataViewer) {
+            if (event.key === 'ArrowDown') {
+                this.moveToLevel(this.availableLevels[0]) // control-panel
+                return true
+            }
+        }
         switch (event.key) {
             case 'ArrowUp':
                 return this.moveUp()
@@ -98,7 +104,7 @@ export class NavigationController {
 
     moveToLevel(level) {
         const currentElement = this.getCurrentFocusedElement()
-        const targetX = currentElement ? this.getElementCenterX(currentElement) : 0
+        const targetX = currentElement ? this.getElementLeftX(currentElement) : 0
 
         this.currentLevel = level
         this.focusClosestElement(level, targetX)
@@ -134,9 +140,9 @@ export class NavigationController {
         return activeEl
     }
 
-    getElementCenterX(element) {
+    getElementLeftX(element) {
         const rect = element.getBoundingClientRect()
-        return rect.left + rect.width / 2
+        return rect.left
     }
 
     getNavigableElements(level) {
@@ -158,10 +164,10 @@ export class NavigationController {
         if (elements.length === 0) return null
 
         let closest = elements[0]
-        let closestDistance = Math.abs(this.getElementCenterX(closest) - targetX)
+        let closestDistance = Math.abs(this.getElementLeftX(closest) - targetX)
 
         for (let i = 1; i < elements.length; i++) {
-            const distance = Math.abs(this.getElementCenterX(elements[i]) - targetX)
+            const distance = Math.abs(this.getElementLeftX(elements[i]) - targetX)
             if (distance < closestDistance) {
                 closest = elements[i]
                 closestDistance = distance
