@@ -11,16 +11,16 @@ export const WheelHandlerMixin = {
     },
 
     handleWheel(event) {
-        event.stopPropagation()
-
         const atTop = this.scrollTop === 0
         const atBottom = this.scrollTop + this.clientHeight >= this.scrollHeight - 1
 
         const scrollingUp = event.deltaY < 0
         const scrollingDown = event.deltaY > 0
 
-        if ((atTop && scrollingUp) || (atBottom && scrollingDown)) {
-            event.preventDefault()
-        }
+        // boundary: let event bubble up naturally for parent scrolling
+        if ((atTop && scrollingUp) || (atBottom && scrollingDown)) return
+
+        // prevent bubbling
+        event.stopPropagation()
     }
 }
