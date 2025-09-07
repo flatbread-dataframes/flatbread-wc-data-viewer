@@ -134,6 +134,7 @@ export class DataViewer extends HTMLElement {
     }
 
     addEventListeners() {
+        this.addEventListener('mouseenter', () => this.focus())
         this.data.addEventListener("data-changed", this.handleDataChange)
         this.shadowRoot.addEventListener("cell-click", this.handleCellClick)
         this.shadowRoot.addEventListener("field-click", this.handleFieldClick)
@@ -149,6 +150,7 @@ export class DataViewer extends HTMLElement {
     }
 
     removeEventListeners() {
+        this.removeEventListener('mouseenter', () => this.focus())
         this.data.removeEventListener("data-changed", this.handleDataChange)
         this.shadowRoot.removeEventListener("cell-click", this.handleCellClick)
         this.shadowRoot.removeEventListener("field-click", this.handleFieldClick)
