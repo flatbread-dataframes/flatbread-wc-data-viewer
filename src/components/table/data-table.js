@@ -450,6 +450,7 @@ export class DataTable extends HTMLElement {
 
         if (targetElement) {
             targetElement.focus()
+            this.scrollElementIntoView(targetElement)
         }
     }
 
@@ -470,6 +471,30 @@ export class DataTable extends HTMLElement {
             this._theadPosition = { row: 'header', col: headerIndex }
         } else if (filterIndex !== -1) {
             this._theadPosition = { row: 'filter', col: filterIndex }
+        }
+    }
+
+    // MARK: focus
+    getStickyIndexWidth() {
+        const columnLevelNameLabel = this.shadowRoot.querySelector('.columnLevelNameLabel')
+        return columnLevelNameLabel ? columnLevelNameLabel.getBoundingClientRect().width : 0
+    }
+
+    scrollElementIntoView(element) {
+        if (!element) return
+
+        const tableContainer = this
+        const elementRect = element.getBoundingClientRect()
+        const containerRect = tableContainer.getBoundingClientRect()
+
+        // Only handle left side - sticky column obstruction
+        const stickyIndexWidth = this.getStickyIndexWidth()
+        const elementLeft = elementRect.left - containerRect.left
+        const isHiddenBehindSticky = elementLeft < stickyIndexWidth
+
+        if (isHiddenBehindSticky) {
+            const scrollOffset = stickyIndexWidth - elementLeft + 10
+            tableContainer.scrollLeft = Math.max(0, tableContainer.scrollLeft - scrollOffset)
         }
     }
 }
