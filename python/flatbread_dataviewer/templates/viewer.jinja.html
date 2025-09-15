@@ -1,10 +1,18 @@
+<style>
+    data-viewer {
+        background-color: var(
+            --vscode-notebook-editorBackground,
+            Canvas
+        );
+    }
+</style>
 <div id="{{ viewer_id }}" class="flatbread-viewer-container">
   Loading data viewer...
 </div>
 
 <script type="module">
 if (!window.FlatbreadDataViewer) {
-  const { DataViewer } = await import("https://flatbread-dataframes.github.io/flatbread-wc-data-viewer/viewer.js")
+  const { DataViewer } = await import("https://flatbread-dataframes.github.io/flatbread-wc-data-viewer/src/viewer.js")
   window.FlatbreadDataViewer = DataViewer
 }
 
