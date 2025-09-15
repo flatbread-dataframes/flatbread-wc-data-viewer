@@ -1,0 +1,35 @@
+<div id="{{ viewer_id }}" class="flatbread-viewer-container">
+  Loading data viewer...
+</div>
+
+<script type="module">
+if (!window.FlatbreadDataViewer) {
+  const { DataViewer } = await import("https://flatbread-dataframes.github.io/flatbread-wc-data-viewer/viewer.js")
+  window.FlatbreadDataViewer = DataViewer
+}
+
+// Create this specific viewer instance
+const viewer = new window.FlatbreadDataViewer()
+viewer.setAttribute("height", "600px")
+viewer.data = {{ data | safe }}
+
+viewer.addEventListener("row-data", event => {
+  const rowText = event.detail.values.join(";")
+  navigator.clipboard.writeText(rowText)
+})
+
+viewer.addEventListener("column-data", event => {
+  const columnText = event.detail.values.join(";")
+  navigator.clipboard.writeText(columnText)
+})
+
+viewer.addEventListener("cell-click", event => {
+  navigator.clipboard.writeText(event.detail.value)
+})
+
+viewer.addEventListener("field-click", event => {
+  navigator.clipboard.writeText(event.detail.value)
+})
+
+document.getElementById("{{ viewer_id }}").replaceWith(viewer);
+</script>
