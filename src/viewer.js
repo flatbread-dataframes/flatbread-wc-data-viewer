@@ -1,6 +1,7 @@
 import { Data } from "./data/data.js"
 import { View } from "./data/view.js"
-import { NavigationController } from "./navigation/navigation-controller.js"
+import { NavigationController } from "./managers/navigation-controller.js"
+import { FilterManager } from "./managers/filter-manager.js"
 import "./components/record/data-record.js"
 import "./components/table/data-table.js"
 import "./components/control-panel.js"
@@ -102,6 +103,7 @@ export class DataViewer extends HTMLElement {
         this.handleLoadMoreRows = this.handleLoadMoreRows.bind(this)
 
         this._data = new Data()
+        this._filterManager = new FilterManager()
         this._navigationController = new NavigationController(this)
     }
 
@@ -402,61 +404,13 @@ async loadDataFromSrc(src) {
     handleFiltersChanged(event) {
         const { indexFilters, columnFilters } = event.detail
 
-        // Update control panel button state
-        const controlPanel = this.shadowRoot.querySelector("control-panel")
-        if (controlPanel) {
-            const hasActiveFilters = indexFilters.length > 0 || columnFilters.length > 0
-            controlPanel.updateClearButtonState(hasActiveFilters)
-        }
+        this._filterManager.applyFilters(this.view, indexFilters, columnFilters)
 
-        this.applyFiltersWithData(indexFilters, columnFilters)
+        // Update UI components
+        const hasActiveFilters = indexFilters.length > 0 || columnFilters.length > 0
+        this.controlPanel?.updateClearButtonState(hasActiveFilters)
+        this.dataTable?.renderTbody()
         this.updateControlPanelStatus()
-    }
-
-    applyFiltersWithData(indexFilters, columnFilters) {
-        if (indexFilters.length === 0 && columnFilters.length === 0) {
-            this.view.reset()
-        } else {
-            const predicates = []
-            if (indexFilters.length > 0) predicates.push(this.createIndexPredicate(indexFilters))
-            if (columnFilters.length > 0) predicates.push(this.createColumnPredicate(columnFilters))
-
-            const combinedPredicate = (rowValues, rowIndex) => {
-                return predicates.every(predicate => predicate(rowValues, rowIndex))
-            }
-
-            this.view.filter(combinedPredicate)
-        }
-
-        if (this.dataTable) {
-            this.dataTable.renderTbody()
-        }
-    }
-
-    createIndexPredicate(indexFilters) {
-        return (rowValues, rowIndex) => {
-            return indexFilters.every(filter => {
-                const indexValue = this.data.index.values[rowIndex]
-                const levelValue = Array.isArray(indexValue)
-                    ? indexValue[filter.level]
-                    : indexValue
-                return levelValue != null &&
-                    levelValue.toString().toLowerCase().includes(filter.value.toLowerCase())
-            })
-        }
-    }
-
-    createColumnPredicate(columnFilters) {
-        return (rowValues, rowIndex) => {
-            return columnFilters.every(filter => {
-                const originalColumnIndex = this.view._visibleColumnIndices
-                    ? this.view._visibleColumnIndices[filter.col]
-                    : filter.col
-                const cellValue = rowValues[originalColumnIndex]
-                return cellValue != null &&
-                    cellValue.toString().toLowerCase().includes(filter.value.toLowerCase())
-            })
-        }
     }
 
     handleClearAllFilters() {
