@@ -1,7 +1,8 @@
 import { Data } from "./data/data.js"
 import { View } from "./data/view.js"
-import { NavigationController } from "./managers/navigation-controller.js"
+import { EventCoordinator } from "./managers/event-coordinator.js"
 import { FilterManager } from "./managers/filter-manager.js"
+import { NavigationController } from "./managers/navigation-controller.js"
 import "./components/record/data-record.js"
 import "./components/table/data-table.js"
 import "./components/control-panel.js"
@@ -83,26 +84,8 @@ export class DataViewer extends HTMLElement {
         this.attachShadow({ mode: "open" })
         this.options = { ...DataViewer.defaults }
 
-        this.handleDataChange = this.handleDataChange.bind(this)
-
-        this.handleCellClick = this.handleCellClick.bind(this)
-        this.handleFieldClick = this.handleFieldClick.bind(this)
-
-        this.handleEnterRecordView = this.handleEnterRecordView.bind(this)
-        this.handleExitRecordView = this.handleExitRecordView.bind(this)
-
-        this.handleToggleFilterRow = this.handleToggleFilterRow.bind(this)
-        this.handleFiltersChanged = this.handleFiltersChanged.bind(this)
-        this.handleClearAllFilters = this.handleClearAllFilters.bind(this)
-
-        this.handleColumnSelectionChange = this.handleColumnSelectionChange.bind(this)
-
-        this.handleColumnSort = this.handleColumnSort.bind(this)
-        this.handleIndexSort = this.handleIndexSort.bind(this)
-
-        this.handleLoadMoreRows = this.handleLoadMoreRows.bind(this)
-
         this._data = new Data()
+        this._eventCoordinator = new EventCoordinator(this)
         this._filterManager = new FilterManager()
         this._navigationController = new NavigationController(this)
     }
@@ -132,39 +115,16 @@ export class DataViewer extends HTMLElement {
         this.data.removeEventListener("data-changed", this.handleDataChange)
         this.removeEventListeners()
         this.stylesheet.disconnect()
+        this._eventCoordinator.destroy()
         this._navigationController.destroy()
     }
 
     addEventListeners() {
-        this.addEventListener('mouseenter', () => this.focus())
-        this.data.addEventListener("data-changed", this.handleDataChange)
-        this.shadowRoot.addEventListener("cell-click", this.handleCellClick)
-        this.shadowRoot.addEventListener("field-click", this.handleFieldClick)
-        this.shadowRoot.addEventListener("enter-record-view", this.handleEnterRecordView)
-        this.shadowRoot.addEventListener("exit-record-view", this.handleExitRecordView)
-        this.shadowRoot.addEventListener("toggle-filter-row", this.handleToggleFilterRow)
-        this.shadowRoot.addEventListener("filters-changed", this.handleFiltersChanged)
-        this.shadowRoot.addEventListener("clear-filters", this.handleClearAllFilters)
-        this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
-        this.shadowRoot.addEventListener("index-sort", this.handleIndexSort)
-        this.shadowRoot.addEventListener("column-selection-changed", this.handleColumnSelectionChange)
-        this.shadowRoot.addEventListener("load-more-rows", this.handleLoadMoreRows)
+        this._eventCoordinator.addEventListeners()
     }
 
     removeEventListeners() {
-        this.removeEventListener('mouseenter', () => this.focus())
-        this.data.removeEventListener("data-changed", this.handleDataChange)
-        this.shadowRoot.removeEventListener("cell-click", this.handleCellClick)
-        this.shadowRoot.removeEventListener("field-click", this.handleFieldClick)
-        this.shadowRoot.removeEventListener("enter-record-view", this.handleEnterRecordView)
-        this.shadowRoot.removeEventListener("exit-record-view", this.handleExitRecordView)
-        this.shadowRoot.removeEventListener("toggle-filter-row", this.handleToggleFilterRow)
-        this.shadowRoot.removeEventListener("filters-changed", this.handleFiltersChanged)
-        this.shadowRoot.removeEventListener("clear-filters", this.handleClearAllFilters)
-        this.shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
-        this.shadowRoot.removeEventListener("index-sort", this.handleIndexSort)
-        this.shadowRoot.removeEventListener("column-selection-changed", this.handleColumnSelectionChange)
-        this.shadowRoot.removeEventListener("load-more-rows", this.handleLoadMoreRows)
+        this._eventCoordinator.removeEventListeners()
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
@@ -344,89 +304,12 @@ async loadDataFromSrc(src) {
         }
     }
 
-    // MARK: handlers
-    handleDataChange(event) {
-        this._viewNeedsUpdate = true
-
-        if (event.detail.isValuesOnly) {
-            this.updateDataTable()
-            this.updateDataRecord()
-            if (this.dataTable) this.dataTable.renderTbody()
-        } else {
-            this.render()
-            this.updateControlPanel()
-        }
-
-        this.dispatchEvent(new CustomEvent("data-changed", { detail: this.data }))
-    }
-
-    handleCellClick(event) {
-        this.dispatchEvent(new CustomEvent("cell-click", {
-            detail: event.detail,
-            bubbles: true,
-            composed: true
-        }))
-    }
-
-    handleFieldClick(event) {
-        this.dispatchEvent(new CustomEvent("field-click", {
-            detail: event.detail,
-            bubbles: true,
-            composed: true
-        }))
-    }
-
     // MARK: @record
-    handleEnterRecordView(event) {
-        const { viewRowIndex } = event.detail
-        this.enterRecordView(viewRowIndex)
-    }
-
     enterRecordView(viewRowIndex) {
         this.setAttribute("view", "record")
     }
 
-    handleExitRecordView(event) {
-        event.stopPropagation()
-        this.setAttribute("view", "table")
-    }
-
-    // MARK: @filter
-    handleToggleFilterRow(event) {
-        if (this.hasAttribute("hide-filter-row")) {
-            this.removeAttribute("hide-filter-row")
-        } else {
-            this.setAttribute("hide-filter-row", "")
-        }
-        this.controlPanel.showFilters = !this.hasAttribute("hide-filter-row")
-    }
-
-    handleFiltersChanged(event) {
-        const { indexFilters, columnFilters } = event.detail
-
-        this._filterManager.applyFilters(this.view, indexFilters, columnFilters)
-
-        // Update UI components
-        const hasActiveFilters = indexFilters.length > 0 || columnFilters.length > 0
-        this.controlPanel?.updateClearButtonState(hasActiveFilters)
-        this.dataTable?.renderTbody()
-        this.updateControlPanelStatus()
-    }
-
-    handleClearAllFilters() {
-        if (this.dataTable) {
-            this.dataTable.clearAllFilters()
-        }
-        this.focus()
-    }
-
     // MARK: @column
-    handleColumnSelectionChange(event) {
-        const selectedColumnIndices = event.detail.selectedColumns
-        this.applyColumnFilter(selectedColumnIndices)
-        this.updateControlPanelStatus()
-    }
-
     applyColumnFilter(selectedColumnIndices) {
         if (selectedColumnIndices.length === 0) {
             this.view.filterColumns(null)
@@ -503,47 +386,6 @@ async loadDataFromSrc(src) {
                 totalRows: this.data.index.length,
                 visibleColumns: this.view.columns.length,
                 totalColumns: this.data.columns.length
-            }
-        }
-    }
-
-    // MARK: @sort
-    handleColumnSort(event) {
-        const { columnIndex, sortState } = event.detail
-        if (sortState === "none") {
-            this.view.reset()
-        } else {
-            this.view.sortByColumn(columnIndex, sortState)
-        }
-
-        if (this.dataTable) {
-            this.dataTable.renderTbody()
-        }
-    }
-
-    handleIndexSort(event) {
-        const { level, sortState } = event.detail
-        if (sortState === "none") {
-            this.view.reset()
-        } else {
-            this.view.sortByIndex(level, sortState)
-        }
-
-        if (this.dataTable) {
-            this.dataTable.renderTbody()
-        }
-    }
-
-    // MARK: @scroll
-    handleLoadMoreRows(event) {
-        const { currentRowCount, bufferSize } = event.detail
-
-        if (this.dataTable) {
-            const tbody = this.dataTable.shadowRoot.querySelector("tbody")
-            if (tbody) {
-                const start = currentRowCount
-                const end = start + bufferSize
-                tbody.innerHTML += this.dataTable._tableBuilder.buildTbody(start, end)
             }
         }
     }
