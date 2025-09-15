@@ -1,19 +1,23 @@
 import { TableBuilder } from "./table-builder.js"
 import { Stylesheet } from "./stylesheet.js"
 import { WheelHandlerMixin } from "../../mixins/wheel-handler.js"
+import { ScrollManager } from "./scroll-manager.js"
+import { ClickHandler } from "./click-handler.js"
+
 
 export class DataTable extends HTMLElement {
     constructor() {
         super()
         this.attachShadow({ mode: "open" })
 
-        this.handleClick = this.handleClick.bind(this)
+        this.scrollManager = new ScrollManager(this)
+        this.clickHandler = new ClickHandler(this)
+
         this.handleKeydown = this.handleKeydown.bind(this)
         this.handleTheadFocusIn = this.handleTheadFocusIn.bind(this)
         this.handleFilterInput = this.handleFilterInput.bind(this)
         this.handleColumnSort = this.handleColumnSort.bind(this)
         this.handleIndexSort = this.handleIndexSort.bind(this)
-        this.handleScroll = this.handleScroll.bind(this)
         this.handleWheel = WheelHandlerMixin.handleWheel.bind(this)
 
         this._dataViewer = null
@@ -36,24 +40,26 @@ export class DataTable extends HTMLElement {
     }
 
     addEventListeners() {
-        this.shadowRoot.addEventListener("click", this.handleClick)
         this.addEventListener("keydown", this.handleKeydown)
         this.shadowRoot.addEventListener("focusin", this.handleTheadFocusIn)
         this.shadowRoot.addEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.addEventListener("index-sort", this.handleIndexSort)
-        this.addEventListener("scroll", this.handleScroll)
+
+        this.clickHandler.addEventListeners()
+        this.scrollManager.addEventListeners()
         WheelHandlerMixin.addWheelHandling.call(this)
     }
 
     removeEventListeners() {
-        this.shadowRoot.removeEventListener("click", this.handleClick)
         this.removeEventListener("keydown", this.handleKeydown)
         this.shadowRoot.removeEventListener("focusin", this.handleTheadFocusIn)
         this.shadowRoot.removeEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.removeEventListener("index-sort", this.handleIndexSort)
-        this.shadowRoot.removeEventListener("scroll", this.handleScroll)
+
+        this.clickHandler.removeEventListeners()
+        this.scrollManager.removeEventListeners()
         WheelHandlerMixin.removeWheelHandling.call(this)
     }
 
@@ -120,79 +126,6 @@ export class DataTable extends HTMLElement {
     }
 
     // MARK: handlers
-    handleClick(event) {
-        if (event.shiftKey || event.ctrlKey) {
-            const cell = event.target.closest("th, td")
-            if (!cell) return
-
-            const tr = cell.closest("tr")
-            const isInBody = tr.closest("tbody") !== null
-
-            if (event.shiftKey && isInBody) {
-                // Dispatch entire row data
-                const viewRowIndex = Array.from(tr.parentNode.children).indexOf(tr)
-                this.dispatchRowData(viewRowIndex)
-                return
-            }
-
-            if (event.ctrlKey) {
-                // Dispatch entire column data
-                const colIndex = this.getColumnIndex(cell, tr)
-                if (colIndex !== -1) {
-                    this.dispatchColumnData(colIndex)
-                    return
-                }
-            }
-        }
-
-        if (event.target.matches(".recordViewIcon button")) {
-            event.stopPropagation()
-            const viewRowIndex = parseInt(event.target.closest("th").dataset.viewRow)
-
-            this.dispatchEvent(new CustomEvent("enter-record-view", {
-                detail: { viewRowIndex },
-                bubbles: true,
-                composed: true
-            }))
-            return
-        }
-
-        const cell = event.target.closest("th, td")
-        if (!cell) return
-
-        const tr = cell.closest("tr")
-        const isInHead = tr.closest("thead") !== null
-        const isInBody = tr.closest("tbody") !== null
-
-        let source, row, col
-
-        if (isInHead) {
-            source = "column"
-            row = Array.from(tr.parentNode.children).indexOf(tr)
-            col = Array.from(tr.children).indexOf(cell)
-        } else if (isInBody) {
-            if (cell.tagName === "TH") {
-                source = "index"
-                row = Array.from(tr.parentNode.children).indexOf(tr)
-                col = Array.from(tr.children).filter(c => c.tagName === "TH").indexOf(cell)
-            } else {
-                source = "values"
-                row = Array.from(tr.parentNode.children).indexOf(tr)
-                col = Array.from(tr.children).filter(c => c.tagName === "TD").indexOf(cell)
-            }
-        } else {
-            return // Not in thead or tbody, ignore
-        }
-
-        const value = cell.textContent
-
-        this.dispatchEvent(new CustomEvent("cell-click", {
-            detail: { value, source, row, col },
-            bubbles: true,
-            composed: true
-        }))
-    }
-
     handleKeydown(event) {
         const activeElement = this.shadowRoot.activeElement
         const isInThead = activeElement && (
@@ -296,80 +229,6 @@ export class DataTable extends HTMLElement {
         this.shadowRoot.querySelectorAll('sortable-column-header').forEach(header => {
             header.clearSort()
         })
-    }
-
-    // MARK: @scroll
-    handleScroll(event) {
-        event.stopPropagation()
-        const table = event.target
-        const tbody = this.shadowRoot.querySelector("tbody")
-
-        const scrollThreshold = 150
-        const nearBottom = table.scrollHeight - (table.scrollTop + table.clientHeight) < scrollThreshold
-
-        if (nearBottom && tbody) {
-            this.dispatchEvent(new CustomEvent("load-more-rows", {
-                detail: {
-                    currentRowCount: tbody.rows.length,
-                    bufferSize: this.dataViewer.options.buffer
-                },
-                bubbles: true,
-                composed: true
-            }))
-        }
-    }
-
-    // MARK: @click
-    dispatchRowData(viewRowIndex) {
-        const rowData = {
-            index: this.dataViewer.view.index.values[viewRowIndex],
-            values: this.dataViewer.view.values[viewRowIndex],
-            originalIndex: this.dataViewer.view.visibleIndices[viewRowIndex]
-        }
-
-        this.dispatchEvent(new CustomEvent("row-data", {
-            detail: rowData,
-            bubbles: true,
-            composed: true
-        }))
-    }
-
-    dispatchColumnData(colIndex) {
-        const columnValues = this.dataViewer.view.values.map(row => row[colIndex])
-        const columnData = {
-            header: this.dataViewer.view.columns.values[colIndex],
-            values: columnValues,
-            dtype: this.dataViewer.view.columns.attrs[colIndex]?.dtype
-        }
-
-        this.dispatchEvent(new CustomEvent("column-data", {
-            detail: columnData,
-            bubbles: true,
-            composed: true
-        }))
-    }
-
-    getColumnIndex(cell, tr) {
-        const isInHead = tr.closest("thead") !== null
-        const isInBody = tr.closest("tbody") !== null
-
-        if (isInHead || (isInBody && cell.tagName === "TD")) {
-            // find column index
-            const cells = Array.from(tr.children)
-            const cellIndex = cells.indexOf(cell)
-
-            if (isInBody) {
-                // subtract number of th elements (index columns)
-                const thCount = cells.filter(c => c.tagName === "TH").length
-                return cellIndex - thCount
-            }
-
-            // in thead account for column level name label
-            const columnLevelLabel = tr.querySelector(".columnLevelNameLabel")
-            return columnLevelLabel ? cellIndex - 1 : cellIndex
-        }
-
-        return -1 // not a data column
     }
 
     // MARK: @thead
