@@ -38,6 +38,14 @@ export class ClickHandler {
         }
 
         if (event.ctrlKey) {
+            if (isInBody && cell.tagName === "TH") {
+                const level = parseInt(cell.dataset.level)
+                if (!isNaN(level)) {
+                    this.dispatchIndexColumnData(level)
+                    return
+                }
+            }
+
             const colIndex = this.getColumnIndex(cell, tr)
             if (colIndex !== -1) {
                 this.dispatchColumnData(colIndex)
@@ -103,6 +111,25 @@ export class ClickHandler {
 
         this.dataTable.dispatchEvent(new CustomEvent("row-data", {
             detail: rowData,
+            bubbles: true,
+            composed: true
+        }))
+    }
+
+    dispatchIndexColumnData(level) {
+        const view = this.dataTable.dataViewer.view
+        const indexValues = view.index.values.map(indexValue => {
+            return Array.isArray(indexValue) ? indexValue[level] : indexValue
+        })
+
+        const indexData = {
+            header: view.indexNames?.[level] || `Index Level ${level}`,
+            values: indexValues,
+            dtype: null // index columns don't have dtypes like data columns
+        }
+
+        this.dataTable.dispatchEvent(new CustomEvent("column-data", {
+            detail: indexData,
             bubbles: true,
             composed: true
         }))
