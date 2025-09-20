@@ -27,6 +27,14 @@ export class TableBuilder {
         return `${columnGroupsRows}${this.buildColumnsRow()}${this.buildIndexLabelRow()}${this.buildFilterRow()}`
     }
 
+    buildHideButton(type, value, level = null, group = null) {
+        const dataAttrs = type === 'group'
+            ? `data-level="${level}" data-group="${group}"`
+            : `data-col="${value}"`
+
+        return `<button class="hide-button" data-hide-type="${type}" ${dataAttrs}>✕</button>`
+    }
+
     buildColumnLevelNameLabel(level) {
         // build the label for the level name of the column row
         const columnLevelNameLabel =
@@ -67,15 +75,16 @@ export class TableBuilder {
     }
 
     buildColumnFilter(iloc) {
-        // build a column filter
         const attrs = this.dataViewer.view.columns.attrs[iloc]
         const groups = attrs.groups.join(" ")
+        const originalColIndex = this.getOriginalColumnIndex(iloc)
 
         const isIndexEdge = iloc === 0
         const isGroupEdge = this.dataViewer.view.columns.edges.slice(1).includes(iloc)
 
         return `<th
             data-col="${iloc}"
+            data-original-col="${originalColIndex}"
             data-groups="${groups}"
             ${isIndexEdge ? ' index-edge' : ''}
             ${isGroupEdge ? ' group-edge' : ''}
@@ -140,25 +149,37 @@ export class TableBuilder {
         return `<tr>${columnLevelNameLabelElement}${columnHeaders.join("")}</tr>`
     }
 
+    getOriginalColumnIndex(viewColIndex) {
+        return this.dataViewer.view._visibleColumnIndices
+            ? this.dataViewer.view._visibleColumnIndices[viewColIndex]
+            : viewColIndex
+    }
+
     buildColumnLabel(value, iloc) {
         // build the th element containing the column labels
         // in a multiindex this label belongs to the lowest level
         const attrs = this.dataViewer.view.columns.attrs[iloc]
         const selectedValue = Array.isArray(value) ? value.at(-1) : value
         const groups = attrs.groups.join(" ")
+        const hideButton = this.buildHideButton('column', iloc)
+        const originalColIndex = this.getOriginalColumnIndex(iloc)
 
         const isIndexEdge = iloc === 0
         const isGroupEdge = this.dataViewer.view.columns.edges.slice(1).includes(iloc)
 
         return `<th
             data-col="${iloc}"
+            data-original-col="${originalColIndex}"
             data-groups="${groups}"
             ${isIndexEdge ? ' index-edge' : ''}
             ${isGroupEdge ? ' group-edge' : ''}
         >
-            <sortable-column-header data-col="${iloc}">
-            ${selectedValue}
-            </sortable-column-header>
+            <span>
+                ${hideButton}
+                <sortable-column-header data-col="${iloc}">
+                    ${selectedValue}
+                </sortable-column-header>
+            </span>
         </th>`
     }
 
@@ -180,13 +201,20 @@ export class TableBuilder {
         // in a multiindex this label belongs to an upper level
         const isIndexEdge = iloc === 0
         const isGroupEdge = iloc > 0
+        const hideButton = this.buildHideButton('group', span.value, level, iloc)
+
         return `<th
             colspan="${span.count}"
             data-level="${level}"
             data-group="${iloc}"
             ${isIndexEdge ? ' index-edge' : ''}
             ${isGroupEdge ? ' group-edge' : ''}
-        ><span>${span.value[level]}</span></th>`
+        >
+            <span>
+            ${hideButton}
+                ${span.value[level]}
+            </span>
+        </th>`
     }
 
     // MARK: Tbody

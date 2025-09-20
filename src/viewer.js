@@ -20,7 +20,6 @@ export class DataViewer extends HTMLElement {
             }
             :host {
                 display: grid;
-                cursor: var(--cursor, auto);
                 height: ${this.options.height};
                 grid-template-areas:
                     "control-panel"

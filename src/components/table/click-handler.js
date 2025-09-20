@@ -13,6 +13,8 @@ export class ClickHandler {
     }
 
     handleClick(event) {
+        if (this.handleHideClick(event)) return
+
         if (event.shiftKey || event.ctrlKey) {
             return this.handleDataExtractionClick(event)
         }
@@ -22,6 +24,28 @@ export class ClickHandler {
         }
 
         return this.handleCellClick(event)
+    }
+
+    handleHideClick(event) {
+        const hideButton = event.target.closest(".hide-button")
+        if (!hideButton) return false
+
+        event.stopPropagation()
+
+        const hideType = hideButton.dataset.hideType
+        const multiSelector = this.dataTable.dataViewer.controlPanel.shadowRoot.querySelector("multi-selector")
+
+        if (hideType === "group") {
+            const level = parseInt(hideButton.dataset.level)
+            const groupIndex = parseInt(hideButton.dataset.group)
+            const span = this.dataTable.dataViewer.view.columns.spans[level][groupIndex]
+            multiSelector.removeSelectedValues(span.value[level])
+        } else if (hideType === "column") {
+            const originalColIndex = parseInt(hideButton.closest("th").dataset.originalCol)
+            multiSelector.removeSelectedValues(originalColIndex)
+        }
+
+        return true
     }
 
     handleDataExtractionClick(event) {
@@ -89,9 +113,7 @@ export class ClickHandler {
                 row = Array.from(tr.parentNode.children).indexOf(tr)
                 col = Array.from(tr.children).filter(c => c.tagName === "TD").indexOf(cell)
             }
-        } else {
-            return
-        }
+        } else return
 
         const value = cell.textContent
 
@@ -151,22 +173,15 @@ export class ClickHandler {
     }
 
     getColumnIndex(cell, tr) {
-        const isInHead = tr.closest("thead") !== null
-        const isInBody = tr.closest("tbody") !== null
-
-        if (isInHead || (isInBody && cell.tagName === "TD")) {
-            const cells = Array.from(tr.children)
-            const cellIndex = cells.indexOf(cell)
-
-            if (isInBody) {
-                const thCount = cells.filter(c => c.tagName === "TH").length
-                return cellIndex - thCount
-            }
-
-            const columnLevelLabel = tr.querySelector(".columnLevelNameLabel")
-            return columnLevelLabel ? cellIndex - 1 : cellIndex
+        if (cell.dataset.originalCol) {
+            return parseInt(cell.dataset.originalCol)
         }
 
-        return -1
+        const tdIndex = Array.from(tr.querySelectorAll('td')).indexOf(cell)
+        const table = tr.closest('table')
+        const headerRow = table.querySelector('thead tr:has(.columnFilter)')
+        const correspondingTh = headerRow.querySelectorAll('th[data-original-col]')[tdIndex]
+
+        return correspondingTh ? parseInt(correspondingTh.dataset.originalCol) : -1
     }
 }

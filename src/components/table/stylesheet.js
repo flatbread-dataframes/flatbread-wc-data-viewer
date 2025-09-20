@@ -61,7 +61,10 @@ export class Stylesheet {
             }
             tbody th { text-align: left; }
             td { text-align: right; }
-            th, td { padding: .25em .5em; }
+            th, td {
+                padding: .25em .5em;
+                cursor: var(--cursor, auto);
+            }
             tbody th:not([rowspan]) {
                 vertical-align: middle;
             }
@@ -69,6 +72,26 @@ export class Stylesheet {
                 text-align: right;
                 vertical-align: middle;
             }
+            thead span {
+                display: grid;
+                grid-template-columns: auto 1fr;
+                gap: .25em;
+            }
+            .hide-button {
+                opacity: 0;
+                border: none;
+                background: transparent;
+                cursor: pointer;
+                font-size: 0.75em;
+                color: inherit;
+                padding: 0.125em;
+                border-radius: 0.125em;
+                transition: opacity 0.2s;
+            }
+            .hide-button:hover {
+                opacity: 1;
+            }
+
             .recordViewIcon {
                 left: var(--index-col-${this.data.index.nlevels}-offset);
                 width: 1.5em;

@@ -18,6 +18,9 @@ export class ControlPanel extends HTMLElement {
                 font-family: monospace;
                 opacity: 0.8;
             }
+            action-button {
+                width: 4em;
+            }
             multi-selector::part(dropdown) {
                 background-color: ${this.colors.background};
             }

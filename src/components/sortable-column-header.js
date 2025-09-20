@@ -3,7 +3,9 @@ export class SortableColumnHeader extends HTMLElement {
         :host {
             display: grid;
             grid-template-columns: 1fr auto;
+            gap: .25em;
             align-items: center;
+            justify-items: start;
             gap: 0.25em;
             cursor: pointer;
             padding: inherit;
