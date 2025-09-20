@@ -25,6 +25,7 @@ export class DataViewer extends HTMLElement {
                 grid-template-areas:
                     "control-panel"
                     "view";
+                grid-template-rows: auto 1fr;
             }
 
             control-panel {
