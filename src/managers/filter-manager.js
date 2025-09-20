@@ -1,4 +1,21 @@
 export class FilterManager {
+    parseFilterValue(filterValue) {
+        const parts = filterValue.split(',').map(part => part.trim())
+
+        return parts.map(part => {
+            if (part.startsWith('=')) {
+                return { type: 'exact', pattern: part.slice(1) }
+            }
+            if (part.endsWith('*') && !part.startsWith('*')) {
+                return { type: 'startsWith', pattern: part.slice(0, -1) }
+            }
+            if (part.startsWith('*') && !part.endsWith('*')) {
+                return { type: 'endsWith', pattern: part.slice(1) }
+            }
+            return { type: 'contains', pattern: part }
+        })
+    }
+
     applyFilters(view, indexFilters, columnFilters) {
         if (indexFilters.length === 0 && columnFilters.length === 0) {
             view.reset()
@@ -22,8 +39,21 @@ export class FilterManager {
                 const levelValue = Array.isArray(indexValue)
                     ? indexValue[filter.level]
                     : indexValue
-                return levelValue != null &&
-                    levelValue.toString().toLowerCase().includes(filter.value.toLowerCase())
+
+                if (levelValue == null) return false
+
+                const levelStr = levelValue.toString().toLowerCase()
+                const parsedFilters = this.parseFilterValue(filter.value.toLowerCase())
+
+                return parsedFilters.some(({ type, pattern }) => {
+                    switch (type) {
+                        case 'exact': return levelStr === pattern
+                        case 'startsWith': return levelStr.startsWith(pattern)
+                        case 'endsWith': return levelStr.endsWith(pattern)
+                        case 'contains': return levelStr.includes(pattern)
+                        default: return false
+                    }
+                })
             })
         }
     }
@@ -35,8 +65,21 @@ export class FilterManager {
                     ? view._visibleColumnIndices[filter.col]
                     : filter.col
                 const cellValue = rowValues[originalColumnIndex]
-                return cellValue != null &&
-                    cellValue.toString().toLowerCase().includes(filter.value.toLowerCase())
+
+                if (cellValue == null) return false
+
+                const cellStr = cellValue.toString().toLowerCase()
+                const parsedFilters = this.parseFilterValue(filter.value.toLowerCase())
+
+                return parsedFilters.some(({ type, pattern }) => {
+                    switch (type) {
+                        case 'exact': return cellStr === pattern
+                        case 'startsWith': return cellStr.startsWith(pattern)
+                        case 'endsWith': return cellStr.endsWith(pattern)
+                        case 'contains': return cellStr.includes(pattern)
+                        default: return false
+                    }
+                })
             })
         }
     }
