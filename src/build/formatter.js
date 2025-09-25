@@ -8,11 +8,13 @@ export class Formatter {
         if (!dtype) return value
 
         switch (dtype) {
-            case 'int':
-            case 'float':
+            case "int":
+            case "float":
                 return this.formatNumber(value, formatOptions)
-            case 'datetime':
+            case "date":
                 return this.formatDate(value, formatOptions)
+            case "datetime":
+                return this.formatDatetime(value, formatOptions)
             default:
                 return value.toString()
         }
@@ -22,7 +24,15 @@ export class Formatter {
         return value.toLocaleString(this.options.locale, options)
     }
 
-    formatDate(value, options) {
+    formatDatetime(value, options) {
         return new Date(value).toLocaleString(this.options.locale, options)
+    }
+
+    formatDate(value, options) {
+        const dateOptions = {
+            dateStyle: "short",
+            ...options
+        }
+        return new Date(value).toLocaleDateString(this.options.locale, dateOptions)
     }
 }
