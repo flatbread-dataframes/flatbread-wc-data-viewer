@@ -12,9 +12,27 @@ class ViewAccessor:
         template_dir = Path(__file__).parent / "templates"
         self._jinja_env = Environment(loader=FileSystemLoader(template_dir))
 
+    @property
+    def data_spec(self):
+        """Get the data object that would be used by the viewer"""
+        return self._prepare_data()
+
     def _prepare_data(self) -> dict:
         """Convert pandas object to data-viewer format"""
         df = self._obj.to_frame() if isinstance(self._obj, pd.Series) else self._obj
+
+        # Extract dtypes
+        dtypes = []
+        for col in df.columns:
+            dtype = df[col].dtype
+            if pd.api.types.is_integer_dtype(dtype):
+                dtypes.append('int')
+            elif pd.api.types.is_float_dtype(dtype):
+                dtypes.append('float')
+            elif pd.api.types.is_datetime64_any_dtype(dtype):
+                dtypes.append(self._get_date_dtype(df[col]))
+            else:
+                dtypes.append(None)
 
         return {
             "values": [
@@ -24,8 +42,21 @@ class ViewAccessor:
             "columns": list(df.columns),
             "index": list(df.index),
             "columnNames": df.columns.names,
-            "indexNames": df.index.names
+            "indexNames": df.index.names,
+            "dtypes": dtypes
         }
+
+    def _get_date_dtype(self, s: pd.Series):
+        """Determine if datetime series should be formatted as date or datetime"""
+        # Check if all non-null values have time component of 00:00:00
+        s = s.dropna()
+        if len(s) == 0:
+            return 'datetime'
+
+        # Check if all times are midnight
+        has_time = (s.dt.hour != 0) | (s.dt.minute != 0) | (s.dt.second != 0)
+
+        return 'datetime' if has_time.any() else 'date'
 
     def _repr_html_(self) -> str:
         """Render as HTML for Jupyter display"""
