@@ -36,6 +36,9 @@ export class View {
         const visibleIndexValues = this.visibleIndices.map(i => this.data.index.values[i])
         return new Axis(visibleIndexValues)
     }
+    get groupingLevels() {
+        return this.index.groupingLevels
+    }
     get values() {
         const rowFiltered = this.visibleIndices.map(i => this.data.values[i])
         if (this._visibleColumnIndices === null) {

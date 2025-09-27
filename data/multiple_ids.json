@@ -1,0 +1,20 @@
+{
+  "index": [
+    ["SurveillanceGrid", "001", "SIG001"],
+    ["SurveillanceGrid", "002", "SIG002"],
+    ["SurveillanceGrid", "003", "SIG003"],
+    ["BehaviorAnalysis", "004", "PSY004"],
+    ["BehaviorAnalysis", "005", "PSY005"],
+    ["DataHarvesting", "006", "EXT006"]
+  ],
+  "indexNames": ["Sector", "SubjectID", "ProfileHash"],
+  "columns": ["ThreatLevel", "Status"],
+  "values": [
+    [1000, "Monitored"],
+    [1500, "Flagged"],
+    [2000, "Monitored"],
+    [800, "Flagged"],
+    [900, "Monitored"],
+    [1100, "Flagged"]
+  ]
+}

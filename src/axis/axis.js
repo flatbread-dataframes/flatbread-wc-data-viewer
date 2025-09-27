@@ -2,6 +2,7 @@ export class Axis {
     constructor(values) {
         this.values = values
         this.spans = this.getSpans()
+        this.groupingLevels = this.getGroupingLevels()
         this.edges = this.getEdges()
     }
 
@@ -64,7 +65,6 @@ export class Axis {
 
     // Returns an array of span objects
     getSpans() {
-        if ( !this.isMultiIndex ) return null
         const levels = []
         this.ilevels.forEach(
             level => {
@@ -75,6 +75,12 @@ export class Axis {
             }
         )
         return levels
+    }
+
+    getGroupingLevels() {
+        return this.spans.map(levelSpans =>
+            levelSpans.some(span => span.count > 1)
+        )
     }
 
     /**

@@ -236,13 +236,24 @@ export class TableBuilder {
             ])
         // Reverse levels because outer levels need to be added last
         const levelsReversed = this.dataViewer.view.index.ilevels.slice(0, -1).reverse()
+
         levelsReversed.forEach(level => {
-            for (const span of this.dataViewer.view.index.spans[level]) {
-                const th = `<th
-                    rowspan="${span.count}"
-                    data-level="${level}"
-                    data-group="${span.group}"
-                ><span>${span.value[level]}</span></th>`
+            const hasGrouping = this.dataViewer.view.index.groupingLevels[level]
+            const spans = this.dataViewer.view.index.spans[level]
+            for (const span of spans) {
+                const attributes = {
+                    "data-level": level,
+                    "data-group": span.group,
+                }
+
+                // Only add rowspan if this level has meaningful grouping
+                if (hasGrouping) {
+                    attributes.rowspan = span.count
+                }
+
+                const th = `<th ${this.buildAttributeString(attributes)}>
+                    <span>${span.value[level]}</span>
+                </th>`
                 if (end <= span.iloc) break
                 if (span.iloc >= start) { indexRows[span.iloc - start].unshift(th) }
             }
@@ -276,5 +287,24 @@ export class TableBuilder {
             ${isIndexEdge ? ' index-edge' : ''}
             ${isGroupEdge ? ' group-edge' : ''}
         >${formattedValue}</td>`
+    }
+
+    buildAttributeString(attributes) {
+        return Object.entries(attributes)
+            .map(([key, value]) => this.formatAttribute(key, value))
+            .filter(Boolean)
+            .join(" ")
+    }
+
+    formatAttribute(key, value) {
+        if (value == null) {
+            return ""
+        }
+
+        if (typeof value === "boolean") {
+            return value ? key : ""
+        }
+
+        return `${key}="${value}"`
     }
 }
