@@ -1,18 +1,28 @@
 export class FilterManager {
     parseFilterValue(filterValue) {
-        const parts = filterValue.split(',').map(part => part.trim())
+        const parts = filterValue.split(",").map(part => part.trim())
 
         return parts.map(part => {
-            if (part.startsWith('=')) {
-                return { type: 'exact', pattern: part.slice(1) }
+            if (part === "null") {
+                return { type: "null" }
             }
-            if (part.endsWith('*') && !part.startsWith('*')) {
-                return { type: 'startsWith', pattern: part.slice(0, -1) }
+            if (part === "!null") {
+                return { type: "notNull" }
             }
-            if (part.startsWith('*') && !part.endsWith('*')) {
-                return { type: 'endsWith', pattern: part.slice(1) }
+            if (part === "empty") {
+                return { type: "empty" }
             }
-            return { type: 'contains', pattern: part }
+
+            if (part.startsWith("=")) {
+                return { type: "exact", pattern: part.slice(1) }
+            }
+            if (part.endsWith("*") && !part.startsWith("*")) {
+                return { type: "startsWith", pattern: part.slice(0, -1) }
+            }
+            if (part.startsWith("*") && !part.endsWith("*")) {
+                return { type: "endsWith", pattern: part.slice(1) }
+            }
+            return { type: "contains", pattern: part }
         })
     }
 
@@ -40,17 +50,26 @@ export class FilterManager {
                     ? indexValue[filter.level]
                     : indexValue
 
-                if (levelValue == null) return false
-
-                const levelStr = levelValue.toString().toLowerCase()
                 const parsedFilters = this.parseFilterValue(filter.value.toLowerCase())
-
                 return parsedFilters.some(({ type, pattern }) => {
+                    if (type === "null") {
+                        return levelValue === null || levelValue === undefined
+                    }
+                    if (type === "notNull") {
+                        return levelValue !== null && levelValue !== undefined
+                    }
+                    if (type === "empty") {
+                        return levelValue === null || levelValue === undefined || levelValue === ""
+                    }
+                    if (levelValue == null) return false
+
+                    const levelStr = levelValue.toString().toLowerCase()
+
                     switch (type) {
-                        case 'exact': return levelStr === pattern
-                        case 'startsWith': return levelStr.startsWith(pattern)
-                        case 'endsWith': return levelStr.endsWith(pattern)
-                        case 'contains': return levelStr.includes(pattern)
+                        case "exact": return levelStr === pattern
+                        case "startsWith": return levelStr.startsWith(pattern)
+                        case "endsWith": return levelStr.endsWith(pattern)
+                        case "contains": return levelStr.includes(pattern)
                         default: return false
                     }
                 })
@@ -66,17 +85,28 @@ export class FilterManager {
                     : filter.col
                 const cellValue = rowValues[originalColumnIndex]
 
-                if (cellValue == null) return false
-
-                const cellStr = cellValue.toString().toLowerCase()
                 const parsedFilters = this.parseFilterValue(filter.value.toLowerCase())
 
                 return parsedFilters.some(({ type, pattern }) => {
+                    if (type === "null") {
+                        return cellValue === null || cellValue === undefined
+                    }
+                    if (type === "notNull") {
+                        return cellValue !== null && cellValue !== undefined
+                    }
+                    if (type === "empty") {
+                        return cellValue === null || cellValue === undefined || cellValue === ""
+                    }
+
+                    if (cellValue == null) return false
+
+                    const cellStr = cellValue.toString().toLowerCase()
+
                     switch (type) {
-                        case 'exact': return cellStr === pattern
-                        case 'startsWith': return cellStr.startsWith(pattern)
-                        case 'endsWith': return cellStr.endsWith(pattern)
-                        case 'contains': return cellStr.includes(pattern)
+                        case "exact": return cellStr === pattern
+                        case "startsWith": return cellStr.startsWith(pattern)
+                        case "endsWith": return cellStr.endsWith(pattern)
+                        case "contains": return cellStr.includes(pattern)
                         default: return false
                     }
                 })
