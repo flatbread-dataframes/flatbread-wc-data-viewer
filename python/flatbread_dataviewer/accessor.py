@@ -17,6 +17,10 @@ class ViewAccessor:
         """Get the data object that would be used by the viewer"""
         return self._prepare_data()
 
+    def get_json(self):
+        data = self._prepare_data()
+        return json.dumps(data, default=self.json_serializer)
+
     def _prepare_data(self) -> dict:
         """Convert pandas object to data-viewer format"""
         df = self._obj.to_frame() if isinstance(self._obj, pd.Series) else self._obj
@@ -64,20 +68,21 @@ class ViewAccessor:
             data = self._prepare_data()
             viewer_id = f"viewer-{uuid.uuid4()}"
 
-            def json_serializer(obj):
-                if pd.isna(obj):
-                    return None
-                if hasattr(obj, 'isoformat'):
-                    return obj.isoformat()
-                return str(obj)
-
             template = self._jinja_env.get_template("viewer.jinja.html")
             return template.render(
                 viewer_id=viewer_id,
-                data=json.dumps(data, default=json_serializer)
+                data=json.dumps(data, default=self.json_serializer)
             )
         except Exception as e:
             return f"<div style='color: red;'>Error rendering data viewer: {e}</div>"
+
+    @staticmethod
+    def json_serializer(obj):
+        if pd.isna(obj):
+            return None
+        if hasattr(obj, 'isoformat'):
+            return obj.isoformat()
+        return str(obj)
 
 
 # Register the accessor
