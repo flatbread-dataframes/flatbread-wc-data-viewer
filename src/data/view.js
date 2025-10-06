@@ -70,9 +70,13 @@ export class View {
 
     // Sorting methods
     sortByColumn(columnIndex, direction = "asc") {
+        const originalColumnIndex = this._visibleColumnIndices
+            ? this._visibleColumnIndices[columnIndex]
+            : columnIndex
+
         this.visibleIndices.sort((a, b) => {
-            const valueA = this.data.values[a][columnIndex]
-            const valueB = this.data.values[b][columnIndex]
+            const valueA = this.data.values[a][originalColumnIndex]
+            const valueB = this.data.values[b][originalColumnIndex]
 
             if (valueA === valueB) return 0
             if (valueA === null || valueA === undefined) return 1
