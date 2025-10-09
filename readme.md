@@ -1,6 +1,3 @@
-Looking at your project, here's a straightforward README that covers the essentials without overselling:
-
-```markdown
 # wc-data-viewer
 
 A vanilla JavaScript web component for viewing tabular data with support for multi-index structures.
