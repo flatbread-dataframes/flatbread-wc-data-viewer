@@ -12,6 +12,7 @@ componentSheet.replaceSync(`
     display: grid;
     height: var(--ms-height);
     color: var(--ms-text-color);
+    border-radius: var(--ms-border-radius);
 }
 
 :host *,
