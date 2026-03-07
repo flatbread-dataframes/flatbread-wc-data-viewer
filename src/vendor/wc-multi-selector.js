@@ -1,6 +1,7 @@
-function createTemplate(options) {
-    // MARK: css
-    const css = /*css*/`
+import { baseSheet } from "../styles/base.js"
+
+const componentSheet = new CSSStyleSheet()
+componentSheet.replaceSync(`
 /* ==========================================================================
    HOST & FOUNDATION
    ========================================================================== */
@@ -327,8 +328,7 @@ input[type="checkbox"] + label:before,
     transition: transform 0.1s ease;
 }
 
-/*
-==========================================================================
+/* ==========================================================================
    OPTIONS
    ========================================================================== */
 
@@ -385,8 +385,7 @@ input[type="checkbox"]:indeterminate + label:before {
 }
 
 input[type="checkbox"]:focus-visible + label:before {
-    outline: 2px solid Highlight;
-    outline: 2px solid -webkit-focus-ring-color;
+    outline: 2px solid var(--focus-color, Highlight);
     outline-offset: 2px;
 }
 
@@ -396,10 +395,6 @@ input[type="checkbox"]:focus-visible + label:before {
 
 [data-role].hide {
     display: none;
-}
-
-:focus-visible {
-    z-index: 999999;
 }
 
 /* ==========================================================================
@@ -442,12 +437,10 @@ code {
     border-radius: 20px;
     border: transparent;
 }
-`
-    // MARK: html
+`)
+
+function createTemplate(options) {
     return /*html*/`
-<style>
-${css}
-</style>
 <details part="container">
     <summary>
         <div part="display" class="display"><span>...</span></div>
@@ -961,6 +954,7 @@ class Renderer {
     }
 
     render() {
+        this.ms.shadowRoot.adoptedStyleSheets = [baseSheet, componentSheet]
         this.ms.shadowRoot.innerHTML = createTemplate(this.ms.settings).trim()
         let html = this.htmlBuilder.buildHTML(this.ms.data)
         this.optionsContainer.innerHTML += html
@@ -969,6 +963,7 @@ class Renderer {
     }
 
     renderEmpty() {
+        this.ms.shadowRoot.adoptedStyleSheets = [baseSheet, componentSheet]
         this.ms.shadowRoot.innerHTML = createTemplate(this.ms.settings).trim()
         this.ms.getElement("display").innerHTML = `<span>${this.ms.settings.labels.empty}</span>`
     }

@@ -6,6 +6,7 @@ componentSheet.replaceSync(`
     :host {
         display: inline-block;
         padding: 0;
+        border-radius: 0.25em;
     }
     button {
         opacity: 0.7;
@@ -57,7 +58,9 @@ export class ActionButton extends HTMLElement {
     updateAttributes() {
         if (!this.button) return
 
-        this.button.disabled = this.hasAttribute("disabled")
+        const disabled = this.hasAttribute("disabled")
+        this.button.disabled = disabled
+        this.setAttribute("tabindex", disabled ? "-1" : "0")
     }
 
     // MARK: get/set

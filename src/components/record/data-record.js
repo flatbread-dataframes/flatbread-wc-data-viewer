@@ -150,10 +150,6 @@ export class DataRecord extends HTMLElement {
         }
     }
 
-    get colors() {
-        return this.dataViewer.resolvedColors
-    }
-
     get recordIndex() {
         return this._currentRecordIndex
     }

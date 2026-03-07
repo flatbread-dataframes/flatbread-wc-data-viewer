@@ -9,8 +9,9 @@ componentSheet.replaceSync(`
         gap: 0.25em;
         align-items: center;
         justify-items: start;
-        cursor: pointer;
         padding: inherit;
+        border-radius: .25em;
+        cursor: pointer;
     }
     #sort-marker {
         font-size: 0.8em;

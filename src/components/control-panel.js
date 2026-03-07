@@ -22,8 +22,8 @@ componentSheet.replaceSync(`
     action-button {
         width: 4em;
     }
-    multi-selector::part(dropdown) {
-        background-color: var(--dv-bg, white);
+    multi-selector {
+        --ms-dropdown-background: var(--dv-bg, white);
     }
 `)
 
@@ -119,7 +119,7 @@ export class ControlPanel extends HTMLElement {
                 <span id="column-count"></span>
             </div>
             <label>Select columns:</label>
-            <multi-selector name="columns" tabindex="0"></multi-selector>
+            <multi-selector name="columns"></multi-selector>
         `
         this.updateMultiSelector()
     }
@@ -217,7 +217,12 @@ export class ControlPanel extends HTMLElement {
                 ? elements.length - 1
                 : nextIndex % elements.length
 
-        elements[nextIndex].focus()
+        const target = elements[nextIndex]
+        if (target.tagName === "MULTI-SELECTOR") {
+            target.shadowRoot?.querySelector("details > summary")?.focus()
+        } else {
+            target.focus()
+        }
     }
 }
 

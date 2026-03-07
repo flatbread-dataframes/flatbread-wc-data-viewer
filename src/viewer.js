@@ -247,16 +247,6 @@ export class DataViewer extends HTMLElement {
         return dataRecord ? dataRecord.currentRecord : null
     }
 
-    get resolvedColors() {
-        const background = getComputedStyle(this).backgroundColor || 'white'
-
-        return {
-            background,
-            hover: `color-mix(in srgb, ${background} 90%, currentColor 10%)`,
-            border: 'currentColor'
-        }
-    }
-
     // MARK: render
     render() {
         if (!this.shadowRoot.querySelector("control-panel")) {
