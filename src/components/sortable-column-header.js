@@ -1,37 +1,29 @@
+import { baseSheet } from "../styles/base.js"
+import { interactiveSheet } from "../styles/interactive.js"
+
+const componentSheet = new CSSStyleSheet()
+componentSheet.replaceSync(`
+    :host {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.25em;
+        align-items: center;
+        justify-items: start;
+        cursor: pointer;
+        padding: inherit;
+    }
+    #sort-marker {
+        font-size: 0.8em;
+        line-height: 1;
+        visibility: hidden;
+        user-select: none;
+    }
+    #sort-marker.visible {
+        visibility: visible;
+    }
+`)
+
 export class SortableColumnHeader extends HTMLElement {
-    static styles = `
-        :host {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: .25em;
-            align-items: center;
-            justify-items: start;
-            gap: 0.25em;
-            cursor: pointer;
-            padding: inherit;
-        }
-
-        :host(:focus) {
-            outline: 1px solid;
-            outline-offset: 2px;
-        }
-
-        :host(:focus:not(:focus-visible)) {
-            outline: none;
-        }
-
-        #sort-marker {
-            font-size: 0.8em;
-            line-height: 1;
-            visibility: hidden;
-            user-select: none;
-        }
-
-        #sort-marker.visible {
-            visibility: visible;
-        }
-    `
-
     static get observedAttributes() {
         return ["data-col", "data-level", "sort-state"]
     }
@@ -56,8 +48,8 @@ export class SortableColumnHeader extends HTMLElement {
     }
 
     render() {
+        this.shadowRoot.adoptedStyleSheets = [baseSheet, interactiveSheet, componentSheet]
         this.shadowRoot.innerHTML = `
-            <style>${SortableColumnHeader.styles}</style>
             <slot></slot>
             <span id="sort-marker">▲</span>
         `

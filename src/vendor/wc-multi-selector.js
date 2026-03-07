@@ -1,5 +1,5 @@
 function createTemplate(options) {
-// MARK: css
+    // MARK: css
     const css = /*css*/`
 /* ==========================================================================
    HOST & FOUNDATION
@@ -443,7 +443,7 @@ code {
     border: transparent;
 }
 `
-// MARK: html
+    // MARK: html
     return /*html*/`
 <style>
 ${css}
@@ -475,7 +475,7 @@ ${css}
     </div>
 </details>
         `
-    }
+}
 
 
 // region selector
@@ -507,7 +507,7 @@ class MultiSelector extends HTMLElement {
 
     constructor() {
         super()
-        this._settings = {...this.constructor.defaultSettings}
+        this._settings = { ...this.constructor.defaultSettings }
         this._pendingAttributes = new Map()
         this._isReady = false
         this.internals_ = this.attachInternals()
@@ -566,7 +566,7 @@ class MultiSelector extends HTMLElement {
         let observer = new MutationObserver(async () => {
             this.data = await this.dataHandler.getData()
         })
-        observer.observe(this, {childList: true})
+        observer.observe(this, { childList: true })
 
         this.mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
         this.mediaQuery.addEventListener("change", this.handleMediaQueryChange)
@@ -596,7 +596,7 @@ class MultiSelector extends HTMLElement {
     }
 
     applyAttribute(property, newValue) {
-        switch(property) {
+        switch (property) {
             case "name":
                 this.name = newValue
                 break
@@ -631,7 +631,7 @@ class MultiSelector extends HTMLElement {
     }
 
     set settings(newSettings) {
-        this._settings = {...this.constructor.defaultSettings, ...newSettings}
+        this._settings = { ...this.constructor.defaultSettings, ...newSettings }
         this.renderer?.render()
     }
 
@@ -760,7 +760,7 @@ class MultiSelector extends HTMLElement {
 
     getElements(name) {
         let query
-        switch(name) {
+        switch (name) {
             case "options":
                 query = `[data-role="option"]`
                 break
@@ -1068,7 +1068,7 @@ class HTMLBuilder {
             id="${itemID}"
             name="${itemID}"
             value="${item.value}"
-            ${item.selected ? "checked": ""}>
+            ${item.selected ? "checked" : ""}>
         <label for="${itemID}">${item.label}</label>`
 
         return `<div
@@ -1089,7 +1089,7 @@ class HTMLBuilder {
                 id="${itemID}"
                 name="${itemID}"
                 value="${item.value}"
-                ${item.selected ? "checked": ""}>
+                ${item.selected ? "checked" : ""}>
             <label for="${itemID}">${label}</label>
         </span>`
 
@@ -1299,7 +1299,7 @@ class SearchHandler {
 
     makeHandleKeyUp() {
         let timeout
-        return function(event) {
+        return function (event) {
             if (!event.target.matches('.filter input[type="text"]')) return
 
             const ignore = [
@@ -1606,6 +1606,9 @@ class NavigationHandler {
             if (!this.shouldAllowNavigation(event)) return
         }
 
+        if (!this.box.open && !["Enter", " "].includes(event.key)) {
+            return // let parent handle navigation
+        }
         switch (event.key) {
             case "ArrowUp":
             case "ArrowDown":
@@ -1644,27 +1647,27 @@ class NavigationHandler {
         const inc = event.key === "ArrowDown" ? 1 : -1
 
         // handle toplevel
-        if ( event.target.matches(`:host > details > summary, :host > details > summary > *`) ) {
-            if ( inc > 0 && !this.box.open ) {
+        if (event.target.matches(`:host > details > summary, :host > details > summary > *`)) {
+            if (inc > 0 && !this.box.open) {
                 this.box.setAttribute("open", "")
                 return
             }
-            if ( inc < 0 && this.box.open ) {
+            if (inc < 0 && this.box.open) {
                 this.box.removeAttribute("open")
                 return
             }
         }
 
         // handle filter buttons
-        if ( event.target.matches(`.filter button`)) {
-            if ( inc > 0 ) {
+        if (event.target.matches(`.filter button`)) {
+            if (inc > 0) {
                 const firstOption = this.box.querySelector(`.options details:not(.hide) > summary, .options div:not(.hide) > [type="checkbox"]`)
                 if (firstOption) {
                     firstOption.focus()
                 }
                 return
             }
-            if ( inc < 0 ) {
+            if (inc < 0) {
                 this.box.querySelector(`summary`).focus()
                 return
             }
@@ -1675,7 +1678,7 @@ class NavigationHandler {
         const closest = event.target.closest(selectors)
         const nextIdx = [...opened].indexOf(closest)
         const next = opened[nextIdx + inc]
-        if ( next ) { next.focus() }
+        if (next) { next.focus() }
     }
 
     handleLeftRightArrow(event) {

@@ -1,3 +1,5 @@
+import { baseSheet } from "../../styles/base.js"
+
 export class Stylesheet {
     constructor(dataTable, data, options) {
         this.dataTable = dataTable
@@ -12,8 +14,8 @@ export class Stylesheet {
 
     // MARK: setup
     setupStyles() {
-        const sheet = this.getIntegratedStyleSheet()
-        this.dataTable.shadowRoot.adoptedStyleSheets = [sheet]
+        this._componentSheet = this.getIntegratedStyleSheet()
+        this.dataTable.shadowRoot.adoptedStyleSheets = [baseSheet, this._componentSheet]
 
         const tbody = this.dataTable.shadowRoot.querySelector("tbody")
         if (tbody) this.resizeObserver.observe(tbody)
@@ -26,10 +28,6 @@ export class Stylesheet {
 
     get table() {
         return this.dataTable.shadowRoot.querySelector("table")
-    }
-
-    get colors() {
-        return this.dataViewer.resolvedColors
     }
 
     getIntegratedStyleSheet() {
@@ -57,7 +55,7 @@ export class Stylesheet {
                 border-spacing: 0;
             }
             th {
-                background-color: ${this.colors.background};
+                background-color: var(--dv-bg, white);
             }
             tbody th { text-align: left; }
             td { text-align: right; }
@@ -164,7 +162,7 @@ export class Stylesheet {
             `,
             hoverEffect: `
                 tbody tr:hover :where(td, th:not([rowspan])) {
-                    background-color: ${this.colors.hover};
+                    background-color: var(--dv-hover);
                 }
             `,
             theadBorder: `
@@ -193,16 +191,11 @@ export class Stylesheet {
 
     // MARK: updates
     updateComposedStyles() {
-        const sheet = this.dataTable.shadowRoot.adoptedStyleSheets[0]
-        if (sheet) {
-            const baseStyles = this.getBaseStyles()
-            const stickyStyles = this.getStickyStyles()
-            const composedStyles = this.getComposedStyles()
-
-            sheet.replaceSync(`
-                ${baseStyles}
-                ${stickyStyles}
-                ${composedStyles}
+        if (this._componentSheet) {
+            this._componentSheet.replaceSync(`
+                ${this.getBaseStyles()}
+                ${this.getStickyStyles()}
+                ${this.getComposedStyles()}
             `)
         }
     }

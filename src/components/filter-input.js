@@ -1,55 +1,31 @@
+import { baseSheet } from "../styles/base.js"
+import { interactiveSheet } from "../styles/interactive.js"
+
+const componentSheet = new CSSStyleSheet()
+componentSheet.replaceSync(`
+    :host {
+        display: grid;
+        grid-template-columns: 1fr auto;
+    }
+    input {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    button {
+        display: grid;
+        place-items: center;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        border-left: none;
+        font-size: 0.875em;
+        opacity: 0.7;
+    }
+    button:hover:not(:disabled) {
+        opacity: 1;
+    }
+`)
+
 export class FilterInput extends HTMLElement {
-    static styles = `
-        :host {
-            box-sizing: border-box;
-            display: grid;
-            grid-template-columns: 1fr auto;
-        }
-
-        input {
-            border: 1px solid;
-            outline: none;
-            border-radius: .25em;
-            border-top-right-radius: 0;
-            border-bottom-right-radius: 0;
-            background: transparent;
-            font: inherit;
-            color: inherit;
-            min-width: 0;
-        }
-
-        input:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        button {
-            display: grid;
-            place-items: center;
-            border: 1px solid;
-            border-radius: .25em;
-            border-top-left-radius: 0;
-            border-bottom-left-radius: 0;
-            border-left: none;
-            background: transparent;
-            cursor: pointer;
-            font: inherit;
-            font-size: .875em;
-            color: inherit;
-            opacity: 0.7;
-            user-select: none;
-        }
-
-        button:hover {
-            opacity: 1;
-        }
-
-        button:disabled {
-            opacity: 0.3;
-            cursor: default;
-        }
-    `
-
     static get observedAttributes() {
         return ["placeholder", "disabled"]
     }
@@ -124,8 +100,8 @@ export class FilterInput extends HTMLElement {
 
     // MARK: render
     render() {
+        this.shadowRoot.adoptedStyleSheets = [baseSheet, interactiveSheet, componentSheet]
         this.shadowRoot.innerHTML = `
-            <style>${FilterInput.styles}</style>
             <input type="text">
             <button type="button" tabindex="-1">🞨</button>
         `
@@ -161,7 +137,7 @@ export class FilterInput extends HTMLElement {
         const cursorPos = input.selectionStart
         const isEmpty = input.value === ""
 
-        switch(event.key) {
+        switch (event.key) {
             case "ArrowUp":
             case "ArrowDown":
                 return true // always allow vertical navigation

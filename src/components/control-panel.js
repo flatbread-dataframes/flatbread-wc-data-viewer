@@ -1,32 +1,33 @@
 import "./action-button.js"
+import { baseSheet } from "../styles/base.js"
+import { interactiveSheet } from "../styles/interactive.js"
+
+const componentSheet = new CSSStyleSheet()
+componentSheet.replaceSync(`
+    :host {
+        display: grid;
+        grid-template-columns: auto 1fr auto 1fr;
+        gap: 0.5em;
+        align-items: center;
+        padding: 0.25em;
+    }
+    .status-info {
+        justify-self: center;
+        display: flex;
+        gap: 1rem;
+        font-size: 0.9em;
+        font-family: monospace;
+        opacity: 0.8;
+    }
+    action-button {
+        width: 4em;
+    }
+    multi-selector::part(dropdown) {
+        background-color: var(--dv-bg, white);
+    }
+`)
 
 export class ControlPanel extends HTMLElement {
-    get styles() {
-        return `
-            :host {
-                display: grid;
-                grid-template-columns: auto 1fr auto 1fr;
-                gap: .5em;
-                align-items: center;
-                padding: .25em;
-            }
-            .status-info {
-                justify-self: center;
-                display: flex;
-                gap: 1rem;
-                font-size: 0.9em;
-                font-family: monospace;
-                opacity: 0.8;
-            }
-            action-button {
-                width: 4em;
-            }
-            multi-selector::part(dropdown) {
-                background-color: ${this.colors.background};
-            }
-        `
-    }
-
     constructor() {
         super()
         this.attachShadow({ mode: "open" })
@@ -63,10 +64,6 @@ export class ControlPanel extends HTMLElement {
         if (value) {
             this.render()
         }
-    }
-
-    get colors() {
-        return this.dataViewer?.resolvedColors ?? { background: "white" }
     }
 
     get navigableElements() {
@@ -110,8 +107,8 @@ export class ControlPanel extends HTMLElement {
 
     // MARK: render
     render() {
+        this.shadowRoot.adoptedStyleSheets = [baseSheet, interactiveSheet, componentSheet]
         this.shadowRoot.innerHTML = `
-            <style>${this.styles}</style>
             <div>
                 <label>Filters:</label>
                 <action-button data-action="toggle-filter-row">Toggle</action-button>
