@@ -191,7 +191,18 @@ export class ControlPanel extends HTMLElement {
     }
 
     handleKeydown(event) {
-        const keys = {"ArrowLeft": -1, "ArrowRight": 1}
+        if (event.key === "Enter") {
+            const composedPath = event.composedPath()
+            const multiSelector = [...this.navigableElements].find(el =>
+                el.tagName === "MULTI-SELECTOR" && composedPath.includes(el)
+            )
+            if (multiSelector) {
+                const summary = multiSelector.shadowRoot?.querySelector("details > summary")
+                summary?.focus()
+            }
+            return
+        }
+        const keys = { "ArrowLeft": -1, "ArrowRight": 1 }
         if (!(event.key in keys)) return
 
         const elements = [...this.navigableElements]
@@ -206,8 +217,8 @@ export class ControlPanel extends HTMLElement {
         let nextIndex = currentIndex + keys[event.key]
         nextIndex =
             nextIndex < 0
-            ? elements.length - 1
-            : nextIndex % elements.length
+                ? elements.length - 1
+                : nextIndex % elements.length
 
         elements[nextIndex].focus()
     }
