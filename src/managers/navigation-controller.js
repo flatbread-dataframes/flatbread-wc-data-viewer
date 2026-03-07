@@ -19,7 +19,7 @@ export class NavigationController {
     // MARK: get/set
     get availableLevels() {
         const modeComponents = {
-            table:  ["control-panel", "thead", "tbody"],
+            table: ["control-panel", "thead", "tbody"],
             record: ["control-panel", "record"]
         }
         return modeComponents[this.dataViewer.viewMode]
@@ -47,7 +47,9 @@ export class NavigationController {
         if (event.ctrlKey) {
             switch (event.key) {
                 case 'h':
-                    this.dataViewer.handleToggleFilterRow()
+                    this.dataViewer.shadowRoot.dispatchEvent(
+                        new CustomEvent("toggle-filter-row", { bubbles: true })
+                    )
                     return true
                 case 'r':
                     this.dataViewer.toggleViewMode()
@@ -57,7 +59,9 @@ export class NavigationController {
                     return true
             }
         } else if (event.key === 'Escape') {
-            this.dataViewer.handleClearAllFilters()
+            this.dataViewer.shadowRoot.dispatchEvent(
+                new CustomEvent("clear-filters", { bubbles: true })
+            )
             return true
         }
         return false
