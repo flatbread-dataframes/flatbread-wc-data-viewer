@@ -1,7 +1,6 @@
 export class NavigationController {
     constructor(dataViewer) {
         this.dataViewer = dataViewer
-        this.currentLevel = 'control-panel'
         this.handleKeydown = this.handleKeydown.bind(this)
         this.handleNavigationBoundary = this.handleNavigationBoundary.bind(this)
 
@@ -23,6 +22,21 @@ export class NavigationController {
             record: ["control-panel", "record"]
         }
         return modeComponents[this.dataViewer.viewMode]
+    }
+
+    get currentLevel() {
+        const viewerActive = this.dataViewer.shadowRoot?.activeElement
+        if (!viewerActive) return null
+
+        if (viewerActive.matches("control-panel")) return "control-panel"
+        if (viewerActive.matches("data-table")) {
+            const tableActive = viewerActive.shadowRoot?.activeElement
+            if (tableActive?.closest("thead")) return "thead"
+            if (tableActive?.closest("tbody")) return "tbody"
+            return "thead"
+        }
+        if (viewerActive.matches("data-record")) return "record"
+        return null
     }
 
     // MARK: handlers
@@ -107,10 +121,13 @@ export class NavigationController {
     }
 
     moveToLevel(level) {
+        if (level === "control-panel") {
+            const elements = this.getNavigableElements("control-panel")
+            if (elements.length) elements[0].focus()
+            return
+        }
         const currentElement = this.getCurrentFocusedElement()
         const targetX = currentElement ? this.getElementLeftX(currentElement) : 0
-
-        this.currentLevel = level
         this.focusClosestElement(level, targetX)
     }
 
