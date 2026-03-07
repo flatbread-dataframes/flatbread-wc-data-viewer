@@ -86,10 +86,12 @@ export class Stylesheet {
                 border-radius: 0.125em;
                 transition: opacity 0.2s;
             }
-            .hide-button:hover {
+            thead th:hover .hide-button {
+                opacity: .25;
+            }
+            thead th .hide-button:hover {
                 opacity: 1;
             }
-
             .recordViewIcon {
                 left: var(--index-col-${this.data.index.nlevels}-offset);
                 width: 1.5em;
@@ -106,9 +108,13 @@ export class Stylesheet {
                 color: inherit;
                 transition: opacity 0.2s;
             }
-            .recordViewIcon button:hover {
+            tr:hover .recordViewIcon button {
+                opacity: .25;
+            }
+            tr .recordViewIcon:hover button {
                 opacity: 1;
             }
+
         `
     }
 

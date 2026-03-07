@@ -21,9 +21,9 @@ export class TableBuilder {
     buildThead() {
         const columnGroupsRows =
             this.dataViewer.view.columns.ilevels
-            .slice(0, -1)
-            .map(level => this.buildColumnGroupsRow(level))
-            .join("")
+                .slice(0, -1)
+                .map(level => this.buildColumnGroupsRow(level))
+                .join("")
         return `${columnGroupsRows}${this.buildColumnsRow()}${this.buildIndexLabelRow()}${this.buildFilterRow()}`
     }
 
@@ -32,15 +32,15 @@ export class TableBuilder {
             ? `data-level="${level}" data-group="${group}"`
             : `data-col="${value}"`
 
-        return `<button class="hide-button" data-hide-type="${type}" ${dataAttrs}>✕</button>`
+        return `<button class="hide-button" tabindex="-1" data-hide-type="${type}" ${dataAttrs}>✕</button>`
     }
 
     buildColumnLevelNameLabel(level) {
         // build the label for the level name of the column row
         const columnLevelNameLabel =
             this.dataViewer.view.columnNames
-            ? this.dataViewer.view.columnNames.at(level) ?? ""
-            : ""
+                ? this.dataViewer.view.columnNames.at(level) ?? ""
+                : ""
 
         const columnLevelNameLabelElement =
             `<th colspan="${this.dataViewer.view.index.nlevels + 1}"
@@ -59,14 +59,14 @@ export class TableBuilder {
     buildIndexLevelNameLabel(level) {
         const indexLevelNameLabel =
             this.dataViewer.view.indexNames
-            ? this.dataViewer.view.indexNames.at(level) ?? ""
-            : ""
+                ? this.dataViewer.view.indexNames.at(level) ?? ""
+                : ""
         const colspan =
             this.dataViewer.view.indexNames.length - 1 === level
-            ? `colspan="2"`
-            : ""
+                ? `colspan="2"`
+                : ""
         const indexLevelNameLabelElement =
-        `<th data-level="${level}" class="indexLevelNameLabel" ${colspan}>
+            `<th data-level="${level}" class="indexLevelNameLabel" ${colspan}>
             <sortable-column-header data-level="${level}">
                 ${indexLevelNameLabel}
             </sortable-column-header>
@@ -190,8 +190,8 @@ export class TableBuilder {
 
         const headers =
             this.dataViewer.view.columns.spans[level]
-            .map((span, iloc) => this.buildColumnGroupLabel(span, iloc, level))
-            .join("")
+                .map((span, iloc) => this.buildColumnGroupLabel(span, iloc, level))
+                .join("")
 
         return `<tr>${columnLevelNameLabelElement}${headers}</tr>`
     }
