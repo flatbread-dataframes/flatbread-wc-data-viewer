@@ -8,9 +8,7 @@ import "./components/table/data-table.js"
 import "./components/control-panel.js"
 import "./components/filter-input.js"
 import "./components/sortable-column-header.js"
-// import "./wc-multi-selector.js"
-import "https://lcvriend.github.io/wc-multi-selector/src/wc-multi-selector.js"
-
+import "./vendor/wc-multi-selector.js"
 
 export class DataViewer extends HTMLElement {
     get styles() {
