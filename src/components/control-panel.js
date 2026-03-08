@@ -219,7 +219,7 @@ export class ControlPanel extends HTMLElement {
 
         const target = elements[nextIndex]
         if (target.tagName === "MULTI-SELECTOR") {
-            target.shadowRoot?.querySelector("details > summary")?.focus()
+            target.shadowRoot?.querySelector(".trigger")?.focus()
         } else {
             target.focus()
         }

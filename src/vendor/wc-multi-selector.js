@@ -7,7 +7,6 @@ componentSheet.replaceSync(`
    ========================================================================== */
 
 :host {
-    position: relative;
     box-sizing: border-box;
     display: grid;
     height: var(--ms-height);
@@ -58,54 +57,34 @@ componentSheet.replaceSync(`
 }
 
 /* ==========================================================================
-   CUSTOM PROPERTIES (DARK THEME)
+   TRIGGER
    ========================================================================== */
 
-:host([mode="dark"]),
-:host > details.system-dark {
-    --ms-dropdown-background: hsl(0, 0%, 7%);
-    --ms-hover: color-mix(in srgb, var(--ms-dropdown-background) 85%, currentColor 15%);
-}
-
-/* ==========================================================================
-   MAIN CONTAINER & DETAILS
-   ========================================================================== */
-
-:host > details {
-    position: absolute;
-    height: 100%;
-    cursor: pointer;
-}
-
-:where(:host > details) {
-    border: 1px solid var(--ms-border-color);
-    border-radius: var(--ms-border-radius);
-}
-
-:host > details[open] {
-    height: unset;
-    z-index: 999999;
-}
-
-/* ==========================================================================
-   SUMMARY (TRIGGER)
-   ========================================================================== */
-
-:host > details > summary {
+.trigger {
+    anchor-name: --ms-trigger;
     display: flex;
     align-items: center;
     gap: .5em;
     height: var(--ms-height);
     padding-block: var(--ms-padding-block);
     padding-inline: var(--ms-padding-inline);
+    cursor: pointer;
+    border: 1px solid var(--ms-border-color);
+    border-radius: var(--ms-border-radius);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: start;
 }
 
-:host > details > summary > .display {
+.trigger > .display {
     margin-right: auto;
 }
 
-:host > details[open] .click-me {
-    display: none;
+:host([open]) .trigger {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom: none;
 }
 
 /* ==========================================================================
@@ -172,7 +151,7 @@ componentSheet.replaceSync(`
     border-radius: 0 var(--ms-border-radius) var(--ms-border-radius) 0;
 }
 
-:host > details[open] [data-command] {
+:host([open]) [data-command] {
     display: grid;
     place-items: center;
 }
@@ -181,18 +160,28 @@ componentSheet.replaceSync(`
    DROPDOWN CONTAINER
    ========================================================================== */
 
-:host > details[open] > div {
+[popover]:popover-open {
+    position-anchor: --ms-trigger;
+    position: fixed;
+    top: anchor(bottom);
+    left: anchor(left);
+    width: anchor-size(width);
+    margin: 0;
+    padding: 0;
+    color: inherit;
+    border: 1px solid var(--ms-border-color);
+    border-top: none;
+    border-radius: 0 0 var(--ms-border-radius) var(--ms-border-radius);
+    background-color: var(--ms-dropdown-background);
     display: grid;
     grid-template-rows: auto 1fr;
     gap: .5em;
     padding-inline: var(--ms-padding-inline);
     padding-bottom: 1em;
-    border-bottom-left-radius: var(--ms-border-radius);
-    border-bottom-right-radius: var(--ms-border-radius);
 }
 
-:where(:host > details[open] > div) {
-    background-color: var(--ms-dropdown-background);
+:host([open]) .click-me {
+    display: none;
 }
 
 /* ==========================================================================
@@ -251,7 +240,7 @@ componentSheet.replaceSync(`
    OPTIONS CONTAINER
    ========================================================================== */
 
-:host > details[open] > div > .options {
+[popover] > .options {
     position: relative;
     display: flex;
     flex-direction: column;
@@ -407,7 +396,6 @@ input[type="checkbox"]:focus-visible + label:before {
     --ms-border-color: var(--ms-border-color-disabled);
     background-color: var(--ms-background-disabled);
     color: var(--ms-text-color-disabled);
-    tab-index: -1;
     pointer-events: none;
     user-select: none;
 }
@@ -440,35 +428,34 @@ code {
 }
 `)
 
+
 function createTemplate(options) {
     return /*html*/`
-<details part="container">
-    <summary>
-        <div part="display" class="display"><span>...</span></div>
-        <div part="controls" class="control-panel">
-            <button part="control-button" data-command="unfold"
-                title="${options.titles.unfoldGroups}">&plus;</button>
-            <button part="control-button" data-command="fold"
-                title="${options.titles.foldGroups}">&minus;</button>
-            <button part="control-button" data-command="show-selected"
-                title="${options.titles.showSelected}" disabled>&#9745;</button>
-        </div>
-        <div class="click-me">&#9660;</div>
-    </summary>
-    <div part="dropdown">
-        <div part="filter" class="filter">
-            <div class="search-container">
-                <input part="search" type="text" placeholder="${options.labels.filter.placeholder}" aria-label="search" role="searchbox">
-                <button data-command="toggle-values-only"
-                title="${options.titles.valuesOnly}">[val]</button>
-            </div>
-            <button part="control-button" data-command="clear-query"
-                title="${options.titles.clearFilter}">&Cross;</button>
-        </div>
-        <div part="options" class="options"></div>
+<div part="trigger" class="trigger" tabindex="0">
+    <div part="display" class="display"><span>...</span></div>
+    <div part="controls" class="control-panel">
+        <button part="control-button" data-command="unfold"
+            title="${options.titles.unfoldGroups}">&plus;</button>
+        <button part="control-button" data-command="fold"
+            title="${options.titles.foldGroups}">&minus;</button>
+        <button part="control-button" data-command="show-selected"
+            title="${options.titles.showSelected}" disabled>&#9745;</button>
     </div>
-</details>
-        `
+    <div class="click-me">&#9660;</div>
+</div>
+<div id="dropdown" part="dropdown" popover class="dropdown">
+    <div part="filter" class="filter">
+        <div class="search-container">
+            <input part="search" type="text" placeholder="${options.labels.filter.placeholder}" aria-label="search" role="searchbox">
+            <button data-command="toggle-values-only"
+            title="${options.titles.valuesOnly}">[val]</button>
+        </div>
+        <button part="control-button" data-command="clear-query"
+            title="${options.titles.clearFilter}">&Cross;</button>
+    </div>
+    <div part="options" class="options"></div>
+</div>
+    `
 }
 
 
@@ -514,15 +501,11 @@ class MultiSelector extends HTMLElement {
         this.checkboxHandler = new CheckboxHandler(this)
         this.foldingHandler = new FoldingHandler(this)
         this.navigationHandler = new NavigationHandler(this)
+        this.handleTriggerClick = this.handleTriggerClick.bind(this)
+        this.handlePopoverToggle = this.handlePopoverToggle.bind(this)
 
-        this.onMouseEnter = this.onMouseEnter.bind(this)
-        this.onMouseLeave = this.onMouseLeave.bind(this)
-        this.onDocumentClick = this.onDocumentClick.bind(this)
-        this.onEscape = this.onEscape.bind(this)
         this.handleMediaQueryChange = this.handleMediaQueryChange.bind(this)
         this.handleWheel = this.handleWheel.bind(this)
-
-        this.isHover = false
     }
 
     async connectedCallback() {
@@ -537,12 +520,8 @@ class MultiSelector extends HTMLElement {
         // participate in form
         this.internals_.setFormValue(this.selectedValues)
 
-        document.addEventListener("click", this.onDocumentClick)
-        this.addEventListener("keyup", this.onEscape)
-        this.addEventListener("focusout", this.onFocusOut)
-
-        this.addEventListener("mouseenter", this.onMouseEnter)
-        this.addEventListener("mouseleave", this.onMouseLeave)
+        this.shadowRoot.addEventListener("click", this.handleTriggerClick)
+        this.getElement("dropdown").addEventListener("toggle", this.handlePopoverToggle)
         this.addEventListener("wheel", this.handleWheel, {
             passive: false,
             capture: true
@@ -553,7 +532,7 @@ class MultiSelector extends HTMLElement {
         this.navigationHandler.addListener()
 
         if (this.hasAttribute("disabled")) {
-            this.getElement("box").setAttribute("tabindex", -1)
+            this.getElement("trigger").setAttribute("tabindex", -1)
         }
 
         // observe mutations
@@ -568,9 +547,8 @@ class MultiSelector extends HTMLElement {
     }
 
     disconnectedCallback() {
-        this.removeEventListener("focusout", this.onFocusOut)
-        this.removeEventListener("keyup", this.onEscape)
-        document.removeEventListener("click", this.onDocumentClick)
+        this.removeEventListener("click", this.handleTriggerClick)
+        this.getElement("dropdown")?.removeEventListener("toggle", this.handlePopoverToggle)
         document.removeEventListener("keydown", this.foldingHandler.handleKeyDown)
         document.removeEventListener("keydown", this.searchHandler.handleKeyManageFilter)
         this.removeEventListener("wheel", this.handleWheel, {
@@ -594,16 +572,13 @@ class MultiSelector extends HTMLElement {
             case "name":
                 this.name = newValue
                 break
-            case "mode":
-                this.getElement("box").classList.remove("system-dark")
-                break
             case "disabled":
-                const box = this.getElement("box")
-                if (box) {
+                const trigger = this.getElement("trigger")
+                if (trigger) {
                     if (newValue === "") {
-                        box.setAttribute("tabindex", -1)
+                        trigger.setAttribute("tabindex", -1)
                     } else {
-                        box.removeAttribute("tabindex")
+                        trigger.removeAttribute("tabindex")
                     }
                 }
                 break
@@ -634,7 +609,7 @@ class MultiSelector extends HTMLElement {
     }
 
     get isActive() {
-        return this.contains(document.activeElement) || this.isHover
+        return this.contains(document.activeElement)
     }
 
     // MARK: ...selection
@@ -712,11 +687,14 @@ class MultiSelector extends HTMLElement {
     getElement(name) {
         let query
         switch (name) {
-            case "box":
-                query = "details"
-                break
             case "display":
                 query = ".display"
+                break
+            case "trigger":
+                query = ".trigger"
+                break
+            case "dropdown":
+                query = "[popover]"
                 break
             case "fold":
                 query = `[data-command="fold"]`
@@ -737,7 +715,7 @@ class MultiSelector extends HTMLElement {
                 query = `[data-command="toggle-values-only"]`
                 break
             case "options-container":
-                query = ":host > details > div > .options"
+                query = "[popover] > .options"
                 break
             case "first-group":
                 query = `[data-role="group"]`
@@ -859,39 +837,24 @@ class MultiSelector extends HTMLElement {
     }
 
     // MARK: ...focus
-    onDocumentClick(event) {
-        if (event.composedPath().includes(this)) return
-        this.shadowRoot.querySelector("details").open = false
-        this.onClose()
-    }
-
-    onEscape(event) {
-        if (event.key === "Escape") {
-            this.shadowRoot.querySelector("details").open = false
-            this.onClose()
-        }
-    }
-
-    onFocusOut(event) {
-        const isStillInside =
-            this.shadowRoot.contains(event.relatedTarget) ||
-            this.contains(event.relatedTarget)
-
-        if (!isStillInside) {
-            this.shadowRoot.querySelector("details").open = false
-            this.onClose()
-        }
-    }
-
     onClose() {
         this.internals_.setFormValue(JSON.stringify(this.selectedValues))
     }
 
-    onMouseEnter() {
-        this.isHover = true
+    handleTriggerClick(event) {
+        if (event.target.closest("[data-command]")) return
+        if (event.target.closest(".trigger")) {
+            this.getElement("dropdown").togglePopover()
+        }
     }
-    onMouseLeave() {
-        this.isHover = false
+
+    handlePopoverToggle(event) {
+        if (event.newState === "open") {
+            this.setAttribute("open", "")
+        } else {
+            this.removeAttribute("open")
+            this.onClose()
+        }
     }
 
     // MARK: ...scroll
@@ -899,8 +862,8 @@ class MultiSelector extends HTMLElement {
         event.stopPropagation()
 
         // only handle scroll containment if dropdown is open
-        const box = this.getElement("box")
-        if (!box?.open) return
+        const dropdown = this.getElement("dropdown")
+        if (!dropdown?.matches(":popover-open")) return
 
         const optionsContainer = this.getElement("options-container")
         if (!optionsContainer) return
@@ -961,12 +924,14 @@ class Renderer {
         this.optionsContainer.innerHTML += html
         this.ms.checkboxHandler.setAllGroupStates()
         this.renderSelected()
+        this.ms.getElement("dropdown").addEventListener("toggle", this.ms.handlePopoverToggle)
     }
 
     renderEmpty() {
         this.ms.shadowRoot.adoptedStyleSheets = [baseSheet, componentSheet]
         this.ms.shadowRoot.innerHTML = createTemplate(this.ms.settings).trim()
         this.ms.getElement("display").innerHTML = `<span>${this.ms.settings.labels.empty}</span>`
+        this.ms.getElement("dropdown").addEventListener("toggle", this.ms.handlePopoverToggle)
     }
 
     renderTitle(item) {
@@ -1304,8 +1269,7 @@ class SearchHandler {
             if (ignore.includes(event.key)) return
             if (event.key === "Escape") {
                 if (event.target.value === "") {
-                    this.ms.getElement("box").open = false
-                    this.ms.onClose()
+                    this.ms.getElement("dropdown").hidePopover()
                 } else {
                     event.target.value = ""
                 }
@@ -1566,8 +1530,16 @@ class NavigationHandler {
         this.handleKeyDown = this.handleKeyDown.bind(this)
     }
 
-    get box() {
-        return this.ms.getElement("box")
+    get trigger() {
+        return this.ms.getElement("trigger")
+    }
+
+    get dropdown() {
+        return this.ms.getElement("dropdown")
+    }
+
+    get isOpen() {
+        return this.dropdown?.matches(":popover-open")
     }
 
     get focusableElementsSelector() {
@@ -1587,6 +1559,17 @@ class NavigationHandler {
     }
 
     handleKeyDown(event) {
+        if (event.key === "Escape") {
+            if (event.target === this.searchbox && event.target.value !== "") {
+                event.target.value = ""
+            } else if (this.isOpen) {
+                this.dropdown.hidePopover()
+                this.trigger.focus()
+            }
+            event.stopPropagation()
+            return
+        }
+
         // handle search input
         // - prevent key escape
         // - manage navigation edges
@@ -1602,7 +1585,7 @@ class NavigationHandler {
             if (!this.shouldAllowNavigation(event)) return
         }
 
-        if (!this.box.open && !["Enter", " "].includes(event.key)) {
+        if (!this.isOpen && !["Enter", " "].includes(event.key)) {
             return // let parent handle navigation
         }
         switch (event.key) {
@@ -1630,12 +1613,12 @@ class NavigationHandler {
     }
 
     handleHome() {
-        this.box.querySelector("summary").focus()
+        this.trigger.focus()
     }
 
     handleEnd() {
         const selectors = this.focusableElementsSelector
-        const opened = this.box.querySelectorAll(selectors);
+        const opened = this.dropdown.querySelectorAll(selectors);
         [...opened].at(-1).focus()
     }
 
@@ -1643,13 +1626,13 @@ class NavigationHandler {
         const inc = event.key === "ArrowDown" ? 1 : -1
 
         // handle toplevel
-        if (event.target.matches(`:host > details > summary, :host > details > summary > *`)) {
-            if (inc > 0 && !this.box.open) {
-                this.box.setAttribute("open", "")
+        if (event.target.closest(".trigger")) {
+            if (inc > 0 && !this.isOpen) {
+                this.dropdown.showPopover()
                 return
             }
-            if (inc < 0 && this.box.open) {
-                this.box.removeAttribute("open")
+            if (inc < 0 && this.isOpen) {
+                this.dropdown.hidePopover()
                 return
             }
         }
@@ -1657,20 +1640,20 @@ class NavigationHandler {
         // handle filter buttons
         if (event.target.matches(`.filter button`)) {
             if (inc > 0) {
-                const firstOption = this.box.querySelector(`.options details:not(.hide) > summary, .options div:not(.hide) > [type="checkbox"]`)
+                const firstOption = this.dropdown.querySelector(`.options details:not(.hide) > summary, .options div:not(.hide) > [type="checkbox"]`)
                 if (firstOption) {
                     firstOption.focus()
                 }
                 return
             }
             if (inc < 0) {
-                this.box.querySelector(`summary`).focus()
+                this.trigger.focus()
                 return
             }
         }
 
         const selectors = this.focusableElementsSelector
-        const opened = this.box.querySelectorAll(selectors)
+        const opened = this.dropdown.querySelectorAll(selectors)
         const closest = event.target.closest(selectors)
         const nextIdx = [...opened].indexOf(closest)
         const next = opened[nextIdx + inc]
@@ -1679,7 +1662,7 @@ class NavigationHandler {
 
     handleLeftRightArrow(event) {
         const inc = event.key === "ArrowRight" ? 1 : -1
-        const opened = this.box.querySelectorAll(`
+        const opened = this.dropdown.querySelectorAll(`
             .control-panel button:not([disabled]),
             .search-container input[type="text"],
             [data-command="toggle-values-only"],
