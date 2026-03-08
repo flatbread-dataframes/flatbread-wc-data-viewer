@@ -90,7 +90,7 @@ export class TableBuilder {
             ${isGroupEdge ? ' group-edge' : ''}
             class="columnFilter"
         >
-            <filter-input></filter-input>
+            <filter-combo></filter-combo>
         </th>`
     }
 
@@ -125,7 +125,7 @@ export class TableBuilder {
                 class="indexFilter"
                 ${colspan}
             >
-                <filter-input></filter-input>
+                <filter-combo></filter-combo>
             </th>`
         })
     }

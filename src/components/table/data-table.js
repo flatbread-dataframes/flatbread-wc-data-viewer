@@ -16,6 +16,7 @@ export class DataTable extends HTMLElement {
         this.handleKeydown = this.handleKeydown.bind(this)
         this.handleTheadFocusIn = this.handleTheadFocusIn.bind(this)
         this.handleFilterInput = this.handleFilterInput.bind(this)
+        this.handleFilterOptionsRequest = this.handleFilterOptionsRequest.bind(this)
         this.handleColumnSort = this.handleColumnSort.bind(this)
         this.handleIndexSort = this.handleIndexSort.bind(this)
         this.handleWheel = WheelHandlerMixin.handleWheel.bind(this)
@@ -46,6 +47,7 @@ export class DataTable extends HTMLElement {
         this.shadowRoot.addEventListener("focusin", this.handleTheadFocusIn)
         this.shadowRoot.addEventListener("focusin", this.handleTbodyFocusIn)
         this.shadowRoot.addEventListener("filter-input", this.handleFilterInput)
+        this.shadowRoot.addEventListener("filter-options-request", this.handleFilterOptionsRequest)
         this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.addEventListener("index-sort", this.handleIndexSort)
 
@@ -59,6 +61,7 @@ export class DataTable extends HTMLElement {
         this.shadowRoot.removeEventListener("focusin", this.handleTheadFocusIn)
         this.shadowRoot.removeEventListener("focusin", this.handleTbodyFocusIn)
         this.shadowRoot.removeEventListener("filter-input", this.handleFilterInput)
+        this.shadowRoot.removeEventListener("filter-options-request", this.handleFilterOptionsRequest)
         this.shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.removeEventListener("index-sort", this.handleIndexSort)
 
@@ -94,8 +97,8 @@ export class DataTable extends HTMLElement {
     get theadNavigableElements() {
         const indexHeaders = this.shadowRoot.querySelectorAll('th.indexLevelNameLabel sortable-column-header')
         const columnHeaders = this.shadowRoot.querySelectorAll('th[data-col] sortable-column-header')
-        const indexFilters = this.shadowRoot.querySelectorAll('th.indexFilter filter-input')
-        const columnFilters = this.shadowRoot.querySelectorAll('th.columnFilter filter-input')
+        const indexFilters = this.shadowRoot.querySelectorAll('th.indexFilter filter-combo')
+        const columnFilters = this.shadowRoot.querySelectorAll('th.columnFilter filter-combo')
 
         return {
             headerRow: [...indexHeaders, ...columnHeaders],
@@ -132,9 +135,10 @@ export class DataTable extends HTMLElement {
     // MARK: handlers
     handleKeydown(event) {
         const activeElement = this.shadowRoot.activeElement
+
         const isInThead = activeElement && (
             activeElement.matches('sortable-column-header') ||
-            activeElement.matches('filter-input') ||
+            activeElement.matches('filter-combo') ||
             activeElement.closest('thead')
         )
 
@@ -163,6 +167,26 @@ export class DataTable extends HTMLElement {
     }
 
     // MARK: @filter
+    handleFilterOptionsRequest(event) {
+        const filterCombo = event.target
+        const th = filterCombo.closest("th")
+
+        if (th.classList.contains("columnFilter")) {
+            const col = parseInt(th.dataset.col)
+            const values = this.view.values.map(row => row[col])
+            this.setFilterOptions(filterCombo, values)
+        } else if (th.classList.contains("indexFilter")) {
+            const level = parseInt(th.dataset.level)
+            const values = this.view.index.values.map(v => Array.isArray(v) ? v[level] : v)
+            this.setFilterOptions(filterCombo, values)
+        }
+    }
+
+    setFilterOptions(filterCombo, values, threshold = 30) {
+        const unique = [...new Set(values)].filter(v => v != null).sort()
+        filterCombo.options = unique.length <= threshold ? unique : null
+    }
+
     handleFilterInput(event) {
         const allFilters = {
             indexFilters: this.getIndexFilters(),
@@ -174,10 +198,12 @@ export class DataTable extends HTMLElement {
             bubbles: true,
             composed: true
         }))
+
+        this.shadowRoot.querySelectorAll("filter-combo").forEach(fc => fc.invalidateOptions())
     }
 
     getIndexFilters() {
-        const indexFilterInputs = this.shadowRoot.querySelectorAll(".indexFilter filter-input")
+        const indexFilterInputs = this.shadowRoot.querySelectorAll(".indexFilter filter-combo")
         return Array.from(indexFilterInputs).map(filterEl => {
             const th = filterEl.closest("th")
             const level = parseInt(th.dataset.level)
@@ -186,7 +212,7 @@ export class DataTable extends HTMLElement {
     }
 
     getColumnFilters() {
-        const columnFilterInputs = this.shadowRoot.querySelectorAll(".columnFilter filter-input")
+        const columnFilterInputs = this.shadowRoot.querySelectorAll(".columnFilter filter-combo")
         return Array.from(columnFilterInputs).map(filterEl => {
             const th = filterEl.closest("th")
             const col = parseInt(th.dataset.col)
@@ -195,7 +221,7 @@ export class DataTable extends HTMLElement {
     }
 
     clearAllFilters() {
-        const allFilterInputs = this.shadowRoot.querySelectorAll("filter-input")
+        const allFilterInputs = this.shadowRoot.querySelectorAll("filter-combo")
         allFilterInputs.forEach(filterInput => filterInput.clear())
 
         this.dispatchEvent(new CustomEvent("filters-changed", {
