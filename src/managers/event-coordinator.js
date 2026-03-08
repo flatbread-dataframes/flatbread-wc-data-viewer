@@ -99,6 +99,8 @@ export class EventCoordinator {
     handleEnterRecordView(event) {
         const { viewRowIndex } = event.detail
         this.dataViewer.setAttribute("view", "record")
+        const dataRecord = this.dataViewer.dataRecord
+        if (dataRecord) dataRecord.recordIndex = viewRowIndex
     }
 
     handleExitRecordView(event) {
@@ -126,6 +128,7 @@ export class EventCoordinator {
         this.dataViewer.controlPanel?.updateClearButtonState(hasActiveFilters)
         this.dataViewer.dataTable?.renderTbody()
         this.dataViewer.updateControlPanelStatus()
+        this.dataViewer.dataTable?.resetTbodyPosition()
     }
 
     handleClearAllFilters() {
@@ -154,6 +157,7 @@ export class EventCoordinator {
         if (this.dataViewer.dataTable) {
             this.dataViewer.dataTable.renderTbody()
         }
+        this.dataViewer.dataTable?.resetTbodyPosition()
     }
 
     handleIndexSort(event) {
@@ -167,6 +171,7 @@ export class EventCoordinator {
         if (this.dataViewer.dataTable) {
             this.dataViewer.dataTable.renderTbody()
         }
+        this.dataViewer.dataTable?.resetTbodyPosition()
     }
 
     // MARK: @scroll

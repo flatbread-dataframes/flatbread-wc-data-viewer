@@ -25,6 +25,8 @@ export class DataTable extends HTMLElement {
         this._stylesheet = null
 
         this._theadPosition = { row: 'header', col: 0 }
+        this._tbodyPosition = 0
+        this.handleTbodyFocusIn = this.handleTbodyFocusIn.bind(this)
     }
 
     // MARK: setup
@@ -42,6 +44,7 @@ export class DataTable extends HTMLElement {
     addEventListeners() {
         this.addEventListener("keydown", this.handleKeydown)
         this.shadowRoot.addEventListener("focusin", this.handleTheadFocusIn)
+        this.shadowRoot.addEventListener("focusin", this.handleTbodyFocusIn)
         this.shadowRoot.addEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.addEventListener("index-sort", this.handleIndexSort)
@@ -54,6 +57,7 @@ export class DataTable extends HTMLElement {
     removeEventListeners() {
         this.removeEventListener("keydown", this.handleKeydown)
         this.shadowRoot.removeEventListener("focusin", this.handleTheadFocusIn)
+        this.shadowRoot.removeEventListener("focusin", this.handleTbodyFocusIn)
         this.shadowRoot.removeEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.removeEventListener("index-sort", this.handleIndexSort)
@@ -143,6 +147,14 @@ export class DataTable extends HTMLElement {
                 (event.key === 'ArrowDown' && this._theadPosition.row === 'header')
 
             if ((isHorizontal || isVerticalWithinThead) && this.handleTheadNavigation(event)) {
+                event.preventDefault()
+                event.stopPropagation()
+                return
+            }
+        }
+        const isInTbody = activeElement && activeElement.closest("tbody")
+        if (isInTbody) {
+            if (this.handleTbodyNavigation(event)) {
                 event.preventDefault()
                 event.stopPropagation()
                 return
@@ -315,7 +327,7 @@ export class DataTable extends HTMLElement {
 
     handleTheadFocusIn(event) {
         const target = event.target
-        if (target.matches('sortable-column-header') || target.matches('filter-input')) {
+        if (target.matches('sortable-column-header') || target.matches('filter-combo')) {
             this.initializeTheadPosition(target)
         }
     }
@@ -331,6 +343,99 @@ export class DataTable extends HTMLElement {
         } else if (filterIndex !== -1) {
             this._theadPosition = { row: 'filter', col: filterIndex }
         }
+    }
+
+    // MARK: @tbody
+    handleTbodyNavigation(event) {
+        const totalRows = this.view.visibleIndices.length
+
+        switch (event.key) {
+            case "ArrowUp": {
+                if (this._tbodyPosition === 0) {
+                    return false
+                }
+                this._tbodyPosition -= 1
+                this.focusTbodyRow(this._tbodyPosition)
+                return true
+            }
+            case "ArrowDown": {
+                const next = this._tbodyPosition + 1
+                const totalRows = this.view.visibleIndices.length
+                if (next >= totalRows) return true
+                this._tbodyPosition = next
+                this.ensureRowRendered(next)
+                this.focusTbodyRow(next)
+                return true
+            }
+            case "Home": {
+                this._tbodyPosition = 0
+                this.focusTbodyRow(0)
+                return true
+            }
+            case "End": {
+                this._tbodyPosition = totalRows - 1
+                this.ensureRowRendered(this._tbodyPosition)
+                this.focusTbodyRow(this._tbodyPosition)
+                return true
+            }
+            case "Enter": {
+                this.dispatchEvent(new CustomEvent("enter-record-view", {
+                    detail: { viewRowIndex: this._tbodyPosition },
+                    bubbles: true,
+                    composed: true
+                }))
+                return true
+            }
+        }
+        return false
+    }
+
+    ensureRowRendered(index) {
+        const tbody = this.shadowRoot.querySelector("tbody")
+        const renderedCount = tbody.rows.length
+        if (index < renderedCount) return
+
+        const end = index + this.dataViewer.options.buffer
+        tbody.innerHTML += this._tableBuilder.buildTbody(renderedCount, end)
+        this._stylesheet.updateIndexOffset()
+        this._stylesheet.updateColumnWidths()
+    }
+
+    focusTbodyRow(index) {
+        this.ensureRowRendered(index)
+        const tbody = this.shadowRoot.querySelector("tbody")
+        const row = tbody.rows[index]
+        if (row) {
+            row.focus()
+            this.scrollRowIntoView(row)
+        }
+    }
+
+    scrollRowIntoView(row) {
+        const containerRect = this.getBoundingClientRect()
+        const rowRect = row.getBoundingClientRect()
+
+        // account for sticky thead
+        const thead = this.shadowRoot.querySelector("thead")
+        const theadHeight = thead ? thead.getBoundingClientRect().height : 0
+
+        if (rowRect.top < containerRect.top + theadHeight) {
+            this.scrollTop -= (containerRect.top + theadHeight - rowRect.top)
+        } else if (rowRect.bottom > containerRect.bottom) {
+            this.scrollTop += (rowRect.bottom - containerRect.bottom)
+        }
+    }
+
+    handleTbodyFocusIn(event) {
+        const row = event.target.closest("tr")
+        if (row && row.closest("tbody")) {
+            const index = Array.from(row.parentNode.children).indexOf(row)
+            this._tbodyPosition = index
+        }
+    }
+
+    resetTbodyPosition() {
+        this._tbodyPosition = 0
     }
 
     // MARK: focus

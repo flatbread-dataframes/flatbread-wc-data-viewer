@@ -187,10 +187,18 @@ export class Stylesheet {
                     display: none;
                 }
             `,
+            rowFocus: `
+                tbody tr:focus {
+                    outline: none;
+                }
+                tbody tr:focus :where(td, th) {
+                    background-color: color-mix(in srgb, var(--focus-color) 15%, var(--dv-bg));
+                }
+            `,
         }
 
         return Object.entries(styleBlocks)
-            .filter(([key]) => this.options.styling[key])
+            .filter(([key]) => key === "rowFocus" || this.options.styling[key])
             .map(([, style]) => style)
             .join("\n")
     }

@@ -100,10 +100,8 @@ export class NavigationController {
     // MARK: transitions
     moveUp() {
         const currentIndex = this.availableLevels.indexOf(this.currentLevel)
-
         if (currentIndex > 0) {
-            const newLevel = this.availableLevels[currentIndex - 1]
-            this.moveToLevel(newLevel)
+            this.moveToLevel(this.availableLevels[currentIndex - 1], "below")
             return true
         }
         return false
@@ -111,21 +109,38 @@ export class NavigationController {
 
     moveDown() {
         const currentIndex = this.availableLevels.indexOf(this.currentLevel)
-
         if (currentIndex < this.availableLevels.length - 1) {
-            const newLevel = this.availableLevels[currentIndex + 1]
-            this.moveToLevel(newLevel)
+            this.moveToLevel(this.availableLevels[currentIndex + 1], "above")
             return true
         }
         return false
     }
 
-    moveToLevel(level) {
+    moveToLevel(level, fromDirection) {
         if (level === "control-panel") {
             const elements = this.getNavigableElements("control-panel")
             if (elements.length) elements[0].focus()
             return
         }
+
+        if (level === "tbody") {
+            const dataTable = this.dataViewer.dataTable
+            if (dataTable) dataTable.focusTbodyRow(dataTable._tbodyPosition)
+            return
+        }
+
+        // ADDED: when entering thead from below, target filter row
+        if (level === "thead" && fromDirection === "below") {
+            const dataTable = this.dataViewer.dataTable
+            if (!dataTable) return
+            const filterRow = dataTable.theadNavigableElements.filterRow
+            if (filterRow.length) {
+                const targetX = this.getElementLeftX(this.getCurrentFocusedElement())
+                const closest = this.findClosestElement(targetX, filterRow)
+                if (closest) { closest.focus(); return }
+            }
+        }
+
         const currentElement = this.getCurrentFocusedElement()
         const targetX = currentElement ? this.getElementLeftX(currentElement) : 0
         this.focusClosestElement(level, targetX)
@@ -213,6 +228,9 @@ export class NavigationController {
 
         if (direction === 'down' && from === 'thead') {
             this.moveToLevel('tbody')
+        }
+        if (direction === "up" && from === "tbody") {
+            this.moveToLevel("thead")
         }
         // add other boundary transitions
     }

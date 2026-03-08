@@ -225,7 +225,9 @@ export class TableBuilder {
             const rowElements = row.map((value, iloc) => this.buildCell(value, iloc))
             indexRows[idx] = indexRows[idx].concat(rowElements)
         })
-        return indexRows.map(row => `<tr>${row.join("")}</tr>`).join("")
+        return indexRows.map((row, idx) =>
+            `<tr tabindex="-1" data-view-row="${start + idx}">${row.join("")}</tr>`
+        ).join("")
     }
 
     buildIndexRows(start, end) {
