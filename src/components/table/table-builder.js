@@ -35,6 +35,14 @@ export class TableBuilder {
         return `<button class="hide-button" tabindex="-1" data-hide-type="${type}" ${dataAttrs}><span>✕</span></button>`
     }
 
+    buildSortButton(type, value) {
+        const dataAttr = type === "column"
+            ? `data-col="${value}"`
+            : `data-level="${value}"`
+
+        return `<sort-button ${dataAttr}></sort-button>`
+    }
+
     buildColumnLevelNameLabel(level) {
         // build the label for the level name of the column row
         const columnLevelNameLabel =
@@ -65,12 +73,15 @@ export class TableBuilder {
             this.dataViewer.view.indexNames.length - 1 === level
                 ? `colspan="2"`
                 : ""
-        const indexLevelNameLabelElement =
-            `<th data-level="${level}" class="indexLevelNameLabel" ${colspan}>
-            <sortable-column-header data-level="${level}">
-                ${indexLevelNameLabel}
-            </sortable-column-header>
-        </th>`
+        const sortButton = this.buildSortButton("index", level)
+        const indexLevelNameLabelElement = `
+            <th data-level="${level}" class="indexLevelNameLabel" ${colspan}>
+                <span>
+                    ${sortButton}
+                    ${indexLevelNameLabel}
+                </span>
+            </th>
+        `
         return indexLevelNameLabelElement
     }
 
@@ -162,6 +173,7 @@ export class TableBuilder {
         const selectedValue = Array.isArray(value) ? value.at(-1) : value
         const groups = attrs.groups.join(" ")
         const hideButton = this.buildHideButton('column', iloc)
+        const sortButton = this.buildSortButton('column', iloc)
         const originalColIndex = this.getOriginalColumnIndex(iloc)
 
         const isIndexEdge = iloc === 0
@@ -175,10 +187,9 @@ export class TableBuilder {
             ${isGroupEdge ? ' group-edge' : ''}
         >
             <span>
+                ${sortButton}
+                ${selectedValue}
                 ${hideButton}
-                <sortable-column-header data-col="${iloc}">
-                    ${selectedValue}
-                </sortable-column-header>
             </span>
         </th>`
     }

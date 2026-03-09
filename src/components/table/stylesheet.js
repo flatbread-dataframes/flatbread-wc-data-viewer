@@ -71,10 +71,12 @@ export class Stylesheet {
                 vertical-align: middle;
             }
             thead th > span {
-                display: grid;
-                grid-template-columns: auto 1fr;
+                display: flex;
                 gap: .25em;
+                align-items: center;
             }
+
+            /* general button styling */
             button {
                 position: relative;
                 padding: 0;
@@ -85,13 +87,14 @@ export class Stylesheet {
                 color: inherit;
                 border-radius: 50%;
             }
-
             button > span {
                 position: absolute;
                 top: 50%;
                 left: 50%;
-                transform: translate(-50%, -50%);
+                transform: translate(-50%, -55%);
             }
+
+            /* hide button */
             .hide-button {
                 opacity: 0;
                 background-color: transparent;
@@ -99,12 +102,41 @@ export class Stylesheet {
                 transition: opacity 0.2s;
             }
             thead th:hover .hide-button {
-                background-color: color-mix(in srgb, var(--focus-color) 15%, var(--dv-bg));
+                background-color: color-mix(in srgb, currentColor 15%, var(--dv-bg));
                 opacity: 1;
             }
             thead th .hide-button:hover {
-                background-color: color-mix(in srgb, var(--focus-color) 35%, var(--dv-bg));
+                background-color: color-mix(in srgb, currentColor 35%, var(--dv-bg));
             }
+
+            /* sort button */
+            sort-button {
+                display: grid;
+                place-items: center;
+            }
+            sort-button button {
+                opacity: 0;
+                background-color: transparent;
+                font-size: 0.6125em;
+                transition: opacity 0.2s;
+            }
+            thead th:hover sort-button button {
+                background-color: color-mix(in srgb, currentColor 15%, var(--dv-bg));
+                opacity: 1;
+            }
+            thead th sort-button button:hover {
+                background-color: color-mix(in srgb, currentColor 35%, var(--dv-bg));
+            }
+            sort-button[sort-state="asc"] button,
+            sort-button[sort-state="desc"] button {
+                opacity: 1;
+            }
+            sort-button button:focus-visible {
+                background-color: color-mix(in srgb, currentColor 15%, var(--dv-bg));
+                opacity: 1;
+            }
+
+            /* record view button */
             .recordViewIcon {
                 left: var(--index-col-${this.data.index.nlevels}-offset);
                 width: 1.5rem;
@@ -117,11 +149,11 @@ export class Stylesheet {
                 transition: opacity 0.2s;
             }
             tr:hover .recordViewIcon button {
-                background-color: color-mix(in srgb, var(--focus-color) 25%, var(--dv-bg));
+                background-color: color-mix(in srgb, currentColor 25%, var(--dv-bg));
                 opacity: 1;
             }
             tr .recordViewIcon:hover button {
-                background-color: color-mix(in srgb, var(--focus-color) 40%, var(--dv-bg));
+                background-color: color-mix(in srgb, currentColor 40%, var(--dv-bg));
             }
 
         `
@@ -167,12 +199,12 @@ export class Stylesheet {
         const styleBlocks = {
             groupBorders: `
                 [group-edge] {
-                    border-left: 1px solid var(--border-color, currentColor);
+                    border-left: 1px solid color-mix(in srgb, currentColor 60%, transparent);
                 }
             `,
             rowBorders: `
                 tbody tr:not(:first-of-type):has(th[rowspan]) :where(th, td) {
-                    border-top: 1px solid var(--border-color, currentColor);
+                    border-top: 1px solid color-mix(in srgb, currentColor 75%, transparent);
                 }
             `,
             hoverEffect: `
@@ -182,13 +214,13 @@ export class Stylesheet {
             `,
             theadBorder: `
                 thead tr:last-of-type th {
-                    border-bottom: var(--axes-width, 2px) solid var(--border-color, currentColor);
+                    border-bottom: var(--axes-width, 2px) solid color-mix(in srgb, currentColor 75%, transparent);
                 }
             `,
             indexBorder: `
                 tbody tr th:last-of-type,
                 thead th:has(+ [index-edge]) {
-                    border-right: var(--axes-width, 2px) solid var(--border-color, currentColor);
+                    border-right: var(--axes-width, 2px) solid color-mix(in srgb, currentColor 75%, transparent);
                 }
             `,
             hideFilters: `

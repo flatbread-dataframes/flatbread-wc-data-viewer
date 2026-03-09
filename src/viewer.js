@@ -7,7 +7,7 @@ import "./components/record/data-record.js"
 import "./components/table/data-table.js"
 import "./components/control-panel.js"
 import "./components/filter-combo.js"
-import "./components/sortable-column-header.js"
+import "./components/sort-button.js"
 import "./vendor/wc-multi-selector.js"
 import "./vendor/darkmode-toggle.js"
 

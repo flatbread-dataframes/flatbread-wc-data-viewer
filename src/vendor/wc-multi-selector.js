@@ -66,7 +66,7 @@ componentSheet.replaceSync(`
     display: flex;
     align-items: center;
     padding-inline: .5rem;
-    border: 1px solid var(--ms-border-color);
+    border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
     border-radius: var(--ms-border-radius);
     background: transparent;
     color: inherit;
@@ -136,7 +136,7 @@ componentSheet.replaceSync(`
 
 :where([data-command]) {
     background-color: var(--ms-button-background);
-    border: 1px solid var(--ms-border-color);
+    border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
     color: var(--ms-text-color);
 }
 
@@ -179,7 +179,7 @@ componentSheet.replaceSync(`
     margin: 0;
     padding: 0;
     color: inherit;
-    border: 1px solid var(--ms-border-color);
+    border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
     border-top: none;
     border-radius: 0 0 var(--ms-border-radius) var(--ms-border-radius);
     background-color: var(--ms-dropdown-background);
@@ -210,7 +210,7 @@ componentSheet.replaceSync(`
     padding-inline: .5em;
     padding-block: var(--ms-padding-block);
     border-radius: var(--ms-border-radius) 0 0 var(--ms-border-radius);
-    border: 1px solid var(--ms-border-color);
+    border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
     border-right: none;
 }
 
@@ -306,7 +306,7 @@ componentSheet.replaceSync(`
 }
 
 [data-role="group"] > :not(summary) {
-    border-left: 2px solid var(--ms-border-color);
+    border-left: 2px solid color-mix(in srgb, currentColor 30%, transparent);
     margin-left: .25rem;
     padding-left: .75rem;
 }

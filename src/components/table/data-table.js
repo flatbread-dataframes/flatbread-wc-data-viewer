@@ -95,8 +95,8 @@ export class DataTable extends HTMLElement {
     }
 
     get theadNavigableElements() {
-        const indexHeaders = this.shadowRoot.querySelectorAll('th.indexLevelNameLabel sortable-column-header')
-        const columnHeaders = this.shadowRoot.querySelectorAll('th[data-col] sortable-column-header')
+        const indexHeaders = this.shadowRoot.querySelectorAll('th.indexLevelNameLabel sort-button')
+        const columnHeaders = this.shadowRoot.querySelectorAll('th[data-col] sort-button')
         const indexFilters = this.shadowRoot.querySelectorAll('th.indexFilter filter-combo')
         const columnFilters = this.shadowRoot.querySelectorAll('th.columnFilter filter-combo')
 
@@ -264,8 +264,8 @@ export class DataTable extends HTMLElement {
     }
 
     clearAllSorts() {
-        this.shadowRoot.querySelectorAll('sortable-column-header').forEach(header => {
-            header.clearSort()
+        this.shadowRoot.querySelectorAll('sort-button').forEach(btn => {
+            btn.clearSort()
         })
     }
 
