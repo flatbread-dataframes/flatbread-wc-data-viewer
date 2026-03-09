@@ -70,23 +70,32 @@ export class Stylesheet {
                 text-align: right;
                 vertical-align: middle;
             }
-            thead span {
+            thead th > span {
                 display: grid;
                 grid-template-columns: auto 1fr;
                 gap: .25em;
             }
-            .hide-button {
-                lin-height: 1rem;
-                opacity: 0;
-                border: none;
-                background-color: transparent;
-                cursor: pointer;
-                font-size: 0.6125em;
+            button {
+                position: relative;
+                padding: 0;
                 width: 1rem;
                 height: 1rem;
-                border-radius: 50%;
-                padding: 0.125em;
+                border: none;
+                cursor: pointer;
                 color: inherit;
+                border-radius: 50%;
+            }
+
+            button > span {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+            .hide-button {
+                opacity: 0;
+                background-color: transparent;
+                font-size: 0.6125em;
                 transition: opacity 0.2s;
             }
             thead th:hover .hide-button {
@@ -98,20 +107,13 @@ export class Stylesheet {
             }
             .recordViewIcon {
                 left: var(--index-col-${this.data.index.nlevels}-offset);
-                width: 1.5em;
+                width: 1.5rem;
                 z-index: 1;
             }
             .recordViewIcon button {
-                line-height: 0;
                 opacity: 0;
-                border: none;
                 background: transparent;
-                cursor: pointer;
-                font-size: 1em;
-                width: 1.25rem;
-                height: 1.25rem;
-                border-radius: 50%;
-                color: inherit;
+                font-size: .8125em;
                 transition: opacity 0.2s;
             }
             tr:hover .recordViewIcon button {
@@ -140,7 +142,7 @@ export class Stylesheet {
             thead th[colspan]:not(.columnLevelNameLabel) {
                 text-align: left;
             }
-            thead th span {
+            thead > th > span {
                 position: sticky;
                 left: var(--index-offset);
             }
@@ -152,7 +154,7 @@ export class Stylesheet {
                 z-index: 1;
                 vertical-align: top;
             }
-            tbody th span {
+            tbody > th > span {
                 position: sticky;
                 top: var(--thead-offset);
             }

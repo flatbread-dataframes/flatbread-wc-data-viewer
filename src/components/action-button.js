@@ -12,6 +12,9 @@ componentSheet.replaceSync(`
         opacity: 0.7;
         width: 100%;
     }
+    button:disabled {
+        pointer-events: none;
+    }
     button:hover:not(:disabled) {
         opacity: 1;
     }

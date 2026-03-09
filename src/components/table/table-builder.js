@@ -32,7 +32,7 @@ export class TableBuilder {
             ? `data-level="${level}" data-group="${group}"`
             : `data-col="${value}"`
 
-        return `<button class="hide-button" tabindex="-1" data-hide-type="${type}" ${dataAttrs}>✕</button>`
+        return `<button class="hide-button" tabindex="-1" data-hide-type="${type}" ${dataAttrs}><span>✕</span></button>`
     }
 
     buildColumnLevelNameLabel(level) {
@@ -271,7 +271,7 @@ export class TableBuilder {
 
     buildRecordViewIcon(viewRowIndex) {
         return `<th class="recordViewIcon" data-view-row="${viewRowIndex}">
-            <button type="button" aria-label="View record details">☰</button>
+            <button type="button" aria-label="View record details"><span>☰</span></button>
         </th>`
     }
 
