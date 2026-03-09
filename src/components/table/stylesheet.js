@@ -76,43 +76,50 @@ export class Stylesheet {
                 gap: .25em;
             }
             .hide-button {
+                lin-height: 1rem;
                 opacity: 0;
                 border: none;
-                background: transparent;
+                background-color: transparent;
                 cursor: pointer;
-                font-size: 0.75em;
-                color: inherit;
+                font-size: 0.6125em;
+                width: 1rem;
+                height: 1rem;
+                border-radius: 50%;
                 padding: 0.125em;
-                border-radius: 0.125em;
+                color: inherit;
                 transition: opacity 0.2s;
             }
             thead th:hover .hide-button {
-                opacity: .25;
+                background-color: color-mix(in srgb, var(--focus-color) 15%, var(--dv-bg));
+                opacity: 1;
             }
             thead th .hide-button:hover {
-                opacity: 1;
+                background-color: color-mix(in srgb, var(--focus-color) 35%, var(--dv-bg));
             }
             .recordViewIcon {
                 left: var(--index-col-${this.data.index.nlevels}-offset);
                 width: 1.5em;
                 z-index: 1;
-                text-align: center;
-                vertical-align: middle;
             }
             .recordViewIcon button {
+                line-height: 0;
                 opacity: 0;
                 border: none;
                 background: transparent;
                 cursor: pointer;
-                font-size: 1.25em;
+                font-size: 1em;
+                width: 1.25rem;
+                height: 1.25rem;
+                border-radius: 50%;
                 color: inherit;
                 transition: opacity 0.2s;
             }
             tr:hover .recordViewIcon button {
-                opacity: .25;
+                background-color: color-mix(in srgb, var(--focus-color) 25%, var(--dv-bg));
+                opacity: 1;
             }
             tr .recordViewIcon:hover button {
-                opacity: 1;
+                background-color: color-mix(in srgb, var(--focus-color) 40%, var(--dv-bg));
             }
 
         `

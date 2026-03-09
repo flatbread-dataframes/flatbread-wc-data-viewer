@@ -7,7 +7,6 @@ baseSheet.replaceSync(`
     :host(:focus-visible),
     :focus-visible {
         outline: 2px solid var(--focus-color, Highlight);
-        outline-offset: 2px;
     }
 
     :host(:focus:not(:focus-visible)),

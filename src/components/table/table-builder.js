@@ -271,7 +271,7 @@ export class TableBuilder {
 
     buildRecordViewIcon(viewRowIndex) {
         return `<th class="recordViewIcon" data-view-row="${viewRowIndex}">
-            <button type="button" aria-label="View record details">👁</button>
+            <button type="button" aria-label="View record details">☰</button>
         </th>`
     }
 
