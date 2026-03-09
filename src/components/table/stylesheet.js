@@ -108,6 +108,10 @@ export class Stylesheet {
             thead th .hide-button:hover {
                 background-color: color-mix(in srgb, currentColor 35%, var(--dv-bg));
             }
+            .hide-button:focus-visible {
+                background-color: color-mix(in srgb, var(--focus-color) 15%, var(--dv-bg));
+                opacity: 1;
+            }
 
             /* sort button */
             sort-button {

@@ -95,13 +95,14 @@ export class DataTable extends HTMLElement {
     }
 
     get theadNavigableElements() {
-        const indexHeaders = this.shadowRoot.querySelectorAll('th.indexLevelNameLabel sort-button')
-        const columnHeaders = this.shadowRoot.querySelectorAll('th[data-col] sort-button')
-        const indexFilters = this.shadowRoot.querySelectorAll('th.indexFilter filter-combo')
-        const columnFilters = this.shadowRoot.querySelectorAll('th.columnFilter filter-combo')
+        const headerButtons = this.shadowRoot.querySelectorAll(
+            "thead tr:not(.filter-row) :is(sort-button button, .hide-button)"
+        )
+        const indexFilters = this.shadowRoot.querySelectorAll("th.indexFilter filter-combo")
+        const columnFilters = this.shadowRoot.querySelectorAll("th.columnFilter filter-combo")
 
         return {
-            headerRow: [...indexHeaders, ...columnHeaders],
+            headerRow: [...headerButtons],
             filterRow: [...indexFilters, ...columnFilters]
         }
     }
@@ -137,7 +138,8 @@ export class DataTable extends HTMLElement {
         const activeElement = this.shadowRoot.activeElement
 
         const isInThead = activeElement && (
-            activeElement.matches('sortable-column-header') ||
+            activeElement.closest("sort-button") ||
+            activeElement.matches(".hide-button") ||
             activeElement.matches('filter-combo') ||
             activeElement.closest('thead')
         )
@@ -353,7 +355,8 @@ export class DataTable extends HTMLElement {
 
     handleTheadFocusIn(event) {
         const target = event.target
-        if (target.matches('sortable-column-header') || target.matches('filter-combo')) {
+        const isHeaderButton = target.matches("sort-button button") || target.matches(".hide-button")
+        if (isHeaderButton || target.matches("filter-combo")) {
             this.initializeTheadPosition(target)
         }
     }
