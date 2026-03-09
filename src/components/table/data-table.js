@@ -105,11 +105,16 @@ export class DataTable extends HTMLElement {
 
         return {
             groups,
-            columnSort: [...this.shadowRoot.querySelectorAll("thead tr.columns-row sort-button button")],
-            columnHide: [...this.shadowRoot.querySelectorAll("thead tr.columns-row .hide-button")],
-            indexLabels: [...this.shadowRoot.querySelectorAll("thead tr.index-labels-row sort-button button")],
-            filterIndex: [...this.shadowRoot.querySelectorAll("thead tr.filter-row th.indexFilter filter-combo")],
-            filterColumns: [...this.shadowRoot.querySelectorAll("thead tr.filter-row th.columnFilter filter-combo")],
+            columnSort: [...this.shadowRoot.querySelectorAll(
+                "thead tr.columns-row sort-button button")],
+            columnHide: [...this.shadowRoot.querySelectorAll(
+                "thead tr.columns-row .hide-button")],
+            indexLabels: [...this.shadowRoot.querySelectorAll(
+                "thead tr.index-labels-row sort-button button")],
+            filterIndex: [...this.shadowRoot.querySelectorAll(
+                "thead tr.filter-row th.indexFilter filter-combo")],
+            filterColumns: [...this.shadowRoot.querySelectorAll(
+                "thead tr.filter-row th.columnFilter filter-combo")],
         }
     }
 
@@ -280,6 +285,7 @@ export class DataTable extends HTMLElement {
             this.dispatchEvent(new CustomEvent("navigation-boundary", {
                 detail: { direction: dir, from: "thead" },
                 bubbles: true,
+                composed: true,
             }))
         }
 
@@ -300,6 +306,12 @@ export class DataTable extends HTMLElement {
                     case "columns":
                         if (pos.sub === "hide") { pos.sub = "sort"; handled = true }
                         else if (pos.col > 0) { pos.col--; pos.sub = "hide"; handled = true }
+                        else {
+                            pos.zone = "index-labels"
+                            pos.col = els.filterIndex.length - 1
+                            pos.sub = "sort"
+                            handled = true
+                        }
                         break
                     case "index-labels":
                         if (pos.col > 0) { pos.col--; handled = true }
@@ -329,6 +341,12 @@ export class DataTable extends HTMLElement {
                         break
                     case "index-labels":
                         if (pos.col < els.indexLabels.length - 1) { pos.col++; handled = true }
+                        else if (els.columnSort.length) {
+                            pos.zone = "columns"
+                            pos.col = 0
+                            pos.sub = "sort"
+                            handled = true
+                        }
                         break
                     case "groups":
                         if (pos.col < els.groups[pos.level].length - 1) { pos.col++; handled = true }
@@ -365,6 +383,7 @@ export class DataTable extends HTMLElement {
                             pos.level = lastLevel
                             pos.col = spanIdx !== -1 ? spanIdx : 0
                         } else {
+                            console.log("columns: moving up...")
                             boundary("up")
                         }
                         handled = true
@@ -392,7 +411,7 @@ export class DataTable extends HTMLElement {
                         boundary("down"); handled = true
                         break
                     case "index-labels":
-                        if (els.filterIndex.length) {
+                        if (els.filterIndex.length && !this.options.styling.hideFilters) {
                             pos.zone = "filter-index"
                             pos.col = Math.min(pos.col, els.filterIndex.length - 1)
                             handled = true

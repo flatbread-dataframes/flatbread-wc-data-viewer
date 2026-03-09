@@ -143,7 +143,7 @@ export class NavigationController {
                 }
             } else {
                 // entering from above (control-panel): land on first filter-index, else first filter-columns
-                const first = els.filterIndex[0] ?? els.filterColumns[0]
+                const first = els.indexLabels[0] ?? els.columnSort[0]
                 first?.focus()
             }
             return
@@ -156,7 +156,6 @@ export class NavigationController {
 
         switch (level) {
             case 'control-panel':
-                console.log(position)
                 this.focusControlPanel(position)
                 break
             case 'thead':

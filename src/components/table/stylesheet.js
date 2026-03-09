@@ -228,7 +228,7 @@ export class Stylesheet {
                 }
             `,
             hideFilters: `
-                .filter-row filter-input {
+                .filter-row filter-combo {
                     display: none;
                 }
             `,
