@@ -138,28 +138,31 @@ class FilterCombo extends HTMLElement {
             input[type="text"] {
                 min-width: 0;
                 padding: 4px 6px;
-                border: 1px solid #ccc;
+                border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
                 border-right: none;
                 border-radius: 4px 0 0 4px;
+                background: transparent;
+                color: inherit;
                 font: inherit;
             }
             input[type="text"]:focus {
-                outline: 2px solid #4a90d9;
+                outline: 2px solid var(--focus-color, Highlight);
                 outline-offset: -1px;
                 z-index: 1;
             }
             button {
                 display: grid;
                 place-items: center;
-                border: 1px solid #ccc;
+                border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
                 border-left: none;
-                background: #f8f8f8;
+                background: color-mix(in srgb, currentColor 8%, transparent);
                 font: inherit;
+                color: inherit;
                 cursor: pointer;
                 padding: 2px 6px;
             }
             button:hover:not(:disabled) {
-                background: #e8e8e8;
+                background: color-mix(in srgb, currentColor 12%, transparent);
             }
             button:disabled {
                 opacity: 0.5;
@@ -185,9 +188,11 @@ class FilterCombo extends HTMLElement {
                 min-width: anchor-size(width);
                 margin: 0;
                 padding: 0;
-                border: 1px solid #ccc;
+                border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
                 border-radius: 4px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                background: var(--dv-bg, white);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                color: inherit;
                 max-height: 200px;
                 overflow-y: auto;
             }
@@ -200,17 +205,17 @@ class FilterCombo extends HTMLElement {
                 user-select: none;
             }
             .option:hover {
-                background: #f0f0f0;
+                background: color-mix(in srgb, currentColor 8%, transparent);
             }
             .option.highlighted {
-                background: #e0e8f0;
+                background: color-mix(in srgb, var(--focus-color) 20%, var(--dv-bg, white));
             }
             .option input[type="checkbox"] {
                 margin: 0;
             }
             .message {
                 padding: 8px 12px;
-                color: #888;
+                color: color-mix(in srgb, currentColor 50%, transparent);
                 font-size: 0.875em;
             }
         `)
@@ -294,6 +299,7 @@ class FilterCombo extends HTMLElement {
         const options = this.popover?.querySelectorAll(".option")
         if (!options) return
         options.forEach((opt, i) => opt.classList.toggle("highlighted", i === index))
+        options[index]?.scrollIntoView({ block: "nearest" })
     }
 
     toggleHighlightedOption() {
