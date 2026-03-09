@@ -60,28 +60,38 @@ componentSheet.replaceSync(`
    TRIGGER
    ========================================================================== */
 
-.trigger {
+.trigger-bar {
     anchor-name: --ms-trigger;
+
     display: flex;
     align-items: center;
-    gap: .5em;
-    height: var(--ms-height);
-    padding-block: var(--ms-padding-block);
-    padding-inline: var(--ms-padding-inline);
-    cursor: pointer;
+    padding-inline: .5rem;
     border: 1px solid var(--ms-border-color);
     border-radius: var(--ms-border-radius);
     background: transparent;
     color: inherit;
     font: inherit;
+}
+
+.trigger {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    padding: 0.25rem;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
     text-align: start;
+    cursor: pointer;
 }
 
 .trigger > .display {
     margin-right: auto;
 }
 
-:host([open]) .trigger {
+:host([open]) .trigger-bar {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
     border-bottom: none;
@@ -387,6 +397,14 @@ input[type="checkbox"]:focus-visible + label:before {
     display: none;
 }
 
+.trigger:focus-visible {
+    outline: none;
+}
+
+.trigger-bar:has(.trigger:focus-visible) {
+    outline: 2px solid var(--focus-color, Highlight);
+}
+
 /* ==========================================================================
    DISABLED STATE
    ========================================================================== */
@@ -431,17 +449,35 @@ code {
 
 function createTemplate(options) {
     return /*html*/`
-<div part="trigger" class="trigger" tabindex="0">
-    <div part="display" class="display"><span>...</span></div>
+<div part="trigger" class="trigger-bar">
+    <button class="trigger" popovertarget="dropdown">
+        <div part="display" class="display"><span>...</span></div>
+        <div class="click-me">&#9660;</div>
+    </button>
     <div part="controls" class="control-panel">
-        <button part="control-button" data-command="unfold"
-            title="${options.titles.unfoldGroups}">&plus;</button>
-        <button part="control-button" data-command="fold"
-            title="${options.titles.foldGroups}">&minus;</button>
-        <button part="control-button" data-command="show-selected"
-            title="${options.titles.showSelected}" disabled>&#9745;</button>
+        <button 
+            part="control-button"
+            data-command="unfold"
+            title="${options.titles.unfoldGroups}"
+            popovertarget="dropdown"
+            popovertargetaction="show"
+        >&plus;</button>
+        <button
+            part="control-button"
+            data-command="fold"
+            title="${options.titles.foldGroups}"
+            popovertarget="dropdown"
+            popovertargetaction="show"
+        >&minus;</button>
+        <button
+            part="control-button"
+            data-command="show-selected"
+            title="${options.titles.showSelected}"
+            popovertarget="dropdown"
+            popovertargetaction="show"
+            disabled
+        >&#9745;</button>
     </div>
-    <div class="click-me">&#9660;</div>
 </div>
 <div id="dropdown" part="dropdown" popover class="dropdown">
     <div part="filter" class="filter">
@@ -501,7 +537,6 @@ class MultiSelector extends HTMLElement {
         this.checkboxHandler = new CheckboxHandler(this)
         this.foldingHandler = new FoldingHandler(this)
         this.navigationHandler = new NavigationHandler(this)
-        this.handleTriggerClick = this.handleTriggerClick.bind(this)
         this.handlePopoverToggle = this.handlePopoverToggle.bind(this)
 
         this.handleMediaQueryChange = this.handleMediaQueryChange.bind(this)
@@ -520,7 +555,6 @@ class MultiSelector extends HTMLElement {
         // participate in form
         this.internals_.setFormValue(this.selectedValues)
 
-        this.shadowRoot.addEventListener("click", this.handleTriggerClick)
         this.getElement("dropdown").addEventListener("toggle", this.handlePopoverToggle)
         this.addEventListener("wheel", this.handleWheel, {
             passive: false,
@@ -532,7 +566,7 @@ class MultiSelector extends HTMLElement {
         this.navigationHandler.addListener()
 
         if (this.hasAttribute("disabled")) {
-            this.getElement("trigger").setAttribute("tabindex", -1)
+            this.getElement("trigger").disabled = true
         }
 
         // observe mutations
@@ -547,9 +581,8 @@ class MultiSelector extends HTMLElement {
     }
 
     disconnectedCallback() {
-        this.removeEventListener("click", this.handleTriggerClick)
         this.getElement("dropdown")?.removeEventListener("toggle", this.handlePopoverToggle)
-        document.removeEventListener("keydown", this.foldingHandler.handleKeyDown)
+        document.removeEventListener("keydown", this.foldingHandler.handleKeyUp)
         document.removeEventListener("keydown", this.searchHandler.handleKeyManageFilter)
         this.removeEventListener("wheel", this.handleWheel, {
             capture: true
@@ -575,11 +608,7 @@ class MultiSelector extends HTMLElement {
             case "disabled":
                 const trigger = this.getElement("trigger")
                 if (trigger) {
-                    if (newValue === "") {
-                        trigger.setAttribute("tabindex", -1)
-                    } else {
-                        trigger.removeAttribute("tabindex")
-                    }
+                    trigger.disabled = (newValue === "")
                 }
                 break
             default:
@@ -692,6 +721,9 @@ class MultiSelector extends HTMLElement {
                 break
             case "trigger":
                 query = ".trigger"
+                break
+            case "trigger-bar":
+                query = ".trigger-bar"
                 break
             case "dropdown":
                 query = "[popover]"
@@ -841,20 +873,21 @@ class MultiSelector extends HTMLElement {
         this.internals_.setFormValue(JSON.stringify(this.selectedValues))
     }
 
-    handleTriggerClick(event) {
-        if (event.target.closest("[data-command]")) return
-        if (event.target.closest(".trigger")) {
-            this.getElement("dropdown").togglePopover()
-        }
-    }
-
     handlePopoverToggle(event) {
         if (event.newState === "open") {
             this.setAttribute("open", "")
+            this.getElement("trigger")?.focus()
         } else {
             this.removeAttribute("open")
             this.onClose()
         }
+    }
+
+    handleTriggerClick(event) {
+        if (event.target.closest("[data-command]")) return
+        if (!event.target.closest(".trigger")) return
+        if (this._justDismissed) return
+        this.getElement("dropdown").togglePopover()
     }
 
     // MARK: ...scroll
@@ -1224,7 +1257,7 @@ class SearchHandler {
     }
 
     handleKeyManageFilter(event) {
-        if (!this.ms.isActive) return
+        // if (!this.ms.isActive) return
         if (!event.ctrlKey) return
 
         switch (event.key) {
@@ -1435,7 +1468,7 @@ class FoldingHandler {
     constructor(multiselector) {
         this.ms = multiselector
         this.handleClick = this.handleClick.bind(this)
-        this.handleKeyDown = this.handleKeyDown.bind(this)
+        this.handleKeyUp = this.handleKeyUp.bind(this)
     }
 
     get options() {
@@ -1444,12 +1477,11 @@ class FoldingHandler {
 
     addListener() {
         this.ms.shadowRoot.addEventListener("click", this.handleClick)
-        document.addEventListener("keydown", this.handleKeyDown)
+        document.addEventListener("keyup", this.handleKeyUp)
     }
 
-    handleKeyDown(event) {
-        if (!this.ms.isActive) return
-
+    handleKeyUp(event) {
+        // if (!this.ms.isActive) return
         if (!event.ctrlKey) return
 
         switch (event.key) {
@@ -1544,10 +1576,10 @@ class NavigationHandler {
 
     get focusableElementsSelector() {
         return `
-            .search-container input[type="text"],
-            details[open]:not(.hide) > summary,
-            details[open]:not(.hide) > div > details:not(.hide) > summary,
-            details[open]:not(.hide) > div > div:not(.hide) > [type="checkbox"]`
+        .search-container input[type="text"],
+        details[data-depth="0"]:not(.hide) > summary,
+        details[open]:not(.hide) > div > details:not(.hide) > summary,
+        details[open]:not(.hide) > div > div:not(.hide) > [type="checkbox"]`
     }
 
     get searchbox() {
@@ -1559,6 +1591,15 @@ class NavigationHandler {
     }
 
     handleKeyDown(event) {
+        const keys = [
+            "ArrowUp", "ArrowDown",
+            "ArrowLeft", "ArrowRight",
+            "Home", "End", "Tab",
+            "Enter", " ",
+            "Escape",
+        ]
+        if (!keys.includes(event.key)) return
+
         if (event.key === "Escape") {
             if (event.target === this.searchbox && event.target.value !== "") {
                 event.target.value = ""
@@ -1626,7 +1667,7 @@ class NavigationHandler {
         const inc = event.key === "ArrowDown" ? 1 : -1
 
         // handle toplevel
-        if (event.target.closest(".trigger")) {
+        if (event.target === this.trigger) {
             if (inc > 0 && !this.isOpen) {
                 this.dropdown.showPopover()
                 return
@@ -1635,6 +1676,11 @@ class NavigationHandler {
                 this.dropdown.hidePopover()
                 return
             }
+        }
+
+        if (event.target === this.searchbox && inc < 0) {
+            this.trigger.focus()
+            return
         }
 
         // handle filter buttons
@@ -1662,6 +1708,15 @@ class NavigationHandler {
 
     handleLeftRightArrow(event) {
         const inc = event.key === "ArrowRight" ? 1 : -1
+        if (event.target.closest(".trigger-bar")) {
+            const bar = this.ms.getElement("trigger-bar")
+            const elements = bar.querySelectorAll("button:not([disabled])")
+            const idx = [...elements].indexOf(event.target)
+            const inc = event.key === "ArrowRight" ? 1 : -1
+            const next = elements[idx + inc]
+            if (next) next.focus()
+            return
+        }
         const opened = this.dropdown.querySelectorAll(`
             .control-panel button:not([disabled]),
             .search-container input[type="text"],
@@ -1682,9 +1737,16 @@ class NavigationHandler {
     }
 
     handleEnter(event) {
-        // buttons: trigger click, prevent dropdown close
-        if (event.target.matches(`button`)) {
-            event.target.click()
+        // trigger: do nothing when on data-commands
+        if (event.target.matches(`[data-command]`)) {
+            event.preventDefault()
+            event.stopPropagation()
+            return
+        }
+
+        // trigger: toggle dropdown
+        if (event.target.closest(".trigger")) {
+            this.dropdown.togglePopover()
             event.preventDefault()
             event.stopPropagation()
             return
