@@ -129,21 +129,25 @@ export class NavigationController {
             return
         }
 
-        // ADDED: when entering thead from below, target filter row
-        if (level === "thead" && fromDirection === "below") {
+        if (level === "thead") {
             const dataTable = this.dataViewer.dataTable
             if (!dataTable) return
-            const filterRow = dataTable.theadNavigableElements.filterRow
-            if (filterRow.length) {
-                const targetX = this.getElementLeftX(this.getCurrentFocusedElement())
-                const closest = this.findClosestElement(targetX, filterRow)
-                if (closest) { closest.focus(); return }
-            }
-        }
+            const els = dataTable.theadNavigableElements
 
-        const currentElement = this.getCurrentFocusedElement()
-        const targetX = currentElement ? this.getElementLeftX(currentElement) : 0
-        this.focusClosestElement(level, targetX)
+            if (fromDirection === "below") {
+                // entering from tbody: land on filter-columns, closest by X
+                if (els.filterColumns.length) {
+                    const targetX = this.getElementLeftX(this.getCurrentFocusedElement())
+                    const closest = this.findClosestElement(targetX, els.filterColumns)
+                    closest?.focus()
+                }
+            } else {
+                // entering from above (control-panel): land on first filter-index, else first filter-columns
+                const first = els.filterIndex[0] ?? els.filterColumns[0]
+                first?.focus()
+            }
+            return
+        }
     }
 
     // MARK: levels
@@ -183,14 +187,15 @@ export class NavigationController {
 
     getNavigableElements(level) {
         switch (level) {
-            case 'control-panel':
+            case "control-panel": {
                 const controlPanel = this.dataViewer.controlPanel
                 return controlPanel ? controlPanel.navigableElements : []
-            case 'thead':
+            }
+            case "thead": {
                 const dataTable = this.dataViewer.dataTable
                 if (!dataTable) return []
-                const elements = dataTable.theadNavigableElements
-                return [...elements.headerRow, ...elements.filterRow]
+                return dataTable.theadNavigableElements.filterColumns
+            }
             default:
                 return []
         }
@@ -226,12 +231,14 @@ export class NavigationController {
     handleNavigationBoundary(event) {
         const { direction, from } = event.detail
 
-        if (direction === 'down' && from === 'thead') {
-            this.moveToLevel('tbody')
+        if (direction === "up" && from === "thead") {
+            this.moveToLevel("control-panel")
+        }
+        if (direction === "down" && from === "thead") {
+            this.moveToLevel("tbody")
         }
         if (direction === "up" && from === "tbody") {
-            this.moveToLevel("thead")
+            this.moveToLevel("thead", "below")
         }
-        // add other boundary transitions
     }
 }

@@ -111,11 +111,11 @@ export class TableBuilder {
             const isIndexEdge = iloc === 0
             const isGroupEdge = this.dataViewer.view.columns.edges.slice(1).includes(iloc)
             return `<th
-                ${isIndexEdge ? ' index-edge' : ''}
-                ${isGroupEdge ? ' group-edge' : ''}
+                ${isIndexEdge ? " index-edge" : ""}
+                ${isGroupEdge ? " group-edge" : ""}
             ></th>`
         })
-        return `<tr>${indexLevelNameLabels.join("")}${emptyCells.join("")}</tr>`
+        return `<tr class="index-labels-row">${indexLevelNameLabels.join("")}${emptyCells.join("")}</tr>`
     }
 
     buildFilterRow() {
@@ -157,7 +157,7 @@ export class TableBuilder {
         // in a multiindex this is the lowest level
         const columnLevelNameLabelElement = this.buildColumnLevelNameLabel(-1)
         const columnHeaders = this.dataViewer.view.columns.map((value, idx) => this.buildColumnLabel(value, idx))
-        return `<tr>${columnLevelNameLabelElement}${columnHeaders.join("")}</tr>`
+        return `<tr class="columns-row">${columnLevelNameLabelElement}${columnHeaders.join("")}</tr>`
     }
 
     getOriginalColumnIndex(viewColIndex) {
@@ -198,13 +198,11 @@ export class TableBuilder {
         // build a row of column group labels
         // in a multiindex these are the upper levels
         const columnLevelNameLabelElement = this.buildColumnLevelNameLabel(level)
-
         const headers =
             this.dataViewer.view.columns.spans[level]
                 .map((span, iloc) => this.buildColumnGroupLabel(span, iloc, level))
                 .join("")
-
-        return `<tr>${columnLevelNameLabelElement}${headers}</tr>`
+        return `<tr class="column-groups-row" data-level="${level}">${columnLevelNameLabelElement}${headers}</tr>`
     }
 
     buildColumnGroupLabel(span, iloc, level) {

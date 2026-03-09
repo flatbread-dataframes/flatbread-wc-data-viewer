@@ -25,7 +25,7 @@ export class DataTable extends HTMLElement {
         this._tableBuilder = null
         this._stylesheet = null
 
-        this._theadPosition = { row: 'header', col: 0 }
+        this._theadPosition = { zone: "filter-columns", col: 0, sub: null, level: null }
         this._tbodyPosition = 0
         this.handleTbodyFocusIn = this.handleTbodyFocusIn.bind(this)
     }
@@ -95,15 +95,21 @@ export class DataTable extends HTMLElement {
     }
 
     get theadNavigableElements() {
-        const headerButtons = this.shadowRoot.querySelectorAll(
-            "thead tr:not(.filter-row) :is(sort-button button, .hide-button)"
+        const nGroupLevels = this.view.columns.ilevels.length - 1
+
+        const groups = Array.from({ length: nGroupLevels }, (_, level) =>
+            [...this.shadowRoot.querySelectorAll(
+                `thead tr.column-groups-row[data-level="${level}"] .hide-button`
+            )]
         )
-        const indexFilters = this.shadowRoot.querySelectorAll("th.indexFilter filter-combo")
-        const columnFilters = this.shadowRoot.querySelectorAll("th.columnFilter filter-combo")
 
         return {
-            headerRow: [...headerButtons],
-            filterRow: [...indexFilters, ...columnFilters]
+            groups,
+            columnSort: [...this.shadowRoot.querySelectorAll("thead tr.columns-row sort-button button")],
+            columnHide: [...this.shadowRoot.querySelectorAll("thead tr.columns-row .hide-button")],
+            indexLabels: [...this.shadowRoot.querySelectorAll("thead tr.index-labels-row sort-button button")],
+            filterIndex: [...this.shadowRoot.querySelectorAll("thead tr.filter-row th.indexFilter filter-combo")],
+            filterColumns: [...this.shadowRoot.querySelectorAll("thead tr.filter-row th.columnFilter filter-combo")],
         }
     }
 
@@ -137,33 +143,18 @@ export class DataTable extends HTMLElement {
     handleKeydown(event) {
         const activeElement = this.shadowRoot.activeElement
 
-        const isInThead = activeElement && (
-            activeElement.closest("sort-button") ||
-            activeElement.matches(".hide-button") ||
-            activeElement.matches('filter-combo') ||
-            activeElement.closest('thead')
-        )
-
-        // only handle internal thead navigation
-        // vertical navigation between levels is handled by NavigationController
-        if (isInThead) {
-            const isHorizontal = ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)
-            const isVerticalWithinThead =
-                (event.key === 'ArrowUp' && this._theadPosition.row === 'filter') ||
-                (event.key === 'ArrowDown' && this._theadPosition.row === 'header')
-
-            if ((isHorizontal || isVerticalWithinThead) && this.handleTheadNavigation(event)) {
+        if (activeElement?.closest("thead")) {
+            if (this.handleTheadNavigation(event)) {
                 event.preventDefault()
                 event.stopPropagation()
-                return
             }
+            return
         }
-        const isInTbody = activeElement && activeElement.closest("tbody")
-        if (isInTbody) {
+
+        if (activeElement?.closest("tbody")) {
             if (this.handleTbodyNavigation(event)) {
                 event.preventDefault()
                 event.stopPropagation()
-                return
             }
         }
     }
@@ -273,104 +264,266 @@ export class DataTable extends HTMLElement {
 
     // MARK: @thead
     handleTheadNavigation(event) {
-        const elements = this.theadNavigableElements
-        const currentRow = elements[this._theadPosition.row + 'Row']
+        const navKeys = [
+            "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
+            "Home", "End", "PageUp", "PageDown",
+        ]
+        if (!navKeys.includes(event.key)) return false
 
-        if (!currentRow.length) return false
-
+        const els = this.theadNavigableElements
+        const pos = this._theadPosition
         let handled = false
+        let shouldRefocus = true
+
+        const boundary = (dir) => {
+            shouldRefocus = false
+            this.dispatchEvent(new CustomEvent("navigation-boundary", {
+                detail: { direction: dir, from: "thead" },
+                bubbles: true,
+            }))
+        }
 
         switch (event.key) {
-            case 'ArrowLeft':
-                this._theadPosition.col = (this._theadPosition.col - 1 + currentRow.length) % currentRow.length
-                this.focusTheadElement()
-                handled = true
+            case "ArrowLeft":
+                switch (pos.zone) {
+                    case "filter-index":
+                        if (pos.col > 0) { pos.col--; handled = true }
+                        break
+                    case "filter-columns":
+                        if (pos.col > 0) { pos.col--; handled = true }
+                        else if (els.filterIndex.length) {
+                            pos.zone = "filter-index"
+                            pos.col = els.filterIndex.length - 1
+                            handled = true
+                        }
+                        break
+                    case "columns":
+                        if (pos.sub === "hide") { pos.sub = "sort"; handled = true }
+                        else if (pos.col > 0) { pos.col--; pos.sub = "hide"; handled = true }
+                        break
+                    case "index-labels":
+                        if (pos.col > 0) { pos.col--; handled = true }
+                        break
+                    case "groups":
+                        if (pos.col > 0) { pos.col--; handled = true }
+                        break
+                }
                 break
 
-            case 'ArrowRight':
-                this._theadPosition.col = (this._theadPosition.col + 1) % currentRow.length
-                this.focusTheadElement()
-                handled = true
+            case "ArrowRight":
+                switch (pos.zone) {
+                    case "filter-index":
+                        if (pos.col < els.filterIndex.length - 1) { pos.col++; handled = true }
+                        else if (els.filterColumns.length) {
+                            pos.zone = "filter-columns"
+                            pos.col = 0
+                            handled = true
+                        }
+                        break
+                    case "filter-columns":
+                        if (pos.col < els.filterColumns.length - 1) { pos.col++; handled = true }
+                        break
+                    case "columns":
+                        if (pos.sub === "sort") { pos.sub = "hide"; handled = true }
+                        else if (pos.col < els.columnSort.length - 1) { pos.col++; pos.sub = "sort"; handled = true }
+                        break
+                    case "index-labels":
+                        if (pos.col < els.indexLabels.length - 1) { pos.col++; handled = true }
+                        break
+                    case "groups":
+                        if (pos.col < els.groups[pos.level].length - 1) { pos.col++; handled = true }
+                        break
+                }
                 break
 
-            case 'Home':
-                this._theadPosition.col = 0
-                this.focusTheadElement()
-                handled = true
+            case "ArrowUp":
+                switch (pos.zone) {
+                    case "filter-index":
+                        if (els.indexLabels.length) {
+                            pos.zone = "index-labels"
+                            pos.col = Math.min(pos.col, els.indexLabels.length - 1)
+                            handled = true
+                        } else {
+                            boundary("up"); handled = true
+                        }
+                        break
+                    case "filter-columns":
+                        pos.zone = "columns"
+                        pos.sub = "sort"
+                        pos.col = Math.min(pos.col, els.columnSort.length - 1)
+                        handled = true
+                        break
+                    case "index-labels":
+                        boundary("up"); handled = true
+                        break
+                    case "columns": {
+                        if (els.groups.length) {
+                            const lastLevel = els.groups.length - 1
+                            const spans = this.view.columns.spans[lastLevel]
+                            const spanIdx = spans.findIndex(s => pos.col >= s.iloc && pos.col < s.iloc + s.count)
+                            pos.zone = "groups"
+                            pos.level = lastLevel
+                            pos.col = spanIdx !== -1 ? spanIdx : 0
+                        } else {
+                            boundary("up")
+                        }
+                        handled = true
+                        break
+                    }
+                    case "groups":
+                        if (pos.level > 0) {
+                            const span = this.view.columns.spans[pos.level][pos.col]
+                            const parentSpans = this.view.columns.spans[pos.level - 1]
+                            const parentIdx = parentSpans.findIndex(s => span.iloc >= s.iloc && span.iloc < s.iloc + s.count)
+                            pos.level--
+                            pos.col = parentIdx !== -1 ? parentIdx : 0
+                        } else {
+                            boundary("up")
+                        }
+                        handled = true
+                        break
+                }
                 break
 
-            case 'End':
-                this._theadPosition.col = currentRow.length - 1
-                this.focusTheadElement()
-                handled = true
+            case "ArrowDown":
+                switch (pos.zone) {
+                    case "filter-index":
+                    case "filter-columns":
+                        boundary("down"); handled = true
+                        break
+                    case "index-labels":
+                        if (els.filterIndex.length) {
+                            pos.zone = "filter-index"
+                            pos.col = Math.min(pos.col, els.filterIndex.length - 1)
+                            handled = true
+                        } else {
+                            boundary("down"); handled = true
+                        }
+                        break
+                    case "columns":
+                        pos.zone = "filter-columns"
+                        pos.col = Math.min(pos.col, els.filterColumns.length - 1)
+                        pos.sub = null
+                        handled = true
+                        break
+                    case "groups": {
+                        const span = this.view.columns.spans[pos.level][pos.col]
+                        if (pos.level < els.groups.length - 1) {
+                            const nextSpans = this.view.columns.spans[pos.level + 1]
+                            const nextIdx = nextSpans.findIndex(s => span.iloc >= s.iloc && span.iloc < s.iloc + s.count)
+                            pos.level++
+                            pos.col = nextIdx !== -1 ? nextIdx : 0
+                        } else {
+                            pos.zone = "columns"
+                            pos.col = span.iloc
+                            pos.sub = "sort"
+                            pos.level = null
+                        }
+                        handled = true
+                        break
+                    }
+                }
                 break
 
-            case 'ArrowUp':
-                if (this._theadPosition.row === 'filter') {
-                    this._theadPosition.row = 'header'
-                    this._theadPosition.col = Math.min(this._theadPosition.col, elements.headerRow.length - 1)
-                    this.focusTheadElement()
-                    handled = true
-                } else {
-                    const boundaryEvent = new CustomEvent('navigation-boundary', {
-                        detail: { direction: 'up', from: 'thead' },
-                        bubbles: true
-                    })
-                    this.dispatchEvent(boundaryEvent)
+            case "Home":
+                switch (pos.zone) {
+                    case "filter-index": pos.col = 0; handled = true; break
+                    case "filter-columns": pos.col = 0; handled = true; break
+                    case "columns": pos.col = 0; pos.sub = "sort"; handled = true; break
+                    case "index-labels": pos.col = 0; handled = true; break
+                    case "groups": pos.col = 0; handled = true; break
+                }
+                break
+
+            case "End":
+                switch (pos.zone) {
+                    case "filter-index": pos.col = els.filterIndex.length - 1; handled = true; break
+                    case "filter-columns": pos.col = els.filterColumns.length - 1; handled = true; break
+                    case "columns": pos.col = els.columnSort.length - 1; pos.sub = "hide"; handled = true; break
+                    case "index-labels": pos.col = els.indexLabels.length - 1; handled = true; break
+                    case "groups": pos.col = els.groups[pos.level].length - 1; handled = true; break
+                }
+                break
+
+            case "PageUp":
+                if (pos.zone === "columns" || pos.zone === "filter-columns") {
+                    const edges = this.view.columns.edges
+                    const prevEdge = [...edges].reverse().find(e => e < pos.col)
+                    pos.col = prevEdge ?? 0
+                    if (pos.zone === "columns") pos.sub = "sort"
                     handled = true
                 }
                 break
 
-            case 'ArrowDown':
-                if (this._theadPosition.row === 'header') {
-                    this._theadPosition.row = 'filter'
-                    // clamp column to available elements
-                    this._theadPosition.col = Math.min(this._theadPosition.col, elements.filterRow.length - 1)
-                    this.focusTheadElement()
-                    handled = true
-                } else {
-                    const boundaryEvent = new CustomEvent('navigation-boundary', {
-                        detail: { direction: 'down', from: 'thead' },
-                        bubbles: true
-                    })
-                    this.dispatchEvent(boundaryEvent)
+            case "PageDown":
+                if (pos.zone === "columns" || pos.zone === "filter-columns") {
+                    const edges = this.view.columns.edges
+                    const maxCol = pos.zone === "columns"
+                        ? els.columnSort.length - 1
+                        : els.filterColumns.length - 1
+                    const nextEdge = edges.find(e => e > pos.col)
+                    pos.col = nextEdge ?? maxCol
+                    if (pos.zone === "columns") pos.sub = "sort"
                     handled = true
                 }
                 break
         }
 
+        if (handled && shouldRefocus) this.focusTheadElement()
         return handled
     }
 
     focusTheadElement() {
-        const elements = this.theadNavigableElements
-        const currentRow = elements[this._theadPosition.row + 'Row']
-        const targetElement = currentRow[this._theadPosition.col]
+        const els = this.theadNavigableElements
+        const { zone, col, sub, level } = this._theadPosition
+        let target
 
-        if (targetElement) {
-            targetElement.focus()
-            this.scrollElementIntoView(targetElement)
+        switch (zone) {
+            case "filter-index": target = els.filterIndex[col]; break
+            case "filter-columns": target = els.filterColumns[col]; break
+            case "index-labels": target = els.indexLabels[col]; break
+            case "columns": target = sub === "sort" ? els.columnSort[col] : els.columnHide[col]; break
+            case "groups": target = els.groups[level]?.[col]; break
+        }
+
+        if (target) {
+            target.focus()
+            this.scrollElementIntoView(target)
         }
     }
 
     handleTheadFocusIn(event) {
         const target = event.target
-        const isHeaderButton = target.matches("sort-button button") || target.matches(".hide-button")
-        if (isHeaderButton || target.matches("filter-combo")) {
-            this.initializeTheadPosition(target)
-        }
+        const isNavigable =
+            target.matches("sort-button button") ||
+            target.matches(".hide-button") ||
+            target.matches("filter-combo")
+
+        if (isNavigable) this.initializeTheadPosition(target)
     }
 
-    initializeTheadPosition(targetElement) {
-        const elements = this.theadNavigableElements
+    initializeTheadPosition(element) {
+        const els = this.theadNavigableElements
+        let idx
 
-        const headerIndex = elements.headerRow.indexOf(targetElement)
-        const filterIndex = elements.filterRow.indexOf(targetElement)
+        idx = els.filterIndex.indexOf(element)
+        if (idx !== -1) { this._theadPosition = { zone: "filter-index", col: idx, sub: null, level: null }; return }
 
-        if (headerIndex !== -1) {
-            this._theadPosition = { row: 'header', col: headerIndex }
-        } else if (filterIndex !== -1) {
-            this._theadPosition = { row: 'filter', col: filterIndex }
+        idx = els.filterColumns.indexOf(element)
+        if (idx !== -1) { this._theadPosition = { zone: "filter-columns", col: idx, sub: null, level: null }; return }
+
+        idx = els.columnSort.indexOf(element)
+        if (idx !== -1) { this._theadPosition = { zone: "columns", col: idx, sub: "sort", level: null }; return }
+
+        idx = els.columnHide.indexOf(element)
+        if (idx !== -1) { this._theadPosition = { zone: "columns", col: idx, sub: "hide", level: null }; return }
+
+        idx = els.indexLabels.indexOf(element)
+        if (idx !== -1) { this._theadPosition = { zone: "index-labels", col: idx, sub: null, level: null }; return }
+
+        for (let level = 0; level < els.groups.length; level++) {
+            idx = els.groups[level].indexOf(element)
+            if (idx !== -1) { this._theadPosition = { zone: "groups", col: idx, sub: null, level }; return }
         }
     }
 
