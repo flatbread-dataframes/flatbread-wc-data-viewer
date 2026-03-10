@@ -135,11 +135,13 @@ export class NavigationController {
             const els = dataTable.theadNavigableElements
 
             if (fromDirection === "below") {
-                // entering from tbody: land on filter-columns, closest by X
-                if (els.filterColumns.length) {
-                    const targetX = this.getElementLeftX(this.getCurrentFocusedElement())
-                    const closest = this.findClosestElement(targetX, els.filterColumns)
-                    closest?.focus()
+                const filtersHidden = this.dataViewer.options.styling.hideFilters
+                if (!filtersHidden && els.filterColumns.length) {
+                    const first = els.filterIndex[0] ?? els.filterColumns[0]
+                    first?.focus()
+                } else {
+                    const first = els.indexLabels[0] ?? els.columnSort[0]
+                    first?.focus()
                 }
             } else {
                 // entering from above (control-panel): land on first filter-index, else first filter-columns
