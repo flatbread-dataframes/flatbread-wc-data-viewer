@@ -183,7 +183,8 @@ export class Stylesheet {
             thead th[colspan]:not(.columnLevelNameLabel) {
                 text-align: left;
             }
-            thead > th > span {
+            thead th[colspan]:not(.columnLevelNameLabel) > span {
+                display: inline-flex;
                 position: sticky;
                 left: var(--index-offset);
             }
@@ -195,7 +196,7 @@ export class Stylesheet {
                 z-index: 1;
                 vertical-align: top;
             }
-            tbody > th > span {
+            tbody th > span {
                 position: sticky;
                 top: var(--thead-offset);
             }
