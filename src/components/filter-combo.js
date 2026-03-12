@@ -138,7 +138,7 @@ class FilterCombo extends HTMLElement {
             input[type="text"] {
                 min-width: 0;
                 padding: 4px 6px;
-                border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+                border: 1px solid var(--dv-border);
                 border-right: none;
                 border-radius: 4px 0 0 4px;
                 background: transparent;
@@ -153,7 +153,7 @@ class FilterCombo extends HTMLElement {
             button {
                 display: grid;
                 place-items: center;
-                border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+                border: 1px solid var(--dv-border);
                 border-left: none;
                 background: color-mix(in srgb, currentColor 8%, transparent);
                 font: inherit;
@@ -188,7 +188,7 @@ class FilterCombo extends HTMLElement {
                 min-width: anchor-size(width);
                 margin: 0;
                 padding: 0;
-                border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+                border: 1px solid var(--dv-border);
                 border-radius: 4px;
                 background: var(--dv-bg, white);
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);

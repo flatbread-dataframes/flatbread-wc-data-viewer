@@ -9,6 +9,8 @@ const style = `
         height: 1.5em;
         transition: transform 200ms ease-in-out;
 
+        span { display: inline-block; }
+
         &:hover {
             transform: scale(1.25);
         }
@@ -18,6 +20,11 @@ const style = `
     }
     .hidden {
         display: none;
+    }
+    @keyframes toggle-swap {
+        0%   { transform: scale(1) }
+        50%  { transform: scale(0) }
+        100% { transform: scale(1) }
     }
 `
 
@@ -68,8 +75,22 @@ export class DarkModeToggle extends HTMLElement {
     get _moon() { return this.shadow.getElementById("moon") }
 
     handleClick() {
-        this.scheme = this.scheme === "dark" ? "light" : "dark"
-        localStorage.setItem("prefers-color-scheme", this.scheme)
+        if (this._animating) return
+        this._animating = true
+
+        const duration = 300
+        const icon = this.scheme === "dark" ? this._moon : this._sun
+        icon.style.animation = `toggle-swap ${duration}ms ease-in-out`
+
+        setTimeout(() => {
+            this.scheme = this.scheme === "dark" ? "light" : "dark"
+            localStorage.setItem("prefers-color-scheme", this.scheme)
+        }, duration / 2)
+
+        setTimeout(() => {
+            icon.style.animation = ""
+            this._animating = false
+        }, duration)
     }
 
     handleMediaQueryChange(event) {

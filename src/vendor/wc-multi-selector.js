@@ -170,7 +170,7 @@ componentSheet.replaceSync(`
    DROPDOWN CONTAINER
    ========================================================================== */
 
-[popover]:popover-open {
+.dropdown:popover-open {
     position-anchor: --ms-trigger;
     position: fixed;
     top: anchor(bottom);
@@ -444,6 +444,45 @@ code {
     border-radius: 20px;
     border: transparent;
 }
+
+/* ==========================================================================
+   TOOLTIP
+   ========================================================================== */
+
+.tooltip {
+    position-anchor: --ms-trigger;
+    position: fixed;
+    top: calc(anchor(bottom) + 0.25rem);
+    left: anchor(left);
+    position-try-fallbacks: flip-block, flip-inline;
+    margin: 0;
+    padding: 0.5rem;
+    border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+    border-radius: var(--ms-border-radius);
+    background-color: var(--ms-dropdown-background);
+    color: inherit;
+    font: inherit;
+    width: anchor-size(width);
+}
+
+.tooltip-title {
+    font-weight: bold;
+    font-size: .95em;
+    margin-bottom: 0.25rem;
+}
+
+.tooltip-items {
+    line-height: 1.4;
+    font-size: 0.85em;
+}
+
+.tooltip-group + .tooltip-group {
+    margin-top: 0.25rem;
+}
+
+.tooltip-group-header {
+    font-weight: bold;
+}
 `)
 
 
@@ -491,6 +530,7 @@ function createTemplate(options) {
     </div>
     <div part="options" class="options"></div>
 </div>
+<div id="tooltip" part="tooltip" popover="manual" class="tooltip"></div>
     `
 }
 
@@ -538,6 +578,7 @@ class MultiSelector extends HTMLElement {
         this.foldingHandler = new FoldingHandler(this)
         this.navigationHandler = new NavigationHandler(this)
         this.handlePopoverToggle = this.handlePopoverToggle.bind(this)
+        this.tooltipHandler = new TooltipHandler(this)
 
         this.handleMediaQueryChange = this.handleMediaQueryChange.bind(this)
         this.handleWheel = this.handleWheel.bind(this)
@@ -564,6 +605,7 @@ class MultiSelector extends HTMLElement {
         this.searchHandler.addListener()
         this.foldingHandler.addListener()
         this.navigationHandler.addListener()
+        this.tooltipHandler.addListener()
 
         if (this.hasAttribute("disabled")) {
             this.getElement("trigger").disabled = true
@@ -755,6 +797,9 @@ class MultiSelector extends HTMLElement {
             case "label-all":
                 query = `[data-role="group"] label`
                 break
+            case "tooltip":
+                query = "#tooltip"
+                break
             default:
                 console.warn(`Unexpected value passed to getElement: ${name}`)
                 return null
@@ -875,6 +920,7 @@ class MultiSelector extends HTMLElement {
 
     handlePopoverToggle(event) {
         if (event.newState === "open") {
+            this.tooltipHandler.hide()
             this.setAttribute("open", "")
             this.getElement("trigger")?.focus()
         } else {
@@ -967,13 +1013,6 @@ class Renderer {
         this.ms.getElement("dropdown").addEventListener("toggle", this.ms.handlePopoverToggle)
     }
 
-    renderTitle(item) {
-        const title = `${item.label} [${item.count}]`
-        const underline = "-".repeat(title.length)
-        const itemList = this.listFormat.format(item.items)
-        return `${title}\n${underline}\n${itemList}`
-    }
-
     renderSelected() {
         const selectedLabels = this.ms.selectedLabels
         const selectedStructured = this.ms.selectedLeastNested
@@ -997,7 +1036,7 @@ class Renderer {
 
             const displayItems = sorted.map(item => {
                 return item.type === "group"
-                    ? `<span title="${this.renderTitle(item)}">${item.label} <code>[${item.count}]</code></span>`
+                    ? `<span>${item.label} <code>[${item.count}]</code></span>`
                     : item.label
             })
             displayText = this.listFormat.format(displayItems)
@@ -1005,13 +1044,8 @@ class Renderer {
             displayText = this.ms.placeholder
         }
 
-        const title = this.renderTitle({
-            label: this.ms.settings.labels.all,
-            items: selectedLabels,
-            count: selectedLabels.length,
-        })
         this.ms.getElement("display").innerHTML = selectedLabels.length > 0
-            ? `<span title="${title}">${displayText}</span>`
+            ? `<span>${displayText}</span>`
             : displayText
 
         this.ms.getElement("show-selected").disabled = selectedLabels.length === 0
@@ -1030,6 +1064,39 @@ class Renderer {
                 : `[${total}]`
         })
     }
+
+    renderTooltip() {
+        const selectedLabels = this.ms.selectedLabels
+        if (selectedLabels.length === 0) return false
+
+        const selectedStructured = this.ms.selectedLeastNested
+        const sorted = selectedStructured.sort((a, b) => {
+            if (a.type !== b.type) return a.type === "group" ? -1 : 1
+            if (a.type === "group" && b.type === "group") {
+                if (a.depth !== b.depth) return a.depth - b.depth
+                return b.count - a.count
+            }
+            return 0
+        })
+
+        const items = sorted.map(item => {
+            if (item.type === "group") {
+                return `<div class="tooltip-group">`
+                    + `<div class="tooltip-group-header">${item.label} [${item.count}]</div>`
+                    + `<div>${this.listFormat.format(item.items)}</div>`
+                    + `</div>`
+            }
+            return item.label
+        })
+
+        const tooltip = this.ms.getElement("tooltip")
+        const title = `${this.ms.settings.labels.all} [${selectedLabels.length}]`
+        tooltip.innerHTML = `<div class="tooltip-title">${title}</div>`
+            + `<div class="tooltip-items">${items.join("")}</div>`
+
+        return true
+    }
+
 }
 
 
@@ -1785,5 +1852,52 @@ class NavigationHandler {
     }
 }
 
+// region tooltip
+class TooltipHandler {
+    constructor(multiselector) {
+        this.ms = multiselector
+        this._delay = 400
+        this._timer = null
+        this.handleMouseOver = this.handleMouseOver.bind(this)
+        this.handleMouseOut = this.handleMouseOut.bind(this)
+    }
+
+    get tooltip() {
+        return this.ms.getElement("tooltip")
+    }
+
+    get isOpen() {
+        return this.tooltip?.matches(":popover-open")
+    }
+
+    addListener() {
+        this.ms.shadowRoot.addEventListener("mouseover", this.handleMouseOver)
+        this.ms.shadowRoot.addEventListener("mouseout", this.handleMouseOut)
+    }
+
+    show() {
+        if (!this.ms.renderer.renderTooltip()) return
+        this.tooltip.showPopover()
+    }
+
+    hide() {
+        clearTimeout(this._timer)
+        if (this.isOpen) this.tooltip.hidePopover()
+    }
+
+    handleMouseOver() {
+        if (!event.target.closest(".trigger-bar")) return
+        if (event.relatedTarget?.closest(".trigger-bar")) return
+        if (this.ms.getElement("dropdown").matches(":popover-open")) return
+        if (this.ms.selectedLabels.length === 0) return
+        this._timer = setTimeout(() => this.show(), this._delay)
+    }
+
+    handleMouseOut() {
+        if (!event.target.closest(".trigger-bar")) return
+        if (event.relatedTarget?.closest(".trigger-bar")) return
+        this.hide()
+    }
+}
 
 window.customElements.define("multi-selector", MultiSelector)

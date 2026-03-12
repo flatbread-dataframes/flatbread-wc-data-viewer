@@ -383,7 +383,6 @@ export class DataTable extends HTMLElement {
                             pos.level = lastLevel
                             pos.col = spanIdx !== -1 ? spanIdx : 0
                         } else {
-                            console.log("columns: moving up...")
                             boundary("up")
                         }
                         handled = true

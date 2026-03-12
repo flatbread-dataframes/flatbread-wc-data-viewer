@@ -47,7 +47,7 @@ export class Stylesheet {
                 box-sizing: border-box;
             }
             :host {
-                padding-right: 12px;
+                display: block;
                 padding-bottom: 12px;
             }
             table {
@@ -75,6 +75,9 @@ export class Stylesheet {
                 gap: .25em;
                 align-items: center;
             }
+            .columnFilter, .indexFilter {
+                border-top: 1px solid var(--dv-border);
+            }
 
             /* general button styling */
             button {
@@ -92,6 +95,7 @@ export class Stylesheet {
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -55%);
+                pointer-events: none
             }
 
             /* hide button */
@@ -117,6 +121,7 @@ export class Stylesheet {
             sort-button {
                 display: grid;
                 place-items: center;
+                margin-left: .125rem;
             }
             sort-button button {
                 opacity: 0;
@@ -129,7 +134,7 @@ export class Stylesheet {
                 opacity: 1;
             }
             thead th sort-button button:hover {
-                background-color: color-mix(in srgb, currentColor 35%, var(--dv-bg));
+                background-color: color-mix(in srgb, currentColor 30%, var(--dv-bg));
             }
             sort-button[sort-state="asc"] button,
             sort-button[sort-state="desc"] button {
@@ -153,11 +158,11 @@ export class Stylesheet {
                 transition: opacity 0.2s;
             }
             tr:hover .recordViewIcon button {
-                background-color: color-mix(in srgb, currentColor 25%, var(--dv-bg));
+                background-color: color-mix(in srgb, currentColor 15%, var(--dv-bg));
                 opacity: 1;
             }
             tr .recordViewIcon:hover button {
-                background-color: color-mix(in srgb, currentColor 40%, var(--dv-bg));
+                background-color: color-mix(in srgb, currentColor 30%, var(--dv-bg));
             }
 
         `
@@ -231,13 +236,17 @@ export class Stylesheet {
                 .filter-row filter-combo {
                     display: none;
                 }
+                .indexFilter, .columnFilter {
+                    border-top: none;
+                    padding: 0;
+                }
             `,
             rowFocus: `
                 tbody tr:focus {
                     outline: none;
                 }
                 tbody tr:focus :where(td, th) {
-                    background-color: color-mix(in srgb, var(--focus-color) 15%, var(--dv-bg));
+                    background-color: color-mix(in srgb, var(--focus-color) 25%, var(--dv-bg));
                 }
             `,
         }

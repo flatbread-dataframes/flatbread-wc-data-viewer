@@ -20,7 +20,7 @@ componentSheet.replaceSync(`
         align-items: center;
         padding: 0.5rem 0;
         margin-bottom: 1.5rem;
-        border-bottom: 1px solid currentColor;
+        border-bottom: 1px solid var(--dv-border);
         position: sticky;
         top: 0;
         background: var(--dv-bg, white);
@@ -29,6 +29,10 @@ componentSheet.replaceSync(`
     .nav-buttons {
         display: flex;
         gap: 0.25rem;
+    }
+    button.is-pressed {
+        opacity: 0.6;
+        transform: scale(0.95);
     }
     .record-info {
         justify-self: center;
@@ -54,7 +58,7 @@ componentSheet.replaceSync(`
     .group-title {
         margin: 0 0 1rem 0;
         padding-bottom: 0.5rem;
-        border-bottom: 1px solid currentColor;
+        border-bottom: 1px solid var(--dv-border);
         font-size: 1.1em;
         font-weight: 600;
     }
@@ -278,6 +282,12 @@ export class DataRecord extends HTMLElement {
 
         this.recordIndex = this._currentRecordIndex
         this.render()
+
+        const btn = this.shadowRoot.querySelector(`[data-nav="${direction}"]`)
+        if (btn) {
+            btn.classList.add("is-pressed")
+            setTimeout(() => btn.classList.remove("is-pressed"), 150)
+        }
     }
 
     handleFieldClick(event) {

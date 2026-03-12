@@ -2,7 +2,7 @@ const interactiveSheet = new CSSStyleSheet()
 interactiveSheet.replaceSync(`
     button {
         padding: 0.25em 0.5em;
-        border: 1px solid currentColor;
+        border: 1px solid var(--dv-border);
         border-radius: 0.25em;
         background: transparent;
         font: inherit;
@@ -21,7 +21,7 @@ interactiveSheet.replaceSync(`
     }
 
     input {
-        border: 1px solid currentColor;
+        border: 1px solid var(--dv-border);
         border-radius: 0.25em;
         background: transparent;
         font: inherit;
