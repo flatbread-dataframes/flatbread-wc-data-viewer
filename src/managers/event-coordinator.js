@@ -182,14 +182,9 @@ export class EventCoordinator {
     // MARK: @scroll
     handleLoadMoreRows(event) {
         const { currentRowCount, bufferSize } = event.detail
-
-        if (this.dataViewer.dataTable) {
-            const tbody = this.dataViewer.dataTable.shadowRoot.querySelector("tbody")
-            if (tbody) {
-                const start = currentRowCount
-                const end = start + bufferSize
-                tbody.innerHTML += this.dataViewer.dataTable._tableBuilder.buildTbody(start, end)
-            }
+        const dataTable = this.dataViewer.dataTable
+        if (dataTable) {
+            dataTable.ensureRowRendered(currentRowCount + bufferSize - 1)
         }
     }
 

@@ -596,7 +596,7 @@ export class DataTable extends HTMLElement {
         if (index < renderedCount) return
 
         const end = index + this.dataViewer.options.buffer
-        tbody.innerHTML += this._tableBuilder.buildTbody(renderedCount, end)
+        tbody.insertAdjacentHTML("beforeend", this._tableBuilder.buildTbody(renderedCount, end))
         this._stylesheet.updateIndexOffset()
         this._stylesheet.updateColumnWidths()
     }
