@@ -1,3 +1,5 @@
+import { toJSON, toCSV, download } from "../export/exporter.js"
+
 export class EventCoordinator {
     constructor(dataViewer) {
         this.dataViewer = dataViewer
@@ -15,6 +17,7 @@ export class EventCoordinator {
         this.handleLoadMoreRows = this.handleLoadMoreRows.bind(this)
         this.handleDataChange = this.handleDataChange.bind(this)
         this.handleMouseEnter = this.handleMouseEnter.bind(this)
+        this.handleExportData = this.handleExportData.bind(this)
     }
 
     // MARK: setup
@@ -34,6 +37,7 @@ export class EventCoordinator {
         shadowRoot.addEventListener("index-sort", this.handleIndexSort)
         shadowRoot.addEventListener("column-selection-changed", this.handleColumnSelectionChange)
         shadowRoot.addEventListener("load-more-rows", this.handleLoadMoreRows)
+        shadowRoot.addEventListener("export-data", this.handleExportData)
     }
 
     removeEventListeners() {
@@ -52,6 +56,7 @@ export class EventCoordinator {
         shadowRoot.removeEventListener("index-sort", this.handleIndexSort)
         shadowRoot.removeEventListener("column-selection-changed", this.handleColumnSelectionChange)
         shadowRoot.removeEventListener("load-more-rows", this.handleLoadMoreRows)
+        shadowRoot.removeEventListener("export-data", this.handleExportData)
     }
 
     destroy() {
@@ -186,5 +191,17 @@ export class EventCoordinator {
                 tbody.innerHTML += this.dataViewer.dataTable._tableBuilder.buildTbody(start, end)
             }
         }
+    }
+
+    // MARK: @export
+    handleExportData(event) {
+        const { format, filename } = event.detail
+        const view = this.dataViewer.view
+
+        const mimeTypes = { json: "application/json", csv: "text/csv" }
+        const serializers = { json: toJSON, csv: toCSV }
+
+        const content = serializers[format](view)
+        download(content, filename, mimeTypes[format])
     }
 }
