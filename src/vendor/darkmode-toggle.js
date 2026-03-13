@@ -2,18 +2,14 @@ const style = `
     button {
         color: inherit;
         cursor: pointer;
-        font-size: 1.5em;
+        font-size: 1.125em;
         background: transparent;
         border: none;
         border-radius: 4px;
         height: 1.5em;
-        transition: transform 200ms ease-in-out;
 
         span { display: inline-block; }
 
-        &:hover {
-            transform: scale(1.25);
-        }
         &:focus-visible {
             outline: 2px solid var(--fg-accent);
         }
@@ -23,7 +19,7 @@ const style = `
     }
     @keyframes toggle-swap {
         0%   { transform: scale(1) }
-        50%  { transform: scale(0) }
+        50%  { transform: scale(.25) }
         100% { transform: scale(1) }
     }
 `
@@ -79,8 +75,7 @@ export class DarkModeToggle extends HTMLElement {
         this._animating = true
 
         const duration = 300
-        const icon = this.scheme === "dark" ? this._moon : this._sun
-        icon.style.animation = `toggle-swap ${duration}ms ease-in-out`
+        this._button.style.animation = `toggle-swap ${duration}ms ease-in-out`
 
         setTimeout(() => {
             this.scheme = this.scheme === "dark" ? "light" : "dark"
@@ -88,7 +83,7 @@ export class DarkModeToggle extends HTMLElement {
         }, duration / 2)
 
         setTimeout(() => {
-            icon.style.animation = ""
+            this._button.style.animation = ""
             this._animating = false
         }, duration)
     }
