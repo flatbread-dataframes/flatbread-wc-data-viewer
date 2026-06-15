@@ -21,9 +21,9 @@ export class TableBuilder {
     buildThead() {
         const columnGroupsRows =
             this.dataViewer.view.columns.ilevels
-            .slice(0, -1)
-            .map(level => this.buildColumnGroupsRow(level))
-            .join("")
+                .slice(0, -1)
+                .map(level => this.buildColumnGroupsRow(level))
+                .join("")
         return `${columnGroupsRows}${this.buildColumnsRow()}${this.buildIndexLabelRow()}${this.buildFilterRow()}`
     }
 
@@ -32,15 +32,23 @@ export class TableBuilder {
             ? `data-level="${level}" data-group="${group}"`
             : `data-col="${value}"`
 
-        return `<button class="hide-button" data-hide-type="${type}" ${dataAttrs}>✕</button>`
+        return `<button class="hide-button" tabindex="-1" data-hide-type="${type}" ${dataAttrs}><span>✕</span></button>`
+    }
+
+    buildSortButton(type, value) {
+        const dataAttr = type === "column"
+            ? `data-col="${value}"`
+            : `data-level="${value}"`
+
+        return `<sort-button ${dataAttr}></sort-button>`
     }
 
     buildColumnLevelNameLabel(level) {
         // build the label for the level name of the column row
         const columnLevelNameLabel =
             this.dataViewer.view.columnNames
-            ? this.dataViewer.view.columnNames.at(level) ?? ""
-            : ""
+                ? this.dataViewer.view.columnNames.at(level) ?? ""
+                : ""
 
         const columnLevelNameLabelElement =
             `<th colspan="${this.dataViewer.view.index.nlevels + 1}"
@@ -59,18 +67,21 @@ export class TableBuilder {
     buildIndexLevelNameLabel(level) {
         const indexLevelNameLabel =
             this.dataViewer.view.indexNames
-            ? this.dataViewer.view.indexNames.at(level) ?? ""
-            : ""
+                ? this.dataViewer.view.indexNames.at(level) ?? ""
+                : ""
         const colspan =
             this.dataViewer.view.indexNames.length - 1 === level
-            ? `colspan="2"`
-            : ""
-        const indexLevelNameLabelElement =
-        `<th data-level="${level}" class="indexLevelNameLabel" ${colspan}>
-            <sortable-column-header data-level="${level}">
-                ${indexLevelNameLabel}
-            </sortable-column-header>
-        </th>`
+                ? `colspan="2"`
+                : ""
+        const sortButton = this.buildSortButton("index", level)
+        const indexLevelNameLabelElement = `
+            <th data-level="${level}" class="indexLevelNameLabel" ${colspan}>
+                <span>
+                    ${indexLevelNameLabel}
+                    ${sortButton}
+                </span>
+            </th>
+        `
         return indexLevelNameLabelElement
     }
 
@@ -90,7 +101,7 @@ export class TableBuilder {
             ${isGroupEdge ? ' group-edge' : ''}
             class="columnFilter"
         >
-            <filter-input></filter-input>
+            <filter-combo></filter-combo>
         </th>`
     }
 
@@ -100,11 +111,11 @@ export class TableBuilder {
             const isIndexEdge = iloc === 0
             const isGroupEdge = this.dataViewer.view.columns.edges.slice(1).includes(iloc)
             return `<th
-                ${isIndexEdge ? ' index-edge' : ''}
-                ${isGroupEdge ? ' group-edge' : ''}
+                ${isIndexEdge ? " index-edge" : ""}
+                ${isGroupEdge ? " group-edge" : ""}
             ></th>`
         })
-        return `<tr>${indexLevelNameLabels.join("")}${emptyCells.join("")}</tr>`
+        return `<tr class="index-labels-row">${indexLevelNameLabels.join("")}${emptyCells.join("")}</tr>`
     }
 
     buildFilterRow() {
@@ -125,7 +136,7 @@ export class TableBuilder {
                 class="indexFilter"
                 ${colspan}
             >
-                <filter-input></filter-input>
+                <filter-combo></filter-combo>
             </th>`
         })
     }
@@ -146,7 +157,7 @@ export class TableBuilder {
         // in a multiindex this is the lowest level
         const columnLevelNameLabelElement = this.buildColumnLevelNameLabel(-1)
         const columnHeaders = this.dataViewer.view.columns.map((value, idx) => this.buildColumnLabel(value, idx))
-        return `<tr>${columnLevelNameLabelElement}${columnHeaders.join("")}</tr>`
+        return `<tr class="columns-row">${columnLevelNameLabelElement}${columnHeaders.join("")}</tr>`
     }
 
     getOriginalColumnIndex(viewColIndex) {
@@ -162,6 +173,7 @@ export class TableBuilder {
         const selectedValue = Array.isArray(value) ? value.at(-1) : value
         const groups = attrs.groups.join(" ")
         const hideButton = this.buildHideButton('column', iloc)
+        const sortButton = this.buildSortButton('column', iloc)
         const originalColIndex = this.getOriginalColumnIndex(iloc)
 
         const isIndexEdge = iloc === 0
@@ -175,10 +187,9 @@ export class TableBuilder {
             ${isGroupEdge ? ' group-edge' : ''}
         >
             <span>
+                ${selectedValue}
+                ${sortButton}
                 ${hideButton}
-                <sortable-column-header data-col="${iloc}">
-                    ${selectedValue}
-                </sortable-column-header>
             </span>
         </th>`
     }
@@ -187,13 +198,11 @@ export class TableBuilder {
         // build a row of column group labels
         // in a multiindex these are the upper levels
         const columnLevelNameLabelElement = this.buildColumnLevelNameLabel(level)
-
         const headers =
             this.dataViewer.view.columns.spans[level]
-            .map((span, iloc) => this.buildColumnGroupLabel(span, iloc, level))
-            .join("")
-
-        return `<tr>${columnLevelNameLabelElement}${headers}</tr>`
+                .map((span, iloc) => this.buildColumnGroupLabel(span, iloc, level))
+                .join("")
+        return `<tr class="column-groups-row" data-level="${level}">${columnLevelNameLabelElement}${headers}</tr>`
     }
 
     buildColumnGroupLabel(span, iloc, level) {
@@ -225,7 +234,9 @@ export class TableBuilder {
             const rowElements = row.map((value, iloc) => this.buildCell(value, iloc))
             indexRows[idx] = indexRows[idx].concat(rowElements)
         })
-        return indexRows.map(row => `<tr>${row.join("")}</tr>`).join("")
+        return indexRows.map((row, idx) =>
+            `<tr tabindex="-1" data-view-row="${start + idx}">${row.join("")}</tr>`
+        ).join("")
     }
 
     buildIndexRows(start, end) {
@@ -269,7 +280,7 @@ export class TableBuilder {
 
     buildRecordViewIcon(viewRowIndex) {
         return `<th class="recordViewIcon" data-view-row="${viewRowIndex}">
-            <button type="button" aria-label="View record details">👁</button>
+            <button type="button" aria-label="View record details"><span>☰</span></button>
         </th>`
     }
 

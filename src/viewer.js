@@ -6,9 +6,10 @@ import { NavigationController } from "./managers/navigation-controller.js"
 import "./components/record/data-record.js"
 import "./components/table/data-table.js"
 import "./components/control-panel.js"
-import "./components/filter-input.js"
-import "./components/sortable-column-header.js"
+import "./components/filter-combo.js"
+import "./components/sort-button.js"
 import "./vendor/wc-multi-selector.js"
+import "./vendor/darkmode-toggle.js"
 
 export class DataViewer extends HTMLElement {
     get styles() {
@@ -17,12 +18,19 @@ export class DataViewer extends HTMLElement {
                 box-sizing: border-box;
             }
             :host {
+                /* --dv-bg: var(--background-color, white); */
+                --dv-hover: color-mix(in srgb, var(--dv-bg) 90%, currentColor 5%);
+                --dv-border: color-mix(in srgb, var(--dv-bg) 90%, currentColor 70%);
+                --focus-color: color-mix(in srgb, var(--dv-bg) 90%, currentColor 50%);
+
                 display: grid;
                 height: ${this.options.height};
                 grid-template-areas:
                     "control-panel"
                     "view";
                 grid-template-rows: auto 1fr;
+
+                outline: none;
             }
 
             control-panel {
@@ -181,17 +189,17 @@ export class DataViewer extends HTMLElement {
         this.render()
     }
 
-async loadDataFromSrc(src) {
-    try {
-        const response = await fetch(src)
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-        const rawData = await response.json()
-        this.data = rawData // This should trigger handleDataChange
-    } catch (error) {
-        console.error("Failed to fetch data:", error)
-        this.showErrorMessage("Failed to load data")
+    async loadDataFromSrc(src) {
+        try {
+            const response = await fetch(src)
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+            const rawData = await response.json()
+            this.data = rawData // This should trigger handleDataChange
+        } catch (error) {
+            console.error("Failed to fetch data:", error)
+            this.showErrorMessage("Failed to load data")
+        }
     }
-}
 
     // MARK: get/set
     get data() {
@@ -238,16 +246,6 @@ async loadDataFromSrc(src) {
     get currentRecord() {
         const dataRecord = this.shadowRoot.querySelector("data-record")
         return dataRecord ? dataRecord.currentRecord : null
-    }
-
-    get resolvedColors() {
-        const background = getComputedStyle(this).backgroundColor || 'white'
-
-        return {
-            background,
-            hover: `color-mix(in srgb, ${background} 90%, currentColor 10%)`,
-            border: 'currentColor'
-        }
     }
 
     // MARK: render
@@ -396,7 +394,7 @@ async loadDataFromSrc(src) {
 
     focusFirstFilter() {
         if (this.dataTable && this._viewMode === "table") {
-            const firstFilter = this.dataTable.shadowRoot.querySelector(".columnFilter filter-input")
+            const firstFilter = this.dataTable.shadowRoot.querySelector(".columnFilter filter-combo")
             if (firstFilter) {
                 firstFilter.focus()
             }

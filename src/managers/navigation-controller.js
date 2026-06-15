@@ -1,7 +1,6 @@
 export class NavigationController {
     constructor(dataViewer) {
         this.dataViewer = dataViewer
-        this.currentLevel = 'control-panel'
         this.handleKeydown = this.handleKeydown.bind(this)
         this.handleNavigationBoundary = this.handleNavigationBoundary.bind(this)
 
@@ -19,10 +18,25 @@ export class NavigationController {
     // MARK: get/set
     get availableLevels() {
         const modeComponents = {
-            table:  ["control-panel", "thead", "tbody"],
+            table: ["control-panel", "thead", "tbody"],
             record: ["control-panel", "record"]
         }
         return modeComponents[this.dataViewer.viewMode]
+    }
+
+    get currentLevel() {
+        const viewerActive = this.dataViewer.shadowRoot?.activeElement
+        if (!viewerActive) return null
+
+        if (viewerActive.matches("control-panel")) return "control-panel"
+        if (viewerActive.matches("data-table")) {
+            const tableActive = viewerActive.shadowRoot?.activeElement
+            if (tableActive?.closest("thead")) return "thead"
+            if (tableActive?.closest("tbody")) return "tbody"
+            return "thead"
+        }
+        if (viewerActive.matches("data-record")) return "record"
+        return null
     }
 
     // MARK: handlers
@@ -47,7 +61,9 @@ export class NavigationController {
         if (event.ctrlKey) {
             switch (event.key) {
                 case 'h':
-                    this.dataViewer.handleToggleFilterRow()
+                    this.dataViewer.shadowRoot.dispatchEvent(
+                        new CustomEvent("toggle-filter-row", { bubbles: true })
+                    )
                     return true
                 case 'r':
                     this.dataViewer.toggleViewMode()
@@ -57,7 +73,9 @@ export class NavigationController {
                     return true
             }
         } else if (event.key === 'Escape') {
-            this.dataViewer.handleClearAllFilters()
+            this.dataViewer.shadowRoot.dispatchEvent(
+                new CustomEvent("clear-filters", { bubbles: true })
+            )
             return true
         }
         return false
@@ -82,10 +100,8 @@ export class NavigationController {
     // MARK: transitions
     moveUp() {
         const currentIndex = this.availableLevels.indexOf(this.currentLevel)
-
         if (currentIndex > 0) {
-            const newLevel = this.availableLevels[currentIndex - 1]
-            this.moveToLevel(newLevel)
+            this.moveToLevel(this.availableLevels[currentIndex - 1], "below")
             return true
         }
         return false
@@ -93,21 +109,47 @@ export class NavigationController {
 
     moveDown() {
         const currentIndex = this.availableLevels.indexOf(this.currentLevel)
-
         if (currentIndex < this.availableLevels.length - 1) {
-            const newLevel = this.availableLevels[currentIndex + 1]
-            this.moveToLevel(newLevel)
+            this.moveToLevel(this.availableLevels[currentIndex + 1], "above")
             return true
         }
         return false
     }
 
-    moveToLevel(level) {
-        const currentElement = this.getCurrentFocusedElement()
-        const targetX = currentElement ? this.getElementLeftX(currentElement) : 0
+    moveToLevel(level, fromDirection) {
+        if (level === "control-panel") {
+            const elements = this.getNavigableElements("control-panel")
+            if (elements.length) elements[0].focus()
+            return
+        }
 
-        this.currentLevel = level
-        this.focusClosestElement(level, targetX)
+        if (level === "tbody") {
+            const dataTable = this.dataViewer.dataTable
+            if (dataTable) dataTable.focusTbodyRow(dataTable._tbodyPosition)
+            return
+        }
+
+        if (level === "thead") {
+            const dataTable = this.dataViewer.dataTable
+            if (!dataTable) return
+            const els = dataTable.theadNavigableElements
+
+            if (fromDirection === "below") {
+                const filtersHidden = this.dataViewer.options.styling.hideFilters
+                if (!filtersHidden && els.filterColumns.length) {
+                    const first = els.filterIndex[0] ?? els.filterColumns[0]
+                    first?.focus()
+                } else {
+                    const first = els.indexLabels[0] ?? els.columnSort[0]
+                    first?.focus()
+                }
+            } else {
+                // entering from above (control-panel): land on first filter-index, else first filter-columns
+                const first = els.indexLabels[0] ?? els.columnSort[0]
+                first?.focus()
+            }
+            return
+        }
     }
 
     // MARK: levels
@@ -116,7 +158,6 @@ export class NavigationController {
 
         switch (level) {
             case 'control-panel':
-                console.log(position)
                 this.focusControlPanel(position)
                 break
             case 'thead':
@@ -147,14 +188,15 @@ export class NavigationController {
 
     getNavigableElements(level) {
         switch (level) {
-            case 'control-panel':
+            case "control-panel": {
                 const controlPanel = this.dataViewer.controlPanel
                 return controlPanel ? controlPanel.navigableElements : []
-            case 'thead':
+            }
+            case "thead": {
                 const dataTable = this.dataViewer.dataTable
                 if (!dataTable) return []
-                const elements = dataTable.theadNavigableElements
-                return [...elements.headerRow, ...elements.filterRow]
+                return dataTable.theadNavigableElements.filterColumns
+            }
             default:
                 return []
         }
@@ -190,9 +232,14 @@ export class NavigationController {
     handleNavigationBoundary(event) {
         const { direction, from } = event.detail
 
-        if (direction === 'down' && from === 'thead') {
-            this.moveToLevel('tbody')
+        if (direction === "up" && from === "thead") {
+            this.moveToLevel("control-panel")
         }
-        // add other boundary transitions
+        if (direction === "down" && from === "thead") {
+            this.moveToLevel("tbody")
+        }
+        if (direction === "up" && from === "tbody") {
+            this.moveToLevel("thead", "below")
+        }
     }
 }
