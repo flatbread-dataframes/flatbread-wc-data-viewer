@@ -175,7 +175,7 @@ export class Stylesheet {
     // MARK: sticky
     getStickyStyles() {
         const calcs = this.data.index.ilevels.map(i => `
-            [data-level="${i}"] {
+            th[data-level="${i}"] {
                 left: var(--index-col-${i}-offset);
             }`)
         return `
