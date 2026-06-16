@@ -66,7 +66,7 @@ export class TableBuilder {
 
     buildIndexLevelNameLabel(level) {
         const indexLevelNameLabel =
-            this.dataViewer.view.indexNames
+            this.dataViewer.view.index.names
                 ? this.dataViewer.view.index.names.at(level) ?? ""
                 : ""
         const colspan =
@@ -141,17 +141,6 @@ export class TableBuilder {
         })
     }
 
-    getIndexLevelName(level) {
-        return this.dataViewer.view.index.names?.[level] || `Level ${level}`
-    }
-
-    buildColumnFilterRow() {
-        // build the bottom row of the thead containing the index labels and column filters
-        const indexLevelNameLabels = this.buildIndexLevelNameLabels()
-        const filterItems = this.dataViewer.view.columns.ilocs.map(iloc => this.buildColumnFilter(iloc))
-        return `<tr>${indexLevelNameLabels.join("")}${filterItems.join("")}`
-    }
-
     buildColumnsRow() {
         // build the level of the thead containing the column labels
         // in a multiindex this is the lowest level
@@ -161,9 +150,7 @@ export class TableBuilder {
     }
 
     getOriginalColumnIndex(viewColIndex) {
-        return this.dataViewer.view._visibleColumnIndices
-            ? this.dataViewer.view._visibleColumnIndices[viewColIndex]
-            : viewColIndex
+        return this.dataViewer.view.getOriginalColumnIndex(viewColIndex)
     }
 
     buildColumnLabel(value, iloc) {

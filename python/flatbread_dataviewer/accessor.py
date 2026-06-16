@@ -42,11 +42,13 @@ class ViewAccessor:
                 "values": list(df.columns),
                 "names": list(df.columns.names),
                 "dtypes": self._get_column_dtypes(df),
+                "formatOptions": [self._resolve_format_option(col) for col in df.columns],
             },
             "index": {
                 "values": list(df.index),
                 "names": list(df.index.names),
                 "dtypes": self._get_index_dtypes(df),
+                "formatOptions": self._get_index_format_options(df),
             },
         }
 
@@ -79,6 +81,12 @@ class ViewAccessor:
             else:
                 dtypes.append(None)
         return dtypes
+
+    def _get_index_format_options(self, df):
+        return [
+            self.format_options.get(name)
+            for name in df.index.names
+        ]
 
     def _resolve_format_option(self, col):
         # exact match (flat string or full tuple)

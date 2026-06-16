@@ -134,4 +134,10 @@ export class View {
     getOriginalIndex(viewIndex) {
         return this.visibleIndices[viewIndex]
     }
+
+    getOriginalColumnIndex(viewColIndex) {
+        return this._visibleColumnIndices
+            ? this._visibleColumnIndices[viewColIndex]
+            : viewColIndex
+    }
 }
