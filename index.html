@@ -5,17 +5,17 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>wc-data-viewer</title>
-    <link rel="stylesheet" href="https://lcvriend.github.io/wc-multi-selector/static/prism.css">
+    <!-- <link rel="stylesheet" href="https://lcvriend.github.io/wc-multi-selector/static/prism.css"> -->
     <script type="module" src="https://uu-asc.github.io/csa-werkvoorraad/src/darkmode-toggle.js"></script>
     <style>
         :root {
-            --background-color: hsl(30, 0%, 98%);
+            --background-color: hsl(0, 0%, 98%);
         }
         body {
             margin-inline: auto;
             margin-bottom: 4rem;
             background-color: var(--background-color);
-            font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+            font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
 
             display: grid;
             grid-template-columns:
@@ -123,32 +123,51 @@
 <pre><code class="language-html">&lt;!-- html --&gt;
 &lt;data-viewer src="data/example.json" locale="nl-NL"&gt;&lt;/data-viewer&gt;</code></pre>
 <h3>Specifications</h3>
+
+<h4>Attributes</h4>
 <ul>
-    <li>Attributes</li>
-    <ul>
-        <li>src</li>
-        <li>locale</li>
-        <li>na-rep (default: "-")</li>
-        <li>borders:</li>
+    <li><code>src</code> — JSON data source URL</li>
+    <li><code>locale</code> — format locale (default: <code>"default"</code>)</li>
+    <li><code>na-rep</code> — null value representation (default: <code>"-"</code>)</li>
+    <li><code>height</code> — component height (default: <code>"600px"</code>)</li>
+    <li><code>view</code> — display mode: <code>"table"</code> or <code>"record"</code></li>
+    <li><code>no-wrap</code> — disable cell text wrapping</li>
+    <li><code>hide-filter-row</code> — hide filter inputs</li>
+    <li>Borders:
         <ul>
-            <li>hide-group-borders</li>
-            <li>hide-row-borders</li>
-            <li>hide-thead-border</li>
-            <li>hide-index-border</li>
+            <li><code>hide-group-borders</code></li>
+            <li><code>hide-row-borders</code></li>
+            <li><code>hide-thead-border</code></li>
+            <li><code>hide-index-border</code></li>
         </ul>
-    </ul>
-    <li>Custom properties</li>
-    <ul>
-        <li>--hover-color</li>
-        <li>--cursor (default: auto)</li>
-        <li>--border-color (default: currentColor)</li>
-        <li>--axes-width (default: 2px)</li>
-    </ul>
-    <li>Events</li>
-    <ul>
-        <li>data-changed</li>
-        <li>cell-click</li>
-    </ul>
+    </li>
+</ul>
+
+<h4>CSS custom properties</h4>
+<ul>
+    <li><code>--background-color</code> (default: <code>white</code>)</li>
+    <li><code>--cursor</code> (default: <code>auto</code>)</li>
+    <li><code>--border-color</code> (default: <code>currentColor</code>)</li>
+    <li><code>--axes-width</code> (default: <code>2px</code>)</li>
+</ul>
+
+<h4>Events</h4>
+<ul>
+    <li><code>data-changed</code> — fired when data is loaded or updated</li>
+    <li><code>cell-click</code> — fired on cell interaction</li>
+    <li><code>field-click</code> — fired on record field interaction</li>
+    <li><code>column-data</code> — fired on Ctrl+click (column extraction)</li>
+    <li><code>row-data</code> — fired on Shift+click (row extraction)</li>
+</ul>
+
+<h4>Keyboard shortcuts</h4>
+<ul>
+    <li><kbd>Ctrl+F</kbd> — focus first filter</li>
+    <li><kbd>Ctrl+H</kbd> — toggle filter row visibility</li>
+    <li><kbd>Ctrl+R</kbd> — toggle table/record view</li>
+    <li><kbd>Escape</kbd> — clear all filters (when not in input)</li>
+    <li>Arrow keys — navigate headers, filters, and rows</li>
+    <li><kbd>Enter</kbd> — enter record view from focused row</li>
 </ul>
 <a href="https://github.com/flatbread-dataframes/flatbread-wc-data-viewer">github.com/flatbread-dataframes/flatbread-wc-data-viewer</a>
 <script src="src/viewer.js" type="module"></script>

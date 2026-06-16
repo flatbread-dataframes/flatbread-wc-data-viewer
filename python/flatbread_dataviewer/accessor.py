@@ -7,6 +7,21 @@ from jinja2 import Environment, FileSystemLoader
 
 
 class ViewAccessor:
+    """Pandas accessor for rendering DataFrames and Series in the data-viewer component.
+
+    Registered as `df.viewer` / `s.viewer`. Converts pandas objects to the JSON
+    format expected by <data-viewer> and provides Jupyter rendering via _repr_html_.
+
+    Format options can be set via `df.viewer.format_options` to control number/date
+    formatting per column. Keys are column names (or tuple prefixes for MultiIndex
+    columns), values are dicts passed through to the viewer's formatter.
+
+    Usage:
+        df.viewer                          # renders in Jupyter
+        df.viewer.get_json()               # JSON string for <data-viewer src="...">
+        df.viewer.data_spec                # raw dict before serialization
+        df.viewer.format_options = {...}   # set per-column formatting
+    """
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
         template_dir = Path(__file__).parent / "templates"
@@ -14,11 +29,25 @@ class ViewAccessor:
 
     @property
     def data_spec(self):
-        """Get the data object that would be used by the viewer"""
+        """Return the data dict that would be consumed by the viewer.
+
+        Returns a dict with keys: 'values', 'columns', 'index'.
+        Both 'columns' and 'index' are dicts containing
+        'values', 'names', 'dtypes', and 'formatOptions'.
+        """
         return self._prepare_data()
 
     @property
     def format_options(self):
+        """Per-column format options stored in df.attrs.
+
+        Keys are column names (str) or tuple prefixes for MultiIndex columns.
+        Values are dicts passed to the viewer's formatter, e.g.
+        {"decimals": 2, "prefix": "€"}.
+
+        Prefix matching: for a MultiIndex column ('A', 'B', 'C'),
+        the accessor checks ('A', 'B', 'C'), then ('A', 'B'), then 'A'.
+        """
         return self._obj.attrs.get("flatbread_viewer_format_options", {})
 
     @format_options.setter
@@ -26,6 +55,11 @@ class ViewAccessor:
         self._obj.attrs["flatbread_viewer_format_options"] = value
 
     def get_json(self):
+        """Serialize the data spec to a JSON string.
+
+        Handles NaN (-> null), datetime (-> ISO 8601), and falls back to str()
+        for other non-serializable types.
+        """
         data = self._prepare_data()
         return json.dumps(data, default=self.json_serializer)
 
