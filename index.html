@@ -94,8 +94,8 @@
             <input type="radio" id="locale-en" name="locale" value="en-US" autocomplete="off" >
             <label for="locale-en">English</label>
         </fieldset>
-        <fieldset>
-            <legend>Borders</legend>
+        <fieldset id="styling-controls">
+            <legend>Styling</legend>
             <input type="checkbox" id="hide-group-borders" name="hide-group-borders" autocomplete="off">
             <label for="hide-group-borders">hide group borders</label>
             <input type="checkbox" id="hide-row-borders" name="hide-row-borders" autocomplete="off">
@@ -104,6 +104,8 @@
             <label for="hide-index-border">hide index border</label>
             <input type="checkbox" id="hide-thead-border" name="hide-thead-border" autocomplete="off">
             <label for="hide-thead-border">hide thead border</label>
+            <input type="checkbox" id="no-wrap" name="no-wrap" autocomplete="off">
+            <label for="no-wrap">no wrapping</label>
         </fieldset>
     </section>
 </section>
@@ -163,7 +165,7 @@
         return document.querySelector('input[type="radio"]:checked')?.value
     }
 
-    function handleBorderChange(event) {
+    function handleStylingChange(event) {
         const attr = event.target.id
         dataViewer.toggleAttribute(attr)
     }
@@ -209,8 +211,8 @@
     })
 
     document.getElementById("controls").addEventListener("change", event => {
-        if (!event.target.id.startsWith("hide")) return
-        handleBorderChange(event)
+        if (!event.target.closest("#styling-controls")) return
+        handleStylingChange(event)
     })
 </script>
 </body>

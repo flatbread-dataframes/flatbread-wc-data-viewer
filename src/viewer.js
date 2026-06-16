@@ -64,7 +64,7 @@ export class DataViewer extends HTMLElement {
             "view", "src", "locale", "na-rep", "height",
             "hide-group-borders", "hide-row-borders",
             "hide-thead-border", "hide-index-border",
-            "hide-filter-row",
+            "hide-filter-row", "no-wrap",
         ]
     }
 
@@ -81,6 +81,7 @@ export class DataViewer extends HTMLElement {
                 theadBorder: true,
                 indexBorder: true,
                 hideFilters: false,
+                noWrap: false,
             }
         }
     }
@@ -151,7 +152,14 @@ export class DataViewer extends HTMLElement {
         }
 
         // Styling-only attributes - update stylesheet
-        const stylingAttributes = ["hide-group-borders", "hide-row-borders", "hide-index-border", "hide-thead-border", "hide-filter-row"]
+        const stylingAttributes = [
+            "hide-group-borders",
+            "hide-row-borders",
+            "hide-index-border",
+            "hide-thead-border",
+            "hide-filter-row",
+            "no-wrap",
+        ]
         if (stylingAttributes.includes(name)) {
             switch (name) {
                 case "hide-group-borders":
@@ -168,6 +176,9 @@ export class DataViewer extends HTMLElement {
                     break
                 case "hide-filter-row":
                     this.options.styling.hideFilters = newValue !== null
+                    break
+                case "no-wrap":
+                    this.options.styling.noWrap = newValue !== null
                     break
             }
             this.updateStylesheet()

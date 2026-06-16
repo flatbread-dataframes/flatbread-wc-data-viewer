@@ -250,6 +250,11 @@ export class Stylesheet {
                     background-color: color-mix(in srgb, var(--focus-color) 25%, var(--dv-bg));
                 }
             `,
+            noWrap: `
+                th, td {
+                    white-space: nowrap;
+                }
+            `,
         }
 
         return Object.entries(styleBlocks)
