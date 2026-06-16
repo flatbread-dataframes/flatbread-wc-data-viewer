@@ -147,9 +147,9 @@ export class ClickHandler {
         })
 
         const indexData = {
-            header: view.indexNames?.[level] || `Index Level ${level}`,
+            header: view.index.names?.[level] || `Index Level ${level}`,
             values: indexValues,
-            dtype: null // index columns don't have dtypes like data columns
+            dtype: view.index.attrs[level]?.dtype ?? null
         }
 
         this.dataTable.dispatchEvent(new CustomEvent("column-data", {

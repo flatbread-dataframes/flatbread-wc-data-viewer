@@ -4,11 +4,11 @@ function buildRows(view) {
 
         const idx = view.index.values[rowIdx]
         if (Array.isArray(idx)) {
-            view.indexNames?.forEach((name, level) => {
+            view.index.names?.forEach((name, level) => {
                 row[name ?? `index_${level}`] = idx[level]
             })
         } else {
-            row[view.indexNames?.[0] ?? "index"] = idx
+            row[view.index.names?.[0] ?? "index"] = idx
         }
 
         view.columns.values.forEach((col, colIdx) => {

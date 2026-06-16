@@ -25,9 +25,18 @@ export class RecordBuilder {
         const total = this.dataViewer.view.visibleIndices.length
         const record = this.dataViewer.currentRecord
 
+        const indexAttrs = this.dataViewer.view.index.attrs
         const indexDisplay = Array.isArray(record.indexValue)
-            ? record.indexValue.join(" | ")
-            : record.indexValue
+            ? record.indexValue.map((value, level) => {
+                const attrs = indexAttrs[level]
+                const formatOptions = attrs.formatOptions ?? this.options
+                return this.formatter.formatValue(value, attrs.dtype, formatOptions)
+            }).join(" | ")
+            : this.formatter.formatValue(
+                record.indexValue,
+                indexAttrs[0]?.dtype,
+                indexAttrs[0]?.formatOptions ?? this.options
+            )
 
         return `
             <nav class="record-navigation">
