@@ -1,5 +1,5 @@
-import { Axis } from "../axis/axis.js"
 import { Columns } from "../axis/columns.js"
+import { Index } from "../axis/index.js"
 
 export class Data extends EventTarget {
     constructor(data={}) {
@@ -30,23 +30,15 @@ export class Data extends EventTarget {
         this._isUpdating = true
         this._rawData = data
 
-        const { columns = [], index = [], values = [] } = data
-        const { columnNames, indexNames, dtypes, formatOptions } = data
+        const { columns = {}, index = {}, values = [] } = data
 
-        // mandatory
         this._columns = columns instanceof Columns
             ? columns
-            : new Columns(columns, dtypes, formatOptions)
-        this._index = index instanceof Axis
+            : new Columns(columns)
+        this._index = index instanceof Index
             ? index
-            : new Axis(index)
+            : new Index(index)
         this._values = values
-
-        // optional
-        this._columnNames = columnNames
-        this._indexNames = indexNames
-        this._dtypes = dtypes
-        this._formatOptions = formatOptions
 
         this._isUpdating = false
         this._dispatchDataChanged()
@@ -57,10 +49,28 @@ export class Data extends EventTarget {
 
         const isValuesOnly = Object.keys(changes).length === 1 && "values" in changes
 
-        for (const [key, value] of Object.entries(changes)) {
-            if (key in this && typeof this[key] !== "function") {
-                this[key] = value
-            }
+        if ("columns" in changes) {
+            this._columns = new Columns({
+                values: this._columns.values,
+                names: this._columns.names,
+                dtypes: this._columns.dtypes,
+                formatOptions: this._columns.formatOptions,
+                ...changes.columns
+            })
+        }
+
+        if ("index" in changes) {
+            this._index = new Index({
+                values: this._index.values,
+                names: this._index.names,
+                dtypes: this._index.dtypes,
+                formatOptions: this._index.formatOptions,
+                ...changes.index
+            })
+        }
+
+        if ("values" in changes) {
+            this._values = changes.values
         }
 
         this._isUpdating = false
@@ -70,24 +80,9 @@ export class Data extends EventTarget {
     // MARK: columns
     get columns() { return this._columns }
     set columns(value) {
-        const columns = new Columns(value, this.dtypes, this.formatOptions)
+        const columns = value instanceof Columns ? value : new Columns(value)
         this._setter("_columns", columns)
     }
-
-    get dtypes() { return this.columns.dtypes }
-    set dtypes(value) {
-        const columns = new Columns(this.columns.values, value, this.formatOptions)
-        this._setter("_columns", columns)
-    }
-
-    get formatOptions() { return this.columns.formatOptions }
-    set formatOptions(value) {
-        const columns = new Columns(this.columns.values, this.dtypes, value)
-        this._setter("_columns", columns)
-    }
-
-    get columnNames() { return this._columnNames }
-    set columnNames(value) { this._setter("_columnNames", value) }
 
     get hasColumns() {
         return this.columns.length > 0
@@ -95,10 +90,10 @@ export class Data extends EventTarget {
 
     // MARK: index
     get index() { return this._index }
-    set index(value) { this._setter("_index", new Axis(value)) }
-
-    get indexNames() { return this._indexNames }
-    set indexNames(value) { this._setter("_indexNames", value) }
+    set index(value) {
+        const index = value instanceof Index ? value : new Index(value)
+        this._setter("_index", index)
+    }
 
     // MARK: values
     get values() { return this._values }

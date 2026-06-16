@@ -1,9 +1,9 @@
 import { Axis } from "./axis.js"
 
 export class Columns extends Axis {
-    constructor(values, dtypes, formatOptions) {
+    constructor({ values = [], names, dtypes, formatOptions } = {}) {
         super(values)
-        this.values = values
+        this.names = names
         this.dtypes = dtypes
         this.formatOptions = formatOptions
         this.spans = this.getSpans()

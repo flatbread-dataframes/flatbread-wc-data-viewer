@@ -1,5 +1,5 @@
-import { Axis } from "../axis/axis.js"
 import { Columns } from "../axis/columns.js"
+import { Index } from "../axis/index.js"
 
 export class View {
     constructor(data) {
@@ -23,38 +23,38 @@ export class View {
         if (this._visibleColumnIndices === null) {
             return this.data.columns
         }
-        // Return filtered columns based on selection
-        const filteredValues = this._visibleColumnIndices.map(i => this.data.columns.values[i])
-        const filteredDtypes = this._visibleColumnIndices.map(i => this.data.dtypes?.[i])
-        const filteredFormatOptions = this._visibleColumnIndices.map(i => this.data.formatOptions?.[i])
-
-        return new Columns(filteredValues, filteredDtypes, filteredFormatOptions)
+        const src = this.data.columns
+        return new Columns({
+            values: this._visibleColumnIndices.map(i => src.values[i]),
+            names: src.names,
+            dtypes: this._visibleColumnIndices.map(i => src.dtypes?.[i]),
+            formatOptions: this._visibleColumnIndices.map(i => src.formatOptions?.[i]),
+        })
     }
 
     get index() {
-        // Return filtered index based on visibleIndices
-        const visibleIndexValues = this.visibleIndices.map(i => this.data.index.values[i])
-        return new Axis(visibleIndexValues)
+        const src = this.data.index
+        return new Index({
+            values: this.visibleIndices.map(i => src.values[i]),
+            names: src.names,
+            dtypes: src.dtypes,
+            formatOptions: src.formatOptions,
+        })
     }
+
     get groupingLevels() {
         return this.index.groupingLevels
     }
+
     get values() {
         const rowFiltered = this.visibleIndices.map(i => this.data.values[i])
         if (this._visibleColumnIndices === null) {
             return rowFiltered
         }
-        // Apply column filtering to each row
         return rowFiltered.map(row =>
             this._visibleColumnIndices.map(colIdx => row[colIdx])
         )
     }
-    get indexNames() { return this.data.indexNames }
-    get columnNames() { return this.data.columnNames }
-
-    // Delegate other properties directly to data
-    get dtypes() { return this.data.dtypes }
-    get formatOptions() { return this.data.formatOptions }
 
     // Filtering methods
     filter(predicate) {

@@ -46,8 +46,8 @@ export class TableBuilder {
     buildColumnLevelNameLabel(level) {
         // build the label for the level name of the column row
         const columnLevelNameLabel =
-            this.dataViewer.view.columnNames
-                ? this.dataViewer.view.columnNames.at(level) ?? ""
+            this.dataViewer.view.columns.names
+                ? this.dataViewer.view.columns.names.at(level) ?? ""
                 : ""
 
         const columnLevelNameLabelElement =
@@ -67,10 +67,10 @@ export class TableBuilder {
     buildIndexLevelNameLabel(level) {
         const indexLevelNameLabel =
             this.dataViewer.view.indexNames
-                ? this.dataViewer.view.indexNames.at(level) ?? ""
+                ? this.dataViewer.view.index.names.at(level) ?? ""
                 : ""
         const colspan =
-            this.dataViewer.view.indexNames.length - 1 === level
+            this.dataViewer.view.index.names.length - 1 === level
                 ? `colspan="2"`
                 : ""
         const sortButton = this.buildSortButton("index", level)
@@ -142,7 +142,7 @@ export class TableBuilder {
     }
 
     getIndexLevelName(level) {
-        return this.dataViewer.view.indexNames?.[level] || `Level ${level}`
+        return this.dataViewer.view.index.names?.[level] || `Level ${level}`
     }
 
     buildColumnFilterRow() {
@@ -247,23 +247,23 @@ export class TableBuilder {
             ])
         // Reverse levels because outer levels need to be added last
         const levelsReversed = this.dataViewer.view.index.ilevels.slice(0, -1).reverse()
-
         levelsReversed.forEach(level => {
             const hasGrouping = this.dataViewer.view.index.groupingLevels[level]
             const spans = this.dataViewer.view.index.spans[level]
+            const attrs = this.dataViewer.view.index.attrs[level]
+            const formatOptions = attrs.formatOptions ?? this.options
             for (const span of spans) {
                 const attributes = {
                     "data-level": level,
                     "data-group": span.group,
                 }
-
                 // Only add rowspan if this level has meaningful grouping
                 if (hasGrouping) {
                     attributes.rowspan = span.count
                 }
-
+                const formattedValue = this.formatter.formatValue(span.value[level], attrs.dtype, formatOptions)
                 const th = `<th ${this.buildAttributeString(attributes)}>
-                    <span>${span.value[level]}</span>
+                    <span>${formattedValue}</span>
                 </th>`
                 if (end <= span.iloc) break
                 if (span.iloc >= start) { indexRows[span.iloc - start].unshift(th) }
@@ -275,7 +275,10 @@ export class TableBuilder {
     buildIndex(value) {
         value = Array.isArray(value) ? value.at(-1) : value
         const level = this.dataViewer.view.index.nlevels - 1
-        return `<th data-level=${level}>${value}</th>`
+        const attrs = this.dataViewer.view.index.attrs[level]
+        const formatOptions = attrs.formatOptions ?? this.options
+        const formattedValue = this.formatter.formatValue(value, attrs.dtype, formatOptions)
+        return `<th data-level=${level}>${formattedValue}</th>`
     }
 
     buildRecordViewIcon(viewRowIndex) {

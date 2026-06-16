@@ -30,38 +30,55 @@ class ViewAccessor:
         return json.dumps(data, default=self.json_serializer)
 
     def _prepare_data(self) -> dict:
+        """Convert pandas object to data-viewer format"""
         df = self._obj.to_frame() if isinstance(self._obj, pd.Series) else self._obj
 
-        dtypes = []
-        for col in df.columns:
-            dtype = df[col].dtype
-            if pd.api.types.is_integer_dtype(dtype):
-                dtypes.append("int")
-            elif pd.api.types.is_float_dtype(dtype):
-                dtypes.append("float")
-            elif pd.api.types.is_datetime64_any_dtype(dtype):
-                dtypes.append(self._get_date_dtype(df[col]))
-            else:
-                dtypes.append(None)
-
-        data = {
+        return {
             "values": [
                 [None if pd.isna(cell) else cell for cell in row]
                 for row in df.values.tolist()
             ],
-            "columns": list(df.columns),
-            "index": list(df.index),
-            "columnNames": df.columns.names,
-            "indexNames": df.index.names,
-            "dtypes": dtypes,
+            "columns": {
+                "values": list(df.columns),
+                "names": list(df.columns.names),
+                "dtypes": self._get_column_dtypes(df),
+            },
+            "index": {
+                "values": list(df.index),
+                "names": list(df.index.names),
+                "dtypes": self._get_index_dtypes(df),
+            },
         }
 
-        if self.format_options:
-            data["formatOptions"] = [
-                self._resolve_format_option(col) for col in df.columns.tolist()
-            ]
+    def _get_column_dtypes(self, df):
+        dtypes = []
+        for col in df.columns:
+            dtype = df[col].dtype
+            if pd.api.types.is_integer_dtype(dtype):
+                dtypes.append('int')
+            elif pd.api.types.is_float_dtype(dtype):
+                dtypes.append('float')
+            elif pd.api.types.is_datetime64_any_dtype(dtype):
+                dtypes.append(self._get_date_dtype(df[col]))
+            else:
+                dtypes.append(None)
+        return dtypes
 
-        return data
+    def _get_index_dtypes(self, df):
+        index = df.index
+        nlevels = index.nlevels
+        dtypes = []
+        for level in range(nlevels):
+            values = index.get_level_values(level)
+            if pd.api.types.is_integer_dtype(values.dtype):
+                dtypes.append('int')
+            elif pd.api.types.is_float_dtype(values.dtype):
+                dtypes.append('float')
+            elif pd.api.types.is_datetime64_any_dtype(values.dtype):
+                dtypes.append(self._get_date_dtype(values.to_series()))
+            else:
+                dtypes.append(None)
+        return dtypes
 
     def _resolve_format_option(self, col):
         # exact match (flat string or full tuple)

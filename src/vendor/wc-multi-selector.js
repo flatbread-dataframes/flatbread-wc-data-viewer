@@ -1,5 +1,3 @@
-import { baseSheet } from "../styles/base.js"
-
 const componentSheet = new CSSStyleSheet()
 componentSheet.replaceSync(`
 /* ==========================================================================
@@ -56,6 +54,10 @@ componentSheet.replaceSync(`
     --ms-filter-placeholder-text-color: color-mix(in srgb, currentColor 50%, transparent);
 }
 
+:host([mode="dark"]) {
+    --ms-dropdown-background: hsl(0, 0%, 18%);
+}
+
 /* ==========================================================================
    TRIGGER
    ========================================================================== */
@@ -94,7 +96,7 @@ componentSheet.replaceSync(`
 :host([open]) .trigger-bar {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
-    border-bottom: none;
+    border-bottom-color: transparent;
 }
 
 /* ==========================================================================
@@ -129,9 +131,11 @@ componentSheet.replaceSync(`
 }
 
 [data-command] {
-    display: none;
+    display: grid;
+    place-items: center;
     user-select: none;
     font-family: monospace;
+    min-width: 1.5rem;
 }
 
 :where([data-command]) {
@@ -141,7 +145,7 @@ componentSheet.replaceSync(`
 }
 
 [data-command][disabled] {
-    color: hsl(0, 0%, 72%);
+    opacity: .5;
 }
 
 :where([data-command]:not([disabled])):hover {
@@ -153,17 +157,18 @@ componentSheet.replaceSync(`
     background-color: var(--ms-button-background-active);
 }
 
-[data-command]:first-of-type {
-    border-radius: var(--ms-border-radius) 0 0 var(--ms-border-radius);
-}
-
-[data-command]:last-of-type {
+[data-command="clear-query"] {
     border-radius: 0 var(--ms-border-radius) var(--ms-border-radius) 0;
+    margin-right: .5rem;
 }
 
-:host([open]) [data-command] {
-    display: grid;
-    place-items: center;
+[data-command="unfold"] {
+    border-radius: var(--ms-border-radius) 0 0 var(--ms-border-radius);
+    border-right: none;
+}
+[data-command="show-selected"] {
+    border-radius: 0 var(--ms-border-radius) var(--ms-border-radius) 0;
+    border-left: none;
 }
 
 /* ==========================================================================
@@ -194,6 +199,14 @@ componentSheet.replaceSync(`
     display: none;
 }
 
+.close-me {
+    display: none;
+}
+
+:host([open]) .close-me {
+    display: block;
+}
+
 /* ==========================================================================
    FILTER SECTION
    ========================================================================== */
@@ -212,6 +225,7 @@ componentSheet.replaceSync(`
     border-radius: var(--ms-border-radius) 0 0 var(--ms-border-radius);
     border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
     border-right: none;
+    background-color: var(--ms-filter-background);
 }
 
 .search-container > input {
@@ -238,7 +252,6 @@ componentSheet.replaceSync(`
 }
 
 :where(.filter) {
-    background-color: var(--ms-filter-background);
     color: var(--ms-filter-text-color);
 }
 
@@ -492,31 +505,8 @@ function createTemplate(options) {
     <button class="trigger" popovertarget="dropdown">
         <div part="display" class="display"><span>...</span></div>
         <div class="click-me">&#9660;</div>
+        <div class="close-me">&#9650;</div>
     </button>
-    <div part="controls" class="control-panel">
-        <button 
-            part="control-button"
-            data-command="unfold"
-            title="${options.titles.unfoldGroups}"
-            popovertarget="dropdown"
-            popovertargetaction="show"
-        >&plus;</button>
-        <button
-            part="control-button"
-            data-command="fold"
-            title="${options.titles.foldGroups}"
-            popovertarget="dropdown"
-            popovertargetaction="show"
-        >&minus;</button>
-        <button
-            part="control-button"
-            data-command="show-selected"
-            title="${options.titles.showSelected}"
-            popovertarget="dropdown"
-            popovertargetaction="show"
-            disabled
-        >&#9745;</button>
-    </div>
 </div>
 <div id="dropdown" part="dropdown" popover class="dropdown">
     <div part="filter" class="filter">
@@ -525,8 +515,29 @@ function createTemplate(options) {
             <button data-command="toggle-values-only"
             title="${options.titles.valuesOnly}">[val]</button>
         </div>
-        <button part="control-button" data-command="clear-query"
-            title="${options.titles.clearFilter}">&Cross;</button>
+        <div part="controls" class="control-panel">
+            <button
+                part="control-button"
+                data-command="clear-query"
+                title="${options.titles.clearFilter}"
+            >&Cross;</button>
+            <button 
+                part="control-button"
+                data-command="unfold"
+                title="${options.titles.unfoldGroups}"
+            >&plus;</button>
+            <button
+                part="control-button"
+                data-command="fold"
+                title="${options.titles.foldGroups}"
+            >&minus;</button>
+            <button
+                part="control-button"
+                data-command="show-selected"
+                title="${options.titles.showSelected}"
+                disabled
+            >&#9745;</button>
+        </div>
     </div>
     <div part="options" class="options"></div>
 </div>
@@ -577,9 +588,10 @@ class MultiSelector extends HTMLElement {
         this.checkboxHandler = new CheckboxHandler(this)
         this.foldingHandler = new FoldingHandler(this)
         this.navigationHandler = new NavigationHandler(this)
-        this.handlePopoverToggle = this.handlePopoverToggle.bind(this)
         this.tooltipHandler = new TooltipHandler(this)
 
+        this.handlePopoverToggle = this.handlePopoverToggle.bind(this)
+        this.handleExternalScroll = this.handleExternalScroll.bind(this)
         this.handleMediaQueryChange = this.handleMediaQueryChange.bind(this)
         this.handleWheel = this.handleWheel.bind(this)
     }
@@ -629,6 +641,7 @@ class MultiSelector extends HTMLElement {
         this.removeEventListener("wheel", this.handleWheel, {
             capture: true
         })
+        window.removeEventListener("scroll", this.handleExternalScroll, true)
     }
 
     attributeChangedCallback(property, oldValue, newValue) {
@@ -923,8 +936,10 @@ class MultiSelector extends HTMLElement {
             this.tooltipHandler.hide()
             this.setAttribute("open", "")
             this.getElement("trigger")?.focus()
+            window.addEventListener("scroll", this.handleExternalScroll, true)
         } else {
             this.removeAttribute("open")
+            window.removeEventListener("scroll", this.handleExternalScroll, true)
             this.onClose()
         }
     }
@@ -969,6 +984,10 @@ class MultiSelector extends HTMLElement {
             event.preventDefault()
         }
     }
+
+    handleExternalScroll() {
+        this.getElement("dropdown").hidePopover()
+    }
 }
 
 
@@ -997,7 +1016,7 @@ class Renderer {
     }
 
     render() {
-        this.ms.shadowRoot.adoptedStyleSheets = [baseSheet, componentSheet]
+        this.ms.shadowRoot.adoptedStyleSheets = [componentSheet]
         this.ms.shadowRoot.innerHTML = createTemplate(this.ms.settings).trim()
         let html = this.htmlBuilder.buildHTML(this.ms.data)
         this.optionsContainer.innerHTML += html
@@ -1007,7 +1026,7 @@ class Renderer {
     }
 
     renderEmpty() {
-        this.ms.shadowRoot.adoptedStyleSheets = [baseSheet, componentSheet]
+        this.ms.shadowRoot.adoptedStyleSheets = [componentSheet]
         this.ms.shadowRoot.innerHTML = createTemplate(this.ms.settings).trim()
         this.ms.getElement("display").innerHTML = `<span>${this.ms.settings.labels.empty}</span>`
         this.ms.getElement("dropdown").addEventListener("toggle", this.ms.handlePopoverToggle)
@@ -1069,34 +1088,37 @@ class Renderer {
         const selectedLabels = this.ms.selectedLabels
         if (selectedLabels.length === 0) return false
 
-        const selectedStructured = this.ms.selectedLeastNested
-        const sorted = selectedStructured.sort((a, b) => {
-            if (a.type !== b.type) return a.type === "group" ? -1 : 1
-            if (a.type === "group" && b.type === "group") {
-                if (a.depth !== b.depth) return a.depth - b.depth
-                return b.count - a.count
-            }
-            return 0
-        })
+        const groups = this.ms.shadowRoot.querySelectorAll(`[data-role="group"]`)
+        let html = ""
 
-        const items = sorted.map(item => {
-            if (item.type === "group") {
-                return `<div class="tooltip-group">`
-                    + `<div class="tooltip-group-header">${item.label} [${item.count}]</div>`
-                    + `<div>${this.listFormat.format(item.items)}</div>`
-                    + `</div>`
+        groups.forEach(group => {
+            const checkedOptions = [...group.querySelectorAll(`[data-role="option"] input:checked`)]
+                .filter(input => input.closest(`[data-role="group"]`) === group)
+            if (checkedOptions.length === 0) return
+
+            const checkbox = group.querySelector("input")
+            const nextSibling = checkbox.nextElementSibling
+            let label = nextSibling.querySelector("span")?.textContent || nextSibling.textContent
+
+            if (parseInt(group.dataset.depth) === 0) {
+                const hasChildGroups = group.querySelector(`[data-role="group"]`) !== null
+                if (hasChildGroups) return
+                label = this.ms.getAttribute("name") ?? label
             }
-            return item.label
+
+            const labels = checkedOptions.map(input => input.nextElementSibling.textContent.trim())
+
+            html += `<div class="tooltip-group">`
+                + `<div class="tooltip-group-header">${label} [${checkedOptions.length}]</div>`
+                + `<div>${this.listFormat.format(labels)}</div>`
+                + `</div>`
         })
 
         const tooltip = this.ms.getElement("tooltip")
-        const title = `${this.ms.settings.labels.all} [${selectedLabels.length}]`
-        tooltip.innerHTML = `<div class="tooltip-title">${title}</div>`
-            + `<div class="tooltip-items">${items.join("")}</div>`
+        tooltip.innerHTML = html
 
         return true
     }
-
 }
 
 
