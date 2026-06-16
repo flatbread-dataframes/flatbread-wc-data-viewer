@@ -243,6 +243,7 @@ export class TableBuilder {
                 const attributes = {
                     "data-level": level,
                     "data-group": span.group,
+                    "data-dtype": attrs.dtype,
                 }
                 // Only add rowspan if this level has meaningful grouping
                 if (hasGrouping) {
@@ -265,7 +266,7 @@ export class TableBuilder {
         const attrs = this.dataViewer.view.index.attrs[level]
         const formatOptions = attrs.formatOptions ?? this.options
         const formattedValue = this.formatter.formatValue(value, attrs.dtype, formatOptions)
-        return `<th data-level=${level}>${formattedValue}</th>`
+        return `<th data-level=${level} data-dtype="${attrs.dtype}">${formattedValue}</th>`
     }
 
     buildRecordViewIcon(viewRowIndex) {

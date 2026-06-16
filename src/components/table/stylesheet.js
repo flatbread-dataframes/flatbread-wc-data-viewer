@@ -57,11 +57,15 @@ export class Stylesheet {
             th {
                 background-color: var(--dv-bg, white);
             }
-            tbody th { text-align: left; }
-            td { text-align: right; }
             th, td {
                 padding: .25em .5em;
                 cursor: var(--cursor, auto);
+            }
+            tbody th { text-align: left; }
+            td { text-align: left; }
+            :where(td, tbody th)[data-dtype="int"],
+            :where(td, tbody th)[data-dtype="float"] {
+                text-align: right;
             }
             tbody th:not([rowspan]) {
                 vertical-align: middle;
