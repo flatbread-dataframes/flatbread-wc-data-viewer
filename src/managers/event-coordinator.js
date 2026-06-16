@@ -16,7 +16,6 @@ export class EventCoordinator {
         this.handleIndexSort = this.handleIndexSort.bind(this)
         this.handleLoadMoreRows = this.handleLoadMoreRows.bind(this)
         this.handleDataChange = this.handleDataChange.bind(this)
-        this.handleMouseEnter = this.handleMouseEnter.bind(this)
         this.handleExportData = this.handleExportData.bind(this)
     }
 
@@ -24,7 +23,6 @@ export class EventCoordinator {
     addEventListeners() {
         const { shadowRoot, data } = this.dataViewer
 
-        this.dataViewer.addEventListener('mouseenter', this.handleMouseEnter)
         data.addEventListener("data-changed", this.handleDataChange)
         shadowRoot.addEventListener("cell-click", this.handleCellClick)
         shadowRoot.addEventListener("field-click", this.handleFieldClick)
@@ -43,7 +41,6 @@ export class EventCoordinator {
     removeEventListeners() {
         const { shadowRoot, data } = this.dataViewer
 
-        this.dataViewer.removeEventListener('mouseenter', this.handleMouseEnter)
         data.removeEventListener("data-changed", this.handleDataChange)
         shadowRoot.removeEventListener("cell-click", this.handleCellClick)
         shadowRoot.removeEventListener("field-click", this.handleFieldClick)
@@ -77,10 +74,6 @@ export class EventCoordinator {
         }
 
         this.dataViewer.dispatchEvent(new CustomEvent("data-changed", { detail: this.dataViewer.data }))
-    }
-
-    handleMouseEnter() {
-        this.dataViewer.focus()
     }
 
     // MARK: @interaction
