@@ -8,6 +8,20 @@
     <!-- <link rel="stylesheet" href="https://lcvriend.github.io/wc-multi-selector/static/prism.css"> -->
     <script type="module" src="https://uu-asc.github.io/csa-werkvoorraad/src/darkmode-toggle.js"></script>
     <style>
+        @font-face {
+            font-family: 'Bungee Hairline';
+            src: url('static/fonts/BungeeHairline-Regular.ttf');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Open Sans';
+            src: url('static/fonts/OpenSans-VariableFont_wdth,wght.ttf');
+            font-style: normal;
+            font-display: swap;
+        }
         :root {
             --background-color: hsl(0, 0%, 98%);
         }
@@ -16,6 +30,7 @@
             margin-bottom: 4rem;
             background-color: var(--background-color);
             font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+            font-family: 'Open Sans', sans-serif;
 
             display: grid;
             grid-template-columns:
@@ -52,6 +67,7 @@
             --cursor: pointer;
             background-color: var(--background-color);
             margin-block: 1.25em;
+            font-size: .9em;
         }
         pre {
             white-space: pre-wrap;
