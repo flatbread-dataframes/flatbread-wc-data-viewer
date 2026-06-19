@@ -15,7 +15,7 @@ export class ClickHandler {
     handleClick(event) {
         if (this.handleHideClick(event)) return
 
-        if (event.target.closest("filter-input")) return
+        if (event.target.closest(".filter-row")) return
 
         if (event.shiftKey || event.ctrlKey) {
             return this.handleDataExtractionClick(event)

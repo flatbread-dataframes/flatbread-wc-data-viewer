@@ -9,7 +9,7 @@ import "./components/control-panel.js"
 import "./components/filter-combo.js"
 import "./components/sort-button.js"
 import "./vendor/wc-multi-selector.js"
-import "./vendor/darkmode-toggle.js"
+// import "./vendor/darkmode-toggle.js"
 
 export class DataViewer extends HTMLElement {
     get styles() {
@@ -20,7 +20,7 @@ export class DataViewer extends HTMLElement {
             :host {
                 --dv-bg: var(--background-color, white);
                 --dv-hover: color-mix(in srgb, var(--dv-bg) 90%, currentColor 5%);
-                --dv-border: color-mix(in srgb, var(--dv-bg) 90%, currentColor 70%);
+                --dv-border: var(--border-color, color-mix(in srgb, var(--dv-bg) 90%, currentColor 70%));
                 --focus-color: color-mix(in srgb, var(--dv-bg) 90%, currentColor 50%);
 
                 display: grid;

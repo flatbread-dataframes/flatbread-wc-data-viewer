@@ -213,12 +213,12 @@ export class Stylesheet {
         const styleBlocks = {
             groupBorders: `
                 [group-edge] {
-                    border-left: 1px solid color-mix(in srgb, currentColor 60%, transparent);
+                    border-left: 1px solid color-mix(in srgb, var(--border-color, currentColor) 60%, transparent);
                 }
             `,
             rowBorders: `
                 tbody tr:not(:first-of-type):has(th[rowspan]) :where(th, td) {
-                    border-top: 1px solid color-mix(in srgb, currentColor 75%, transparent);
+                    border-top: 1px solid color-mix(in srgb, var(--border-color, currentColor) 75%, transparent);
                 }
             `,
             hoverEffect: `
@@ -228,13 +228,13 @@ export class Stylesheet {
             `,
             theadBorder: `
                 thead tr:last-of-type th {
-                    border-bottom: var(--axes-width, 2px) solid color-mix(in srgb, currentColor 75%, transparent);
+                    border-bottom: var(--axes-width, 2px) solid color-mix(in srgb, var(--border-color, currentColor) 75%, transparent);
                 }
             `,
             indexBorder: `
                 tbody tr th:last-of-type,
                 thead th:has(+ [index-edge]) {
-                    border-right: var(--axes-width, 2px) solid color-mix(in srgb, currentColor 75%, transparent);
+                    border-right: var(--axes-width, 2px) solid color-mix(in srgb, var(--border-color, currentColor) 75%, transparent);
                 }
             `,
             hideFilters: `
