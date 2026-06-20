@@ -59,6 +59,7 @@ export class ControlPanel extends HTMLElement {
         this.handleToggleExport = this.handleToggleExport.bind(this)
         this.handleExportClick = this.handleExportClick.bind(this)
         this.handleExportKeydown = this.handleExportKeydown.bind(this)
+        this.handleMultiSelectorOpen = this.handleMultiSelectorOpen.bind(this)
         this._columnData = []
     }
 
@@ -76,6 +77,7 @@ export class ControlPanel extends HTMLElement {
         this.shadowRoot.addEventListener("toggle-export", this.handleToggleExport)
         this.shadowRoot.addEventListener("click", this.handleExportClick)
         this.shadowRoot.addEventListener("keydown", this.handleExportKeydown)
+        this.shadowRoot.addEventListener("ms-open", this.handleMultiSelectorOpen)
         this.addEventListener("keydown", this.handleKeydown)
     }
 
@@ -84,6 +86,7 @@ export class ControlPanel extends HTMLElement {
         this.shadowRoot.removeEventListener("toggle-export", this.handleToggleExport)
         this.shadowRoot.removeEventListener("click", this.handleExportClick)
         this.shadowRoot.removeEventListener("keydown", this.handleExportKeydown)
+        this.shadowRoot.removeEventListener("ms-open", this.handleMultiSelectorOpen)
         this.removeEventListener("keydown", this.handleKeydown)
     }
 
@@ -209,12 +212,6 @@ export class ControlPanel extends HTMLElement {
         if (multiSelector && this._columnData.length > 0) {
             customElements.whenDefined("multi-selector").then(() => {
                 multiSelector.data = this._columnData
-
-                if (this.dataViewer) {
-                    const viewerHeight = this.dataViewer.getBoundingClientRect().height
-                    const maxHeight = Math.floor(viewerHeight * 0.8) + 'px'
-                    multiSelector.style.setProperty("--ms-max-height", maxHeight)
-                }
             })
         }
     }
@@ -228,6 +225,14 @@ export class ControlPanel extends HTMLElement {
             bubbles: true,
             composed: true,
         }))
+    }
+
+    handleMultiSelectorOpen(event) {
+        if (!this.dataViewer) return
+        const viewerHeight = this.dataViewer.getBoundingClientRect().height
+        if (viewerHeight === 0) return
+        const maxHeight = Math.floor(viewerHeight * 0.8) + 'px'
+        event.target.style.setProperty("--ms-max-height", maxHeight)
     }
 
     handleKeydown(event) {

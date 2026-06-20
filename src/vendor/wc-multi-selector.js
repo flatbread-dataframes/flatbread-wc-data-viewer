@@ -937,6 +937,7 @@ class MultiSelector extends HTMLElement {
             this.setAttribute("open", "")
             this.getElement("trigger")?.focus()
             window.addEventListener("scroll", this.handleExternalScroll, true)
+            this.dispatchEvent(new Event('ms-open', { bubbles: true, composed: true }))
         } else {
             this.removeAttribute("open")
             window.removeEventListener("scroll", this.handleExternalScroll, true)
@@ -1923,3 +1924,4 @@ class TooltipHandler {
 }
 
 window.customElements.define("multi-selector", MultiSelector)
+

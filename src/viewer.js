@@ -9,9 +9,8 @@ import "./components/control-panel.js"
 import "./components/filter-combo.js"
 import "./components/sort-button.js"
 import "./vendor/wc-multi-selector.js"
-// import "./vendor/darkmode-toggle.js"
 
-export class DataViewer extends HTMLElement {
+export class FlatbreadDataViewer extends HTMLElement {
     get styles() {
         return `
             :root {
@@ -89,7 +88,7 @@ export class DataViewer extends HTMLElement {
     constructor() {
         super()
         this.attachShadow({ mode: "open" })
-        this.options = { ...DataViewer.defaults }
+        this.options = { ...FlatbreadDataViewer.defaults }
 
         this._data = new Data()
         this._eventCoordinator = new EventCoordinator(this)
@@ -188,13 +187,13 @@ export class DataViewer extends HTMLElement {
         // Attributes that require full render
         switch (name) {
             case "locale":
-                this.options.locale = newValue ?? DataViewer.defaults.locale
+                this.options.locale = newValue ?? FlatbreadDataViewer.defaults.locale
                 break
             case "na-rep":
-                this.options.naRep = newValue ?? DataViewer.defaults.naRep
+                this.options.naRep = newValue ?? FlatbreadDataViewer.defaults.naRep
                 break
             case "height":
-                this.options.height = newValue ?? DataViewer.defaults.height
+                this.options.height = newValue ?? FlatbreadDataViewer.defaults.height
                 break
         }
         this.render()
@@ -422,4 +421,4 @@ export class DataViewer extends HTMLElement {
 }
 
 
-window.customElements.define('data-viewer', DataViewer)
+window.customElements.define('flatbread-data-viewer', FlatbreadDataViewer)
