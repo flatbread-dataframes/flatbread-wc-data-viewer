@@ -9,7 +9,6 @@ export class View {
         this._visibleColumnIndices = null
         this._viewIndex = null
         this._viewColumns = null
-        this._viewValues = null
     }
 
     get visibleIndices() {
@@ -23,8 +22,9 @@ export class View {
         if (this._visibleColumnIndices === null) {
             return this.data.columns
         }
+        if (this._viewColumns) return this._viewColumns
         const src = this.data.columns
-        return new Columns({
+        return this._viewColumns = new Columns({
             values: this._visibleColumnIndices.map(i => src.values[i]),
             names: src.names,
             dtypes: this._visibleColumnIndices.map(i => src.dtypes?.[i]),
@@ -33,8 +33,9 @@ export class View {
     }
 
     get index() {
+        if (this._viewIndex) return this._viewIndex
         const src = this.data.index
-        return new Index({
+        return this._viewIndex = new Index({
             values: this.visibleIndices.map(i => src.values[i]),
             names: src.names,
             dtypes: src.dtypes,
@@ -59,6 +60,7 @@ export class View {
     // Filtering methods
     filter(predicate) {
         this._visibleIndices = this.data.index.ilocs.filter(i => predicate(this.data.values[i], i))
+        this.invalidateCache()
         return this
     }
 
@@ -119,7 +121,6 @@ export class View {
     invalidateCache() {
         this._viewIndex = null
         this._viewColumns = null
-        this._viewValues = null
     }
 
     // Utility methods

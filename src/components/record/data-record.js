@@ -149,7 +149,7 @@ export class DataRecord extends HTMLElement {
     set dataViewer(value) {
         this._dataViewer = value
         if (value) {
-            this._recordBuilder = new RecordBuilder(value, value.options)
+            this._recordBuilder = new RecordBuilder(value)
             this.render()
         }
     }

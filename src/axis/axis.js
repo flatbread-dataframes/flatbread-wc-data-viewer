@@ -54,13 +54,11 @@ export class Axis {
     // Returns an array of integer locations of the group edges
     getEdges() {
         if ( !this.isMultiIndex ) return []
-        const edges = []
-        for (const level of this.spans) {
-            for (const span of level) {
-                if (!edges.includes(span.iloc)) { edges.push(span.iloc) }
-            }
-        }
-        return edges
+        // spans[0] is the outermost level, spans.at(-1) the innermost grouped level.
+        // Its keys are the longest prefixes, so it starts a span wherever any
+        // outer level does, and more. Its ilocs are therefore all edges, in order.
+        const innermostSpans = this.spans.at(-1)
+        return innermostSpans.map(span => span.iloc)
     }
 
     // Returns an array of span objects

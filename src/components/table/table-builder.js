@@ -1,11 +1,6 @@
-import { Formatter } from "../../build/formatter.js"
-
-
 export class TableBuilder {
-    constructor(dataViewer, options) {
+    constructor(dataViewer) {
         this.dataViewer = dataViewer
-        this.options = options
-        this.formatter = new Formatter(options)
     }
 
     buildTable(buffer) {
@@ -238,7 +233,6 @@ export class TableBuilder {
             const hasGrouping = this.dataViewer.view.index.groupingLevels[level]
             const spans = this.dataViewer.view.index.spans[level]
             const attrs = this.dataViewer.view.index.attrs[level]
-            const formatOptions = attrs.formatOptions ?? this.options
             for (const span of spans) {
                 const attributes = {
                     "data-level": level,
@@ -249,7 +243,7 @@ export class TableBuilder {
                 if (hasGrouping) {
                     attributes.rowspan = span.count
                 }
-                const formattedValue = this.formatter.formatValue(span.value[level], attrs.dtype, formatOptions)
+                const formattedValue = this.dataViewer.formatter.formatValue(span.value[level], attrs.dtype, attrs.formatOptions)
                 const th = `<th ${this.buildAttributeString(attributes)}>
                     <span>${formattedValue}</span>
                 </th>`
@@ -264,8 +258,7 @@ export class TableBuilder {
         value = Array.isArray(value) ? value.at(-1) : value
         const level = this.dataViewer.view.index.nlevels - 1
         const attrs = this.dataViewer.view.index.attrs[level]
-        const formatOptions = attrs.formatOptions ?? this.options
-        const formattedValue = this.formatter.formatValue(value, attrs.dtype, formatOptions)
+        const formattedValue = this.dataViewer.formatter.formatValue(value, attrs.dtype, attrs.formatOptions)
         return `<th data-level=${level} data-dtype="${attrs.dtype}">${formattedValue}</th>`
     }
 
@@ -277,8 +270,7 @@ export class TableBuilder {
 
     buildCell(value, iloc) {
         const attrs = this.dataViewer.view.columns.attrs[iloc]
-        const formatOptions = attrs.formatOptions ?? this.options
-        const formattedValue = this.formatter.formatValue(value, attrs.dtype, formatOptions)
+        const formattedValue = this.dataViewer.formatter.formatValue(value, attrs.dtype, attrs.formatOptions)
         const groups = attrs.groups.join(" ")
         const isIndexEdge = iloc === 0
         const isGroupEdge = this.dataViewer.view.columns.edges.slice(1).includes(iloc)

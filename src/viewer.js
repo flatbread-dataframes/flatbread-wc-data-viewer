@@ -1,5 +1,6 @@
 import { Data } from "./data/data.js"
 import { View } from "./data/view.js"
+import { Formatter } from "./build/formatter.js"
 import { EventCoordinator } from "./managers/event-coordinator.js"
 import { FilterManager } from "./managers/filter-manager.js"
 import { NavigationController } from "./managers/navigation-controller.js"
@@ -94,6 +95,7 @@ export class FlatbreadDataViewer extends HTMLElement {
         this._eventCoordinator = new EventCoordinator(this)
         this._filterManager = new FilterManager()
         this._navigationController = new NavigationController(this)
+        this._formatter = new Formatter(this.options)
     }
 
     // MARK: setup
@@ -188,6 +190,7 @@ export class FlatbreadDataViewer extends HTMLElement {
         switch (name) {
             case "locale":
                 this.options.locale = newValue ?? FlatbreadDataViewer.defaults.locale
+                this._formatter = new Formatter(this.options)
                 break
             case "na-rep":
                 this.options.naRep = newValue ?? FlatbreadDataViewer.defaults.naRep
@@ -230,6 +233,10 @@ export class FlatbreadDataViewer extends HTMLElement {
 
     get viewMode() {
         return this._viewMode
+    }
+
+    get formatter() {
+        return this._formatter
     }
 
     get navigationController() {

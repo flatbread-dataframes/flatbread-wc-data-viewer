@@ -1,11 +1,6 @@
-import { Formatter } from "../../build/formatter.js"
-
-
 export class RecordBuilder {
-    constructor(dataViewer, options) {
+    constructor(dataViewer) {
         this.dataViewer = dataViewer
-        this.options = options
-        this.formatter = new Formatter(options)
     }
 
     buildRecord() {
@@ -29,13 +24,12 @@ export class RecordBuilder {
         const indexDisplay = Array.isArray(record.indexValue)
             ? record.indexValue.map((value, level) => {
                 const attrs = indexAttrs[level]
-                const formatOptions = attrs.formatOptions ?? this.options
-                return this.formatter.formatValue(value, attrs.dtype, formatOptions)
+                return this.dataViewer.formatter.formatValue(value, attrs.dtype, attrs.formatOptions)
             }).join(" | ")
-            : this.formatter.formatValue(
+            : this.dataViewer.formatter.formatValue(
                 record.indexValue,
                 indexAttrs[0]?.dtype,
-                indexAttrs[0]?.formatOptions ?? this.options
+                indexAttrs[0]?.formatOptions
             )
 
         return `
@@ -67,8 +61,7 @@ export class RecordBuilder {
         const fields = this.dataViewer.view.columns.values.map((columnValue, iloc) => {
             const value = record.values[iloc]
             const attrs = this.dataViewer.view.columns.attrs[iloc]
-            const formatOptions = attrs.formatOptions ?? this.options
-            return this.buildRecordField(columnValue, value, attrs.dtype, formatOptions)
+            return this.buildRecordField(columnValue, value, attrs.dtype, attrs.formatOptions)
         })
 
         return `<div class="record-fields">${fields.join("")}</div>`
@@ -103,7 +96,7 @@ export class RecordBuilder {
                 label: fieldLabel,
                 value: value,
                 dtype: attrs.dtype,
-                formatOptions: attrs.formatOptions ?? this.options
+                formatOptions: attrs.formatOptions
             })
         })
 
@@ -126,7 +119,7 @@ export class RecordBuilder {
     }
 
     buildRecordField(label, value, dtype, formatOptions) {
-        const formattedValue = this.formatter.formatValue(value, dtype, formatOptions)
+        const formattedValue = this.dataViewer.formatter.formatValue(value, dtype, formatOptions)
 
         return `
             <div class="record-field">

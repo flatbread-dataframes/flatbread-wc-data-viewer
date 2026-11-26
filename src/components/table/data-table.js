@@ -78,7 +78,7 @@ export class DataTable extends HTMLElement {
     set dataViewer(value) {
         this._dataViewer = value
         if (value) {
-            this._tableBuilder = new TableBuilder(value, value.options)
+            this._tableBuilder = new TableBuilder(value)
             this._stylesheet = new Stylesheet(this, value.data, value.options)
             if (this.isConnected) {
                 this.render()
