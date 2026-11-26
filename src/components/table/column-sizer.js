@@ -6,6 +6,8 @@ import { distributeExcess } from "../../build/column-widths.js"
 export class ColumnSizer {
     constructor(dataTable) {
         this.dataTable = dataTable
+        // Last measured width of the record view icon column; kept for renders without rows
+        this._iconWidth = 0
     }
 
     // MARK: get/set
@@ -52,7 +54,8 @@ export class ColumnSizer {
         const spans = []
 
         const icon = this.root.querySelector("tbody .recordViewIcon")
-        if (icon) leaves[nIndex - 1] = requiredWidth(icon)
+        if (icon) this._iconWidth = requiredWidth(icon)
+        leaves[nIndex - 1] = this._iconWidth
 
         // The filter row is left out: filter-combo shrinks to the column width
         for (const row of this.root.querySelectorAll("thead tr:not(.filter-row)")) {
