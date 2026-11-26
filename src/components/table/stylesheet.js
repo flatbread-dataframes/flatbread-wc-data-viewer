@@ -5,20 +5,12 @@ export class Stylesheet {
         this.dataTable = dataTable
         this.data = data
         this.options = options
-        this.updateColumnWidths = this.updateColumnWidths.bind(this)
-        this.resizeObserver = new ResizeObserver(() => {
-            this.updateColumnWidths()
-            this.updateIndexOffset()
-        })
     }
 
     // MARK: setup
     setupStyles() {
         this._componentSheet = this.getIntegratedStyleSheet()
         this.dataTable.shadowRoot.adoptedStyleSheets = [baseSheet, this._componentSheet]
-
-        const tbody = this.dataTable.shadowRoot.querySelector("tbody")
-        if (tbody) this.resizeObserver.observe(tbody)
     }
 
     // MARK: get/set
@@ -54,11 +46,17 @@ export class Stylesheet {
                 border-collapse: separate;
                 border-spacing: 0;
             }
+            /* fixed layout once the colgroup is written; width 0 makes the table the sum of its cols */
+            table:has(> colgroup > col) {
+                table-layout: fixed;
+                width: 0;
+            }
             th {
                 background-color: var(--dv-bg, white);
             }
             th, td {
                 padding: .25em .5em;
+                white-space: nowrap;
                 cursor: var(--cursor, auto);
             }
             tbody th { text-align: left; }
@@ -76,8 +74,12 @@ export class Stylesheet {
             }
             thead th > span {
                 display: flex;
+                width: max-content;
                 gap: .25em;
                 align-items: center;
+            }
+            thead th.columnLevelNameLabel > span {
+                margin-left: auto;
             }
             .columnFilter, .indexFilter {
                 border-top: 1px solid var(--dv-border);
@@ -184,10 +186,10 @@ export class Stylesheet {
                 top: 0;
                 z-index: 7;
             }
-            thead th[colspan]:not(.columnLevelNameLabel) {
+            thead .column-groups-row th:not(.columnLevelNameLabel) {
                 text-align: left;
             }
-            thead th[colspan]:not(.columnLevelNameLabel) > span {
+            thead .column-groups-row th:not(.columnLevelNameLabel) > span {
                 display: inline-flex;
                 position: sticky;
                 left: var(--index-offset);
@@ -254,11 +256,6 @@ export class Stylesheet {
                     background-color: color-mix(in srgb, var(--focus-color) 25%, var(--dv-bg));
                 }
             `,
-            noWrap: `
-                th, td {
-                    white-space: nowrap;
-                }
-            `,
         }
 
         return Object.entries(styleBlocks)
@@ -278,19 +275,12 @@ export class Stylesheet {
         }
     }
 
-    updateColumnWidths() {
-        const tbody = this.dataTable.shadowRoot.querySelector("tbody")
-        if (!tbody) return
-
-        const firstRow = tbody.querySelector("tr")
-        if (!firstRow) return
-
-        const indexHeaders = firstRow.querySelectorAll("th")
-
-        let cumulativeWidth = 0
-        indexHeaders.forEach((header, index) => {
-            this.table.style.setProperty(`--index-col-${index}-offset`, `${cumulativeWidth}px`)
-            cumulativeWidth += header.getBoundingClientRect().width
+    // Sticky left offsets of the index columns (levels + record view icon) from their fixed widths
+    updateIndexOffsets(widths) {
+        let offset = 0
+        widths.forEach((width, i) => {
+            this.table.style.setProperty(`--index-col-${i}-offset`, `${offset}px`)
+            offset += width
         })
     }
 
@@ -308,9 +298,5 @@ export class Stylesheet {
 
         const newOffset = `calc(${columnLevelName.getBoundingClientRect().width}px + .5em)`
         this.table.style.setProperty(`--index-offset`, newOffset)
-    }
-
-    disconnect() {
-        this.resizeObserver.disconnect()
     }
 }

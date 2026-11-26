@@ -3,6 +3,7 @@ import { Stylesheet } from "./stylesheet.js"
 import { WheelHandlerMixin } from "../../mixins/wheel-handler.js"
 import { ScrollManager } from "./scroll-manager.js"
 import { ClickHandler } from "./click-handler.js"
+import { ColumnSizer } from "./column-sizer.js"
 
 
 export class DataTable extends HTMLElement {
@@ -12,6 +13,7 @@ export class DataTable extends HTMLElement {
 
         this.scrollManager = new ScrollManager(this)
         this.clickHandler = new ClickHandler(this)
+        this.columnSizer = new ColumnSizer(this)
 
         this.handleKeydown = this.handleKeydown.bind(this)
         this.handleTheadFocusIn = this.handleTheadFocusIn.bind(this)
@@ -20,6 +22,7 @@ export class DataTable extends HTMLElement {
         this.handleColumnSort = this.handleColumnSort.bind(this)
         this.handleIndexSort = this.handleIndexSort.bind(this)
         this.handleWheel = WheelHandlerMixin.handleWheel.bind(this)
+        this.handleFontsLoaded = this.handleFontsLoaded.bind(this)
 
         this._dataViewer = null
         this._tableBuilder = null
@@ -37,9 +40,7 @@ export class DataTable extends HTMLElement {
     }
 
     disconnectedCallback() {
-        if (this._stylesheet) {
-            this._stylesheet.disconnect()
-        }
+        this.removeEventListeners()
     }
 
     addEventListeners() {
@@ -50,6 +51,7 @@ export class DataTable extends HTMLElement {
         this.shadowRoot.addEventListener("filter-options-request", this.handleFilterOptionsRequest)
         this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.addEventListener("index-sort", this.handleIndexSort)
+        document.fonts.addEventListener("loadingdone", this.handleFontsLoaded)
 
         this.clickHandler.addEventListeners()
         this.scrollManager.addEventListeners()
@@ -64,6 +66,7 @@ export class DataTable extends HTMLElement {
         this.shadowRoot.removeEventListener("filter-options-request", this.handleFilterOptionsRequest)
         this.shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
         this.shadowRoot.removeEventListener("index-sort", this.handleIndexSort)
+        document.fonts.removeEventListener("loadingdone", this.handleFontsLoaded)
 
         this.clickHandler.removeEventListeners()
         this.scrollManager.removeEventListeners()
@@ -124,24 +127,30 @@ export class DataTable extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
             <table>
+                <colgroup></colgroup>
                 <thead>${this._tableBuilder.buildThead()}</thead>
                 <tbody>${this._tableBuilder.buildTbody(0, this.options.buffer)}</tbody>
             </table>
         `
 
         this._stylesheet.setupStyles()
-        this._stylesheet.updateTheadOffset()
-        this._stylesheet.updateIndexOffset()
-        this._stylesheet.updateColumnWidths()
+        this.applyColumnWidths()
     }
 
     renderTbody() {
         const tbody = this.shadowRoot.querySelector("tbody")
         if (tbody && this._tableBuilder) {
             tbody.innerHTML = this._tableBuilder.buildTbody(0, this.options.buffer)
-            this._stylesheet.updateIndexOffset()
-            this._stylesheet.updateColumnWidths()
         }
+    }
+
+    // Fixes the column widths; the table switches to fixed layout once the colgroup has cols
+    applyColumnWidths(remeasure = false) {
+        const widths = this.columnSizer.measure(remeasure)
+        this.shadowRoot.querySelector("colgroup").innerHTML = this._tableBuilder.buildColgroup(widths)
+        this._stylesheet.updateIndexOffsets(widths.slice(0, this.view.index.nlevels + 1))
+        this._stylesheet.updateTheadOffset()
+        this._stylesheet.updateIndexOffset()
     }
 
     // MARK: handlers
@@ -162,6 +171,10 @@ export class DataTable extends HTMLElement {
                 event.stopPropagation()
             }
         }
+    }
+
+    handleFontsLoaded() {
+        if (this.shadowRoot.querySelector("table")) this.applyColumnWidths(true)
     }
 
     // MARK: @filter
@@ -597,8 +610,6 @@ export class DataTable extends HTMLElement {
 
         const end = index + this.dataViewer.options.buffer
         tbody.insertAdjacentHTML("beforeend", this._tableBuilder.buildTbody(renderedCount, end))
-        this._stylesheet.updateIndexOffset()
-        this._stylesheet.updateColumnWidths()
     }
 
     focusTbodyRow(index) {

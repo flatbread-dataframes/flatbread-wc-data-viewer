@@ -63,6 +63,7 @@ export class EventCoordinator {
     // MARK: handlers
     handleDataChange(event) {
         this.dataViewer._viewNeedsUpdate = true
+        this.dataViewer.invalidateColumnWidths()
 
         if (event.detail.isValuesOnly) {
             this.dataViewer.updateDataTable()

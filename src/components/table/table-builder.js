@@ -47,7 +47,7 @@ export class TableBuilder {
 
         const columnLevelNameLabelElement =
             `<th colspan="${this.dataViewer.view.index.nlevels + 1}"
-            class="columnLevelNameLabel">${columnLevelNameLabel}</th>`
+            class="columnLevelNameLabel"><span>${columnLevelNameLabel}</span></th>`
 
         return columnLevelNameLabelElement
     }
@@ -206,6 +206,11 @@ export class TableBuilder {
                 ${span.value[level]}
             </span>
         </th>`
+    }
+
+    // MARK: Colgroup
+    buildColgroup(widths) {
+        return widths.map(width => `<col style="width: ${width}px">`).join("")
     }
 
     // MARK: Tbody

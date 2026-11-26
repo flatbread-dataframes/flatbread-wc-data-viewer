@@ -1,6 +1,7 @@
 import { Data } from "./data/data.js"
 import { View } from "./data/view.js"
 import { Formatter } from "./build/formatter.js"
+import { ColumnWidths } from "./build/column-widths.js"
 import { EventCoordinator } from "./managers/event-coordinator.js"
 import { FilterManager } from "./managers/filter-manager.js"
 import { NavigationController } from "./managers/navigation-controller.js"
@@ -64,7 +65,7 @@ export class FlatbreadDataViewer extends HTMLElement {
             "view", "src", "locale", "na-rep", "height",
             "hide-group-borders", "hide-row-borders",
             "hide-thead-border", "hide-index-border",
-            "hide-filter-row", "no-wrap",
+            "hide-filter-row",
         ]
     }
 
@@ -81,7 +82,6 @@ export class FlatbreadDataViewer extends HTMLElement {
                 theadBorder: true,
                 indexBorder: true,
                 hideFilters: false,
-                noWrap: false,
             }
         }
     }
@@ -159,7 +159,6 @@ export class FlatbreadDataViewer extends HTMLElement {
             "hide-index-border",
             "hide-thead-border",
             "hide-filter-row",
-            "no-wrap",
         ]
         if (stylingAttributes.includes(name)) {
             switch (name) {
@@ -178,9 +177,6 @@ export class FlatbreadDataViewer extends HTMLElement {
                 case "hide-filter-row":
                     this.options.styling.hideFilters = newValue !== null
                     break
-                case "no-wrap":
-                    this.options.styling.noWrap = newValue !== null
-                    break
             }
             this.updateStylesheet()
             return
@@ -191,9 +187,11 @@ export class FlatbreadDataViewer extends HTMLElement {
             case "locale":
                 this.options.locale = newValue ?? FlatbreadDataViewer.defaults.locale
                 this._formatter = new Formatter(this.options)
+                this.invalidateColumnWidths()
                 break
             case "na-rep":
                 this.options.naRep = newValue ?? FlatbreadDataViewer.defaults.naRep
+                this.invalidateColumnWidths()
                 break
             case "height":
                 this.options.height = newValue ?? FlatbreadDataViewer.defaults.height
@@ -237,6 +235,15 @@ export class FlatbreadDataViewer extends HTMLElement {
 
     get formatter() {
         return this._formatter
+    }
+
+    // Built on first use; formats the full dataset, so kept until data, locale or naRep change
+    get columnWidths() {
+        return this._columnWidths ??= new ColumnWidths(this.data, this.formatter)
+    }
+
+    invalidateColumnWidths() {
+        this._columnWidths = null
     }
 
     get navigationController() {
