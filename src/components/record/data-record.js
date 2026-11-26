@@ -136,7 +136,10 @@ export class DataRecord extends HTMLElement {
         if (oldValue === newValue) return
 
         if (name === "record-index") {
-            this._currentRecordIndex = parseInt(newValue) ?? 0
+            const index = parseInt(newValue) ?? 0
+            // Set through recordIndex: state only, the caller renders
+            if (index === this._currentRecordIndex) return
+            this._currentRecordIndex = index
             this.render()
         }
     }
@@ -150,7 +153,6 @@ export class DataRecord extends HTMLElement {
         this._dataViewer = value
         if (value) {
             this._recordBuilder = new RecordBuilder(value)
-            this.render()
         }
     }
 
@@ -181,8 +183,18 @@ export class DataRecord extends HTMLElement {
 
     // MARK: render
     render() {
+        // Hidden in table view; rendered when the record view opens
+        if (this.dataViewer?.viewMode !== "record") return
+        this.clampRecordIndex()
         this.shadowRoot.adoptedStyleSheets = [baseSheet, interactiveSheet, componentSheet]
         this.shadowRoot.innerHTML = this.buildRecord()
+    }
+
+    // The view can shrink (filtering, new data) while the record index is kept
+    clampRecordIndex() {
+        const total = this.dataViewer.view.visibleIndices.length
+        const index = Math.min(this._currentRecordIndex, Math.max(total - 1, 0))
+        if (index !== this._currentRecordIndex) this.recordIndex = index
     }
 
     buildRecord() {

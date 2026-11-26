@@ -305,6 +305,7 @@ export class FlatbreadDataViewer extends HTMLElement {
         const dataRecord = this.shadowRoot.querySelector("data-record")
         if (dataRecord) {
             dataRecord.dataViewer = this
+            dataRecord.render()
         }
     }
 
@@ -413,6 +414,7 @@ export class FlatbreadDataViewer extends HTMLElement {
     // MARK: @keyboard
     toggleViewMode() {
         const newView = this._viewMode === "table" ? "record" : "table"
+        if (newView === "record" && this.view.visibleIndices.length === 0) return
         this.setAttribute("view", newView)
     }
 

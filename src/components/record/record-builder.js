@@ -4,14 +4,22 @@ export class RecordBuilder {
     }
 
     buildRecord() {
-        const record = this.dataViewer.currentRecord
-        const recordFields = record ? this.buildRecordFields() : "<p>No record selected</p>"
+        const content = this.dataViewer.currentRecord
+            ? `${this.buildRecordNavigation()}${this.buildRecordFields()}`
+            : this.buildEmptyRecord()
+        return `<div class="record-view">${content}</div>`
+    }
 
+    // No rows in the view: only the exit button, so the record view can still be left
+    buildEmptyRecord() {
         return `
-            <div class="record-view">
-                ${this.buildRecordNavigation()}
-                ${recordFields}
-            </div>
+            <nav class="record-navigation">
+                <div class="nav-buttons"></div>
+                <div class="record-info">
+                    <span class="record-position">No records</span>
+                </div>
+                <button data-nav="exit" class="exit-button">✕</button>
+            </nav>
         `
     }
 
