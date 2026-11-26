@@ -1,8 +1,8 @@
 import { Axis } from "./axis.js"
 
 export class Columns extends Axis {
-    constructor({ values = [], names, dtypes, formatOptions } = {}) {
-        super(values)
+    constructor({ values = [], names, dtypes, formatOptions, nlevels } = {}) {
+        super(values, nlevels ?? names?.length)
         this.names = names
         this.dtypes = dtypes
         this.formatOptions = formatOptions

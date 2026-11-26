@@ -29,6 +29,7 @@ export class View {
             names: src.names,
             dtypes: this._visibleColumnIndices.map(i => src.dtypes?.[i]),
             formatOptions: this._visibleColumnIndices.map(i => src.formatOptions?.[i]),
+            nlevels: src.nlevels,
         })
     }
 
@@ -40,6 +41,7 @@ export class View {
             names: src.names,
             dtypes: src.dtypes,
             formatOptions: src.formatOptions,
+            nlevels: src.nlevels,
         })
     }
 

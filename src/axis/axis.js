@@ -1,6 +1,11 @@
 export class Axis {
-    constructor(values) {
+    // nlevels is used only when values is empty (e.g. a filtered view without rows);
+    // otherwise the levels follow from the values
+    constructor(values, nlevels) {
         this.values = values
+        this.nlevels = Array.isArray(values[0]) ? values[0].length
+            : values.length ? 1
+            : nlevels ?? 1
         this.spans = this.getSpans()
         this.groupingLevels = this.getGroupingLevels()
         this.edges = this.getEdges()
@@ -8,17 +13,12 @@ export class Axis {
 
     // Returns length of values on axis as int
     get length() { return this.values.length }
-    // Returns number of levels on index as int
-    get nlevels() {
-        if (this.isMultiIndex) return this.values[0].length
-        return 1
-    }
     // Returns levels on index as array of ints
     get ilevels() { return [...Array(this.nlevels).keys()] }
     // Returns positions on axis as array of ints
     get ilocs() { return [...Array(this.length).keys()] }
     // Returns whether axis has multiple levels
-    get isMultiIndex() { return Array.isArray(this.values[0]) }
+    get isMultiIndex() { return this.nlevels > 1 }
 
     // Iterator
     [Symbol.iterator]() {
