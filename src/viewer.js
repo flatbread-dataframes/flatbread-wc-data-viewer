@@ -120,19 +120,17 @@ export class FlatbreadDataViewer extends HTMLElement {
     }
 
     disconnectedCallback() {
-        this.data.removeEventListener("data-changed", this.handleDataChange)
         this.removeEventListeners()
-        this.stylesheet.disconnect()
-        this._eventCoordinator.destroy()
-        this._navigationController.destroy()
     }
 
     addEventListeners() {
         this._eventCoordinator.addEventListeners()
+        this._navigationController.addEventListeners()
     }
 
     removeEventListeners() {
         this._eventCoordinator.removeEventListeners()
+        this._navigationController.removeEventListeners()
     }
 
     attributeChangedCallback(name, oldValue, newValue) {

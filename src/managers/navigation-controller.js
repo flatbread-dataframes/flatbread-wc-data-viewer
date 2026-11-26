@@ -3,14 +3,15 @@ export class NavigationController {
         this.dataViewer = dataViewer
         this.handleKeydown = this.handleKeydown.bind(this)
         this.handleNavigationBoundary = this.handleNavigationBoundary.bind(this)
+    }
 
-        // Set up event listeners immediately
+    // MARK: setup
+    addEventListeners() {
         this.dataViewer.addEventListener('keydown', this.handleKeydown)
         this.dataViewer.addEventListener('navigation-boundary', this.handleNavigationBoundary)
     }
 
-    // MARK: cleanup
-    destroy() {
+    removeEventListeners() {
         this.dataViewer.removeEventListener('keydown', this.handleKeydown)
         this.dataViewer.removeEventListener('navigation-boundary', this.handleNavigationBoundary)
     }

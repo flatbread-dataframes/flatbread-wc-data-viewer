@@ -56,10 +56,6 @@ export class EventCoordinator {
         shadowRoot.removeEventListener("export-data", this.handleExportData)
     }
 
-    destroy() {
-        this.removeEventListeners()
-    }
-
     // MARK: handlers
     handleDataChange(event) {
         this.dataViewer._viewNeedsUpdate = true
