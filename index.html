@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>wc-data-viewer</title>
     <!-- <link rel="stylesheet" href="https://lcvriend.github.io/wc-multi-selector/static/prism.css"> -->
-    <script type="module" src="https://uu-asc.github.io/csa-werkvoorraad/src/darkmode-toggle.js"></script>
+    <script type="module" src="https://lcvriend.github.io/wc-darkmode-toggle//src/darkmode-toggle.js"></script>
     <style>
         @font-face {
             font-family: 'Bungee Hairline';
@@ -63,7 +63,7 @@
                 display: grid;
                 grid-template-columns: 1fr 1fr;
             }
-        data-viewer {
+        flatbread-data-viewer {
             --cursor: pointer;
             background-color: var(--background-color);
             margin-block: 1.25em;
@@ -82,7 +82,7 @@
 <section id="info">
     <section>
         <h2>Web component</h2>
-        <p><code>&lt;data-viewer&gt;</code> is a web component for viewing table data:</p>
+        <p><code>&lt;flatbread-data-viewer&gt;</code> is a web component for viewing table data:</p>
         <ul>
             <li>Vanilla JS (no dependencies)</li>
             <li>Reads json from url</li>
@@ -127,17 +127,17 @@
 </section>
 <h2>Output</h2>
 <div class="breakout">
-    <data-viewer
+    <flatbread-data-viewer
         src="data/uro_2024.json"
         locale="nl-NL"
     >
-    </data-viewer>
+    </flatbread-data-viewer>
 </div>
 <h3>Event</h3>
 <div id="event-display"><pre><code></code></pre></div>
 <h2>HTML</h2>
 <pre><code class="language-html">&lt;!-- html --&gt;
-&lt;data-viewer src="data/example.json" locale="nl-NL"&gt;&lt;/data-viewer&gt;</code></pre>
+&lt;flatbread-data-viewer src="data/example.json" locale="nl-NL"&gt;&lt;/flatbread-data-viewer&gt;</code></pre>
 <h3>Specifications</h3>
 
 <h4>Attributes</h4>
@@ -188,7 +188,7 @@
 <a href="https://github.com/flatbread-dataframes/flatbread-wc-data-viewer">github.com/flatbread-dataframes/flatbread-wc-data-viewer</a>
 <script src="src/viewer.js" type="module"></script>
 <script>
-    const dataViewer = document.querySelector("data-viewer")
+    const dataViewer = document.querySelector("flatbread-data-viewer")
     const eventDisplay = document.getElementById("event-display")
 
     function truncateJSONString(JSONString, maxLength = 1500) {
