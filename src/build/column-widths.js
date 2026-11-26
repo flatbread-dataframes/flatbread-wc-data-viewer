@@ -9,19 +9,18 @@
 export class ColumnWidths {
     constructor(data, formatter) {
         const { columns, index } = data
-
-        this._columnCandidates = columns.ilocs.map(col => {
-            const { dtype, formatOptions } = columns.attrs[col]
+        const getCandidates = (values, { dtype, formatOptions }) => {
             const format = value => String(formatter.formatValue(value, dtype, formatOptions))
-            return candidatesFor(dtype)(data.values.map(row => row[col]), format)
-        })
+            const getNumberFormat = () => formatter.getFormat("float", formatOptions)
+            return longest(candidatesFor(dtype)(values, format, getNumberFormat))
+        }
 
-        this._indexCandidates = index.ilevels.map(level => {
-            const { dtype, formatOptions } = index.attrs[level]
-            const format = value => String(formatter.formatValue(value, dtype, formatOptions))
-            const values = index.values.map(value => Array.isArray(value) ? value[level] : value)
-            return candidatesFor(dtype)(values, format)
-        })
+        this._columnCandidates = columns.ilocs.map(col =>
+            getCandidates(data.values.map(row => row[col]), columns.attrs[col])
+        )
+        this._indexCandidates = index.ilevels.map(level =>
+            getCandidates(index.values.map(value => Array.isArray(value) ? value[level] : value), index.attrs[level])
+        )
 
         this._columnWidths = this._columnCandidates.map(() => 0)
         this._indexWidths = this._indexCandidates.map(() => 0)
@@ -55,15 +54,63 @@ export class ColumnWidths {
 }
 
 // MARK: candidates
-// Candidate selection per dtype: (values, format) => strings.
-// Add dtype-specific entries here to change the strategy (e.g. picking number candidates
-// from the raw values and formatting only those).
+// Candidate selection per dtype: (values, format, getNumberFormat) => formatted strings,
+// from which the longest are measured. getNumberFormat returns the column's Intl.NumberFormat.
 const CANDIDATES = {
-    default: (values, format) => longest(values.map(format)),
+    int: numberCandidates,
+    float: numberCandidates,
+    default: distinctCandidates,
 }
 
 function candidatesFor(dtype) {
     return CANDIDATES[dtype] ?? CANDIDATES.default
+}
+
+// Exact: every distinct raw value formatted once (dates and text repeat a lot)
+function distinctCandidates(values, format) {
+    return [...new Set(values)].map(format)
+}
+
+// With standard notation and fraction digit rounding, the length of a formatted number follows from
+// its sign, its number of integer digits and the number of fraction digits shown. One value per
+// combination is formatted, plus the largest per sign and digit count (rounding can add a digit).
+// Other notations and roundings fall back to distinctCandidates.
+function numberCandidates(values, format, getNumberFormat) {
+    const options = getNumberFormat().resolvedOptions()
+    const isDigitBased = options.notation === "standard"
+        && options.maximumSignificantDigits === undefined
+        && (options.trailingZeroDisplay ?? "auto") === "auto"
+    if (!isDigitBased) return distinctCandidates(values, format)
+
+    const { minimumFractionDigits: minFraction, maximumFractionDigits: maxFraction } = options
+    const factor = options.style === "percent" ? 100 : 1
+    const scale = 10 ** maxFraction
+    const shapes = new Map()
+    const largest = new Map()
+    const others = new Set()
+
+    for (const value of values) {
+        if (typeof value !== "number") {
+            others.add(value)
+            continue
+        }
+        const abs = Math.abs(value * factor)
+        const digits = abs >= 1 ? Math.floor(Math.log10(abs)) + 1 : 0
+        const magnitude = `${value < 0 ? "-" : "+"}${digits}`
+
+        // fraction digits shown: trailing zeros of the rounded value are dropped, down to the minimum
+        let rounded = Math.round(abs * scale)
+        let fraction = maxFraction
+        while (fraction > minFraction && rounded % 10 === 0) {
+            rounded /= 10
+            fraction--
+        }
+
+        const shape = `${magnitude}.${fraction}`
+        if (!shapes.has(shape)) shapes.set(shape, value)
+        if (!largest.has(magnitude) || abs > Math.abs(largest.get(magnitude) * factor)) largest.set(magnitude, value)
+    }
+    return [...others, ...shapes.values(), ...largest.values()].map(format)
 }
 
 // The distinct strings within `tolerance` of the longest character count, at most `limit`
