@@ -61,6 +61,22 @@ export class Axis {
         return innermostSpans.map(span => span.iloc)
     }
 
+    // Spans of a level that overlap positions [start, end).
+    // Spans cover the axis contiguously, so the first one is found by binary search.
+    overlappingSpans(level, start, end) {
+        const spans = this.spans[level]
+        let low = 0
+        let high = spans.length
+        while (low < high) {
+            const mid = (low + high) >> 1
+            if (spans[mid].iloc + spans[mid].count <= start) low = mid + 1
+            else high = mid
+        }
+        let stop = low
+        while (stop < spans.length && spans[stop].iloc < end) stop++
+        return spans.slice(low, stop)
+    }
+
     // Returns an array of span objects
     getSpans() {
         const levels = []

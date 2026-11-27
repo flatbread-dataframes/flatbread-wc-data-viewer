@@ -207,47 +207,70 @@ export class TableBuilder {
     // MARK: Tbody
     buildTbody(start, end) {
         const indexRows = this.buildIndexRows(start, end)
+        const groupStarts = this.getGroupStarts(start, indexRows.length)
         const dataView = this.dataViewer.view.valuesSlice(start, end)
         dataView.forEach((row, idx) => {
             const rowElements = row.map((value, iloc) => this.buildCell(value, iloc))
             indexRows[idx] = indexRows[idx].concat(rowElements)
         })
-        return indexRows.map((row, idx) =>
-            `<tr tabindex="-1" data-view-row="${start + idx}">${row.join("")}</tr>`
-        ).join("")
+        return indexRows.map((row, idx) => {
+            const attributes = {
+                tabindex: -1,
+                "data-view-row": start + idx,
+                "data-group-start": groupStarts[idx].join(" ") || null,
+            }
+            return `<tr ${this.buildAttributeString(attributes)}>${row.join("")}</tr>`
+        }).join("")
     }
 
+    // Every span overlapping [start, end) gets a cell in its first row within the window,
+    // with its rowspan clipped to the window, so a group crossing the top edge keeps its label
     buildIndexRows(start, end) {
-        const indexRows =
-            this.dataViewer.view.index.values.slice(start, end).map((value, idx) => [
-                this.buildIndex(value),
-                this.buildRecordViewIcon(start + idx)
-            ])
+        const index = this.dataViewer.view.index
+        const indexRows = index.values.slice(start, end).map((value, idx) => [
+            this.buildIndex(value),
+            this.buildRecordViewIcon(start + idx)
+        ])
         // Reverse levels because outer levels need to be added last
-        const levelsReversed = this.dataViewer.view.index.ilevels.slice(0, -1).reverse()
+        const levelsReversed = index.ilevels.slice(0, -1).reverse()
         levelsReversed.forEach(level => {
-            const hasGrouping = this.dataViewer.view.index.groupingLevels[level]
-            const spans = this.dataViewer.view.index.spans[level]
-            const attrs = this.dataViewer.view.index.attrs[level]
-            for (const span of spans) {
-                const attributes = {
-                    "data-level": level,
-                    "data-group": span.group,
-                    "data-dtype": attrs.dtype,
-                }
+            const hasGrouping = index.groupingLevels[level]
+            for (const span of index.overlappingSpans(level, start, indexRows.length + start)) {
+                const first = Math.max(span.iloc, start)
+                const rowspan = Math.min(span.iloc + span.count, start + indexRows.length) - first
                 // Only add rowspan if this level has meaningful grouping
-                if (hasGrouping) {
-                    attributes.rowspan = span.count
-                }
-                const formattedValue = this.dataViewer.formatter.formatValue(span.value[level], attrs.dtype, attrs.formatOptions)
-                const th = `<th ${this.buildAttributeString(attributes)}>
-                    <span>${formattedValue}</span>
-                </th>`
-                if (end <= span.iloc) break
-                if (span.iloc >= start) { indexRows[span.iloc - start].unshift(th) }
+                indexRows[first - start].unshift(this.buildGroupCell(span, level, hasGrouping ? rowspan : null))
             }
         })
         return indexRows
+    }
+
+    buildGroupCell(span, level, rowspan) {
+        const attrs = this.dataViewer.view.index.attrs[level]
+        const attributes = {
+            class: rowspan ? "group" : null,
+            rowspan,
+            "data-level": level,
+            "data-group": span.group,
+            "data-dtype": attrs.dtype,
+        }
+        const formattedValue = this.dataViewer.formatter.formatValue(span.value[level], attrs.dtype, attrs.formatOptions)
+        return `<th ${this.buildAttributeString(attributes)}>
+            <span>${formattedValue}</span>
+        </th>`
+    }
+
+    // Per row from start: the grouping levels whose group starts in that row (not at a window edge)
+    getGroupStarts(start, count) {
+        const index = this.dataViewer.view.index
+        const starts = Array.from({ length: count }, () => [])
+        index.ilevels.slice(0, -1).forEach(level => {
+            if (!index.groupingLevels[level]) return
+            for (const span of index.overlappingSpans(level, start, start + count)) {
+                if (span.iloc >= start) starts[span.iloc - start].push(level)
+            }
+        })
+        return starts
     }
 
     buildIndex(value) {

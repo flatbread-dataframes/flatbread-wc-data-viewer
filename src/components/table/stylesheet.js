@@ -67,7 +67,7 @@ export class Stylesheet {
             :where(td, tbody th)[data-dtype="float"] {
                 text-align: right;
             }
-            tbody th:not([rowspan]) {
+            tbody th:not(.group) {
                 vertical-align: middle;
             }
             thead th.columnLevelNameLabel {
@@ -227,12 +227,13 @@ export class Stylesheet {
                 }
             `,
             rowBorders: `
-                tbody tr:not(:first-of-type):has(th[rowspan]) :where(th, td) {
-                    border-top: 1px solid color-mix(in srgb, var(--border-color, currentColor) 75%, transparent);
+                /* box-shadow, not border: a border would make group start rows taller */
+                tbody tr[data-group-start]:not([data-view-row="0"]) :where(th, td) {
+                    box-shadow: inset 0 1px 0 0 color-mix(in srgb, var(--border-color, currentColor) 75%, transparent);
                 }
             `,
             hoverEffect: `
-                tbody tr:hover :where(td, th:not([rowspan])) {
+                tbody tr:hover :where(td, th:not(.group)) {
                     background-color: var(--dv-hover);
                 }
             `,
