@@ -30,5 +30,5 @@ export class UniformRowGeometry {
     }
 
     // Uniform rows: measured heights are not used
-    setMeasured(index, height) {}
+    setMeasured(start, heights) {}
 }

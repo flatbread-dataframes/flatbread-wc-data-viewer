@@ -79,12 +79,16 @@ export class TbodyRenderer {
         this.render(start, end)
     }
 
-    // Passes the rendered row heights to the geometry
+    // Heights of the rendered rows [start, end)
+    measureRows() {
+        // without the spacers
+        return [...this.tbody.rows].slice(1, -1).map(row => row.getBoundingClientRect().height)
+    }
+
+    // Passes the rendered row heights to the geometry, in one call per window
     reportHeights() {
         if (!this._geometry) return
-        for (let i = this._start; i < this._end; i++) {
-            this._geometry.setMeasured(i, this.rowAt(i).getBoundingClientRect().height)
-        }
+        this._geometry.setMeasured(this._start, this.measureRows())
     }
 
     // A row of empty cells (see TableBuilder.buildSpacerCells) with the height of the rows it stands in for
