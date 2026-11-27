@@ -303,11 +303,24 @@ export class Stylesheet {
                     text-overflow: ellipsis;
                 }
             `,
+            // Text wraps within the header width, also inside long words (codes, URLs) that would
+            // otherwise run into the next column; cells align at the top, with the first line
+            wrap: `
+                tbody ${TRUNCATABLE_CELLS} {
+                    white-space: normal;
+                    overflow-wrap: anywhere;
+                }
+                tbody td,
+                tbody th:not(.group) {
+                    vertical-align: top;
+                }
+            `,
         }
         // blocks not toggled by a styling option
         const enabled = {
             rowFocus: true,
             truncate: this.options.cellLayout === "truncate",
+            wrap: this.options.cellLayout === "wrap",
         }
 
         return Object.entries(styleBlocks)

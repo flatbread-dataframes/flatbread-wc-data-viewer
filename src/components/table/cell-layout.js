@@ -1,5 +1,7 @@
-// Cell layout modes: "no-wrap" (columns as wide as their widest value) and
-// "truncate" (columns as wide as their header, longer values cut off with an ellipsis)
+// Cell layout modes: "no-wrap" (columns as wide as their widest value),
+// "wrap" (text columns as wide as their header, longer values on several lines) and
+// "truncate" (text columns as wide as their header, longer values cut off with an ellipsis).
+// Text columns are the truncatable ones: they wrap in wrap mode.
 
 // Values of these dtypes keep their full width: a cut-off number or date reads as a different value
 export const UNTRUNCATED_DTYPES = ["int", "float", "date", "datetime"]

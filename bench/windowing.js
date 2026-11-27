@@ -54,6 +54,7 @@ function seeded(seed) {
 const WORDS = ["alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", "iota", "kappa"]
 
 // float, int and text columns; text values of one to four words, so truncate cuts them off
+// and wrap puts them on several lines
 function makeColumns(nrows, ncols, rnd) {
     const dtypes = Array.from({ length: ncols }, (_, col) => ["float", "int", "str"][col % 3])
     const pick = () => WORDS[Math.floor(rnd() * WORDS.length)]
@@ -88,7 +89,9 @@ const DATASETS = {
 
 // MARK: matrix
 const HEIGHTS = ["500px", "800px"]
-const LAYOUTS = ["no-wrap", "truncate"]
+const LAYOUTS = ["no-wrap", "wrap", "truncate"]
+// Scripted scrolling goes down only: in wrap mode that needs no scroll corrections
+const SCROLL_LAYOUTS = ["no-wrap", "wrap"]
 const OVERSCANS = [10, 20, 40]
 const POSITIONS = 25
 const SPEEDS = [1500, 4000]
@@ -128,7 +131,7 @@ class WindowingBench {
         this.viewer = null
         this.datasetName = null
         this.delay = 0
-        this.rebuilds = []
+        this.resetStats()
         this.results = ""
         this.running = false
         this._datasets = {}
@@ -187,20 +190,38 @@ class WindowingBench {
     }
 
     // Times every rebuild from renderer.update until the heights are read (which forces layout)
-    // and adds the feel delay. Replaces the methods on this renderer instance only.
+    // and adds the feel delay; counts the scroll corrections of wrap mode (scrollTop moved by a
+    // rebuild). Replaces the methods on this renderer and row window instance only.
     instrument() {
-        const renderer = this.renderer
+        const { renderer, rowWindow } = this
         const { update, reportHeights } = Object.getPrototypeOf(renderer)
+        const { rebuild } = Object.getPrototypeOf(rowWindow)
         renderer.update = (start, end) => {
             this._rebuildStart = performance.now()
             update.call(renderer, start, end)
             if (this.delay) busyWait(this.delay)
         }
         renderer.reportHeights = () => {
-            reportHeights.call(renderer)
+            const changed = reportHeights.call(renderer)
             this.rebuilds.push(performance.now() - this._rebuildStart)
             this.updateFeelStats()
+            return changed
         }
+        rowWindow.rebuild = force => {
+            const before = this.dataTable.scrollTop
+            const changed = rebuild.call(rowWindow, force)
+            const moved = Math.abs(this.dataTable.scrollTop - before)
+            if (moved) {
+                this.corrections.push(moved)
+                this.updateFeelStats()
+            }
+            return changed
+        }
+    }
+
+    resetStats() {
+        this.rebuilds = []
+        this.corrections = []
     }
 
     forceLayout() {
@@ -301,17 +322,19 @@ class WindowingBench {
     async measureScrolling() {
         const rows = []
         for (const name of Object.keys(DATASETS)) {
-            await this.loadViewer(name)
-            for (const speed of SPEEDS) {
-                this.setStatus(`scrolling: ${name}, ${speed} px/s`)
-                rows.push([name, speed, ...await this.scrollRun(speed)])
+            for (const layout of SCROLL_LAYOUTS) {
+                await this.loadViewer(name, { layout })
+                for (const speed of SPEEDS) {
+                    this.setStatus(`scrolling: ${name}, ${layout}, ${speed} px/s`)
+                    rows.push([name, layout, speed, ...await this.scrollRun(speed)])
+                }
             }
         }
         const longFrame = 1.5 * this.frameInterval
         return [
-            `## Scripted scrolling (height 800px, overscan 20, no-wrap, ${SCROLL_SECONDS} s per run)`,
+            `## Scripted scrolling down (height 800px, overscan 20, ${SCROLL_SECONDS} s per run)`,
             `long: frame interval over ${ms(longFrame)} ms (a missed frame). uncovered: frames that show spacer in the viewport.`,
-            formatTable(["data", "px/s", "frames", "interval med", "interval p95", "long", "rebuilds", "rebuild med / p95", "uncovered"], rows),
+            formatTable(["data", "layout", "px/s", "frames", "interval med", "interval p95", "long", "rebuilds", "rebuild med / p95", "uncovered", "corrections"], rows),
         ].join("\n")
     }
 
@@ -319,7 +342,7 @@ class WindowingBench {
         const { dataTable } = this
         dataTable.scrollTop = 0
         await settle()
-        this.rebuilds = []
+        this.resetStats()
 
         const intervals = []
         let uncovered = 0
@@ -340,7 +363,7 @@ class WindowingBench {
         const long = intervals.filter(interval => interval > 1.5 * this.frameInterval).length
         return [
             intervals.length, ms(median(intervals)), ms(p95(intervals)), long,
-            this.rebuilds.length, pair(this.rebuilds), uncovered,
+            this.rebuilds.length, pair(this.rebuilds), uncovered, this.corrections.length,
         ]
     }
 
@@ -395,7 +418,7 @@ class WindowingBench {
     async handleFeelLoad() {
         this.setStatus("loading")
         await this.loadViewer(document.querySelector("#feel-data").value, this.feelOptions)
-        this.rebuilds = []
+        this.resetStats()
         this.setStatus("")
         this.updateFeelStats()
     }
@@ -405,14 +428,14 @@ class WindowingBench {
         const { overscan, layout } = this.feelOptions
         this.viewer.options.overscan = overscan
         this.viewer.setAttribute("cell-layout", layout)
-        this.rebuilds = []
+        this.resetStats()
         this.updateFeelStats()
     }
 
     handleDelayInput(event) {
         this.delay = Number(event.target.value)
         document.querySelector("#feel-delay-value").value = `${this.delay} ms`
-        this.rebuilds = []
+        this.resetStats()
         this.updateFeelStats()
     }
 
@@ -426,7 +449,11 @@ class WindowingBench {
     // Not while measuring: the text change would be part of the measured frames
     updateFeelStats() {
         if (this.running) return
-        this.feelStats.textContent = `rebuilds ${this.rebuilds.length}, median ${ms(median(this.rebuilds))} ms incl. delay`
+        const corrections = this.corrections.length
+            ? `, median ${Math.round(median(this.corrections))} px, max ${Math.round(Math.max(...this.corrections))} px`
+            : ""
+        this.feelStats.textContent = `rebuilds ${this.rebuilds.length}, median ${ms(median(this.rebuilds))} ms incl. delay; `
+            + `scroll corrections ${this.corrections.length}${corrections}`
     }
 
     // MARK: helpers

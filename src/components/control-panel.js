@@ -197,6 +197,7 @@ export class ControlPanel extends HTMLElement {
             </div>
             <div class="layout-popover" popover data-toggle="toggle-layout" role="radiogroup" aria-label="cell layout">
                 <label><input type="radio" name="cell-layout" value="no-wrap">no-wrap</label>
+                <label><input type="radio" name="cell-layout" value="wrap">wrap</label>
                 <label><input type="radio" name="cell-layout" value="truncate">truncate</label>
             </div>
         `

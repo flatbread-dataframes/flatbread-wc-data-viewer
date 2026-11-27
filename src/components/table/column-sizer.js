@@ -26,8 +26,9 @@ export class ColumnSizer {
         return this.dataTable.shadowRoot
     }
 
-    get isTruncating() {
-        return this.dataTable.options.cellLayout === "truncate"
+    // Truncate and wrap: text columns are as wide as their header
+    get hasHeaderWidths() {
+        return ["truncate", "wrap"].includes(this.dataTable.options.cellLayout)
     }
 
     get indexCount() {
@@ -87,7 +88,7 @@ export class ColumnSizer {
 
     // Value widths plus cell padding and borders, read from the thead cells of the same column
     // (td and th share padding and group-edge borders; the thead is always rendered).
-    // In truncate mode the values of truncatable columns do not count: the header sets the width.
+    // In truncate and wrap mode the values of text columns do not count: the header sets the width.
     measureValues() {
         const nIndex = this.indexCount
         const values = Array(nIndex + this.view.columns.length).fill(0)
@@ -98,7 +99,7 @@ export class ColumnSizer {
             values[level] = this.columnWidths.indexWidth(level) + horizontalPadding(label)
         })
         this.view.columns.ilocs.forEach(iloc => {
-            if (this.isTruncating && isTruncatable(this.view.columns.attrs[iloc].dtype)) return
+            if (this.hasHeaderWidths && isTruncatable(this.view.columns.attrs[iloc].dtype)) return
             const header = this.root.querySelector(`thead .columns-row th[data-col="${iloc}"]`)
             const original = this.view.getOriginalColumnIndex(iloc)
             values[nIndex + iloc] = this.columnWidths.columnWidth(original) + horizontalExtra(header)
