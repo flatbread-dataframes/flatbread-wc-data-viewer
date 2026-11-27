@@ -61,7 +61,6 @@ export class EventCoordinator {
         if (event.detail.isValuesOnly) {
             this.dataViewer.updateDataTable()
             this.dataViewer.updateDataRecord()
-            if (this.dataViewer.dataTable) this.dataViewer.dataTable.renderTbody()
         } else {
             this.dataViewer.render()
             this.dataViewer.updateControlPanel()
