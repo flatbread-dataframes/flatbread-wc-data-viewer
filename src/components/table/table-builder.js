@@ -252,9 +252,8 @@ export class TableBuilder {
             "data-dtype": attrs.dtype,
         }
         const formattedValue = this.dataViewer.formatter.formatValue(span.value[level], attrs.dtype, attrs.formatOptions)
-        return `<th ${this.buildAttributeString(attributes)}>
-            <span>${formattedValue}</span>
-        </th>`
+        // no whitespace around the span: cell-click reports the cell's textContent as its value
+        return `<th ${this.buildAttributeString(attributes)}><span>${formattedValue}</span></th>`
     }
 
     // Per row from start: the grouping levels whose group starts in that row (not at a window edge)
