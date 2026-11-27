@@ -630,6 +630,17 @@ export class DataTable extends HTMLElement {
                 this.focusTbodyRow(this._tbodyPosition)
                 return true
             }
+            // Handled also at the first and last row: the browser would scroll the table without moving focus
+            case "PageUp":
+            case "PageDown": {
+                const from = this._tbodyPosition
+                const target = this.rowWindow.pageFrom(from, event.key === "PageDown" ? 1 : -1)
+                if (target === from) return true
+                this._tbodyPosition = target
+                this.rowWindow.scrollToRowInPlaceOf(target, from)
+                this.rowWindow.rowAt(target)?.focus({ preventScroll: true })
+                return true
+            }
             case "Enter": {
                 this.dispatchEvent(new CustomEvent("enter-record-view", {
                     detail: { viewRowIndex: this._tbodyPosition },

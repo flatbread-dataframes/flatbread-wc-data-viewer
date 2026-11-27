@@ -209,6 +209,37 @@ export class RowWindow {
         if (this.isVariable && this.scrollIntoView(index)) this.update()
     }
 
+    // The row a page up (direction -1) or down (+1) from index: a viewport below the sticky thead
+    // further, at least one row (a wrapped row can be taller than the viewport). Clamped to the
+    // first and last row, so within a page of either end it moves there.
+    pageFrom(index, direction) {
+        if (!this._laidOut) return index
+        const page = this.dataTable.clientHeight - this.dataTable.theadHeight
+        const found = this._geometry.indexAt(this._geometry.offsetOf(index) + direction * page)
+        const target = found === index ? index + direction : found
+        return Math.max(0, Math.min(this.count - 1, target))
+    }
+
+    // Scrolls so that the row takes the place in the viewport of another row (PageUp/PageDown: the
+    // focused row stays where it was on screen), then renders the window. Where that place is out of
+    // reach (the ends of the table) or out of view (focus was parked), the row is scrolled into view.
+    // With variable heights a second pass uses the measured heights, as in scrollToRow.
+    scrollToRowInPlaceOf(index, other) {
+        if (!this._laidOut) return
+        const y = this._geometry.offsetOf(other) - this.dataTable.scrollTop
+        this.placeRow(index, y)
+        this.update()
+        if (this.isVariable && this.placeRow(index, y)) this.update()
+    }
+
+    // Returns whether scrollTop changed
+    placeRow(index, y) {
+        const scrollTop = this.dataTable.scrollTop
+        this.dataTable.scrollTop = this._geometry.offsetOf(index) - y
+        this.scrollIntoView(index)
+        return this.dataTable.scrollTop !== scrollTop
+    }
+
     // Returns whether scrollTop changed
     scrollIntoView(index) {
         const top = this._geometry.offsetOf(index)
