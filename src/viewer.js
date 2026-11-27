@@ -201,6 +201,7 @@ export class FlatbreadDataViewer extends HTMLElement {
             case "locale":
                 this.options.locale = newValue ?? FlatbreadDataViewer.defaults.locale
                 this._formatter = new Formatter(this.options)
+                this.view.locale = this.options.locale
                 this.invalidateColumnWidths()
                 break
             case "na-rep":
@@ -234,7 +235,7 @@ export class FlatbreadDataViewer extends HTMLElement {
 
     get view() {
         if (!this._view || this._viewNeedsUpdate) {
-            this._view = new View(this.data)
+            this._view = new View(this.data, { locale: this.options.locale })
             this._viewNeedsUpdate = false
         }
         return this._view

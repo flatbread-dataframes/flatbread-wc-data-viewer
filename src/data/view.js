@@ -1,9 +1,11 @@
 import { Columns } from "../axis/columns.js"
 import { Index } from "../axis/index.js"
+import { createComparator, sortComparator } from "./compare.js"
 
 export class View {
-    constructor(data) {
+    constructor(data, { locale = "default" } = {}) {
         this.data = data
+        this.locale = locale
 
         this._visibleIndices = null
         this._visibleColumnIndices = null
@@ -76,40 +78,20 @@ export class View {
 
     // Sorting methods
     sortByColumn(columnIndex, direction = "asc") {
-        const originalColumnIndex = this._visibleColumnIndices
-            ? this._visibleColumnIndices[columnIndex]
-            : columnIndex
-
-        this.visibleIndices.sort((a, b) => {
-            const valueA = this.data.values[a][originalColumnIndex]
-            const valueB = this.data.values[b][originalColumnIndex]
-
-            if (valueA === valueB) return 0
-            if (valueA === null || valueA === undefined) return 1
-            if (valueB === null || valueB === undefined) return -1
-
-            const comparison = valueA < valueB ? -1 : 1
-            return direction === "asc" ? comparison : -comparison
-        })
-        this.invalidateCache()
-        return this
+        const iloc = this.getOriginalColumnIndex(columnIndex)
+        return this.sortRows(i => this.data.values[i][iloc], this.data.columns.dtypes?.[iloc], direction)
     }
 
     sortByIndex(level = -1, direction = "asc") {
-        this.visibleIndices.sort((a, b) => {
-            const indexA = this.data.index.values[a]
-            const indexB = this.data.index.values[b]
+        const { values, dtypes } = this.data.index
+        const valueAt = i => Array.isArray(values[i]) ? values[i].at(level) : values[i]
+        return this.sortRows(valueAt, dtypes?.at(level), direction)
+    }
 
-            const valueA = Array.isArray(indexA) ? indexA[level] || indexA.at(level) : indexA
-            const valueB = Array.isArray(indexB) ? indexB[level] || indexB.at(level) : indexB
-
-            if (valueA === valueB) return 0
-            if (valueA === null || valueA === undefined) return 1
-            if (valueB === null || valueB === undefined) return -1
-
-            const comparison = valueA < valueB ? -1 : 1
-            return direction === "asc" ? comparison : -comparison
-        })
+    // Sorts the visible rows by one value per data row (valueAt takes a data iloc)
+    sortRows(valueAt, dtype, direction) {
+        const compare = sortComparator(createComparator(dtype, this.locale), direction)
+        this.visibleIndices.sort((a, b) => compare(valueAt(a), valueAt(b)))
         this.invalidateCache()
         return this
     }
