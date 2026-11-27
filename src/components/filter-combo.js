@@ -1,3 +1,18 @@
+import { splitParts, parseFilterValue, quoteExact } from "../data/filter.js"
+
+// The value of a ="…" part (the parts the list owns), or null for any other part
+const exactValue = part => {
+    const [parsed] = parseFilterValue(part)
+    return parsed.type === "exact" && parsed.caseSensitive ? parsed.pattern : null
+}
+
+// A single unquoted contains term, copied into the search when the list opens; null otherwise
+const plainTerm = expression => {
+    const parts = splitParts(expression)
+    if (parts.length !== 1) return null
+    const [parsed] = parseFilterValue(parts[0])
+    return parsed.type === "contains" && !parsed.caseSensitive ? parts[0] : null
+}
 
 class FilterCombo extends HTMLElement {
     static _instanceCount = 0
@@ -16,6 +31,8 @@ class FilterCombo extends HTMLElement {
         this._instanceId = FilterCombo._instanceCount++
         this._anchorName = `--fc-${this._instanceId}`
         this._options = null
+        this._layout = null           // { pinned, items }: the list's order, fixed until the next layout
+        this._consumedTerm = null     // the plain term copied into the search; replaced by the first tick
         this._highlightIndex = -1
         this.maxOptions = FilterCombo.defaults.maxOptions
 
@@ -25,6 +42,8 @@ class FilterCombo extends HTMLElement {
         this.handleTriggerClick = this.handleTriggerClick.bind(this)
         this.handlePopoverToggle = this.handlePopoverToggle.bind(this)
         this.handlePopoverClick = this.handlePopoverClick.bind(this)
+        this.handleSearchInput = this.handleSearchInput.bind(this)
+        this.handleSearchKeydown = this.handleSearchKeydown.bind(this)
     }
 
     // MARK: lifecycle
@@ -47,8 +66,10 @@ class FilterCombo extends HTMLElement {
         this.input.addEventListener("keydown", this.handleKeydown)
         this.shadowRoot.querySelector(".clear").addEventListener("click", this.handleClear)
         this.shadowRoot.querySelector(".trigger").addEventListener("click", this.handleTriggerClick)
-        this.popover.addEventListener("toggle", this.handlePopoverToggle)
+        this.popover.addEventListener("beforetoggle", this.handlePopoverToggle)
         this.popover.addEventListener("click", this.handlePopoverClick)
+        this.search.addEventListener("input", this.handleSearchInput)
+        this.search.addEventListener("keydown", this.handleSearchKeydown)
     }
 
     removeEventListeners() {
@@ -56,8 +77,10 @@ class FilterCombo extends HTMLElement {
         this.input.removeEventListener("keydown", this.handleKeydown)
         this.shadowRoot.querySelector(".clear").removeEventListener("click", this.handleClear)
         this.shadowRoot.querySelector(".trigger").removeEventListener("click", this.handleTriggerClick)
-        this.popover.removeEventListener("toggle", this.handlePopoverToggle)
+        this.popover.removeEventListener("beforetoggle", this.handlePopoverToggle)
         this.popover.removeEventListener("click", this.handlePopoverClick)
+        this.search.removeEventListener("input", this.handleSearchInput)
+        this.search.removeEventListener("keydown", this.handleSearchKeydown)
     }
 
     // MARK: get/set
@@ -67,6 +90,27 @@ class FilterCombo extends HTMLElement {
 
     get popover() {
         return this.shadowRoot.querySelector("[popover]")
+    }
+
+    get search() {
+        return this.shadowRoot.querySelector(".search")
+    }
+
+    get list() {
+        return this.shadowRoot.querySelector(".list")
+    }
+
+    get isOpen() {
+        return this.popover?.matches(":popover-open") ?? false
+    }
+
+    get optionElements() {
+        return this.list?.querySelectorAll(".option") ?? []
+    }
+
+    // Values ticked in the list: the ="…" parts of the expression
+    get selectedValues() {
+        return splitParts(this.value).map(exactValue).filter(value => value !== null)
     }
 
     get value() {
@@ -81,8 +125,10 @@ class FilterCombo extends HTMLElement {
         return this._options
     }
 
+    // Refreshed options keep the order (no re-sort under the cursor); it changes on open and on search
     set options(values) {
         this._options = values
+        if (!this._layout) this.layoutOptions()
         this.renderOptions()
     }
 
@@ -122,7 +168,7 @@ class FilterCombo extends HTMLElement {
 
     // The options depend on the other filters: an open list asks again, a closed one asks when it opens
     refreshOptions() {
-        if (this.popover?.matches(":popover-open")) this.requestOptions()
+        if (this.isOpen) this.requestOptions()
     }
 
     requestOptions() {
@@ -130,6 +176,18 @@ class FilterCombo extends HTMLElement {
             bubbles: true,
             composed: true
         }))
+    }
+
+    // Adds or removes the value's ="…" part; other parts stay, except a consumed plain term
+    toggleValue(text) {
+        const parts = splitParts(this.value).filter(part => part !== this._consumedTerm)
+        this._consumedTerm = null
+        const kept = parts.filter(part => exactValue(part) === null)
+        const listed = parts.filter(part => ![null, text].includes(exactValue(part)))
+        if (!parts.some(part => exactValue(part) === text)) listed.push(quoteExact(text))
+        this.input.value = [...kept, ...listed].join(", ")
+        this.dispatchFilterEvent(this.input.value)
+        this.syncChecks()
     }
 
     // MARK: render
@@ -204,8 +262,28 @@ class FilterCombo extends HTMLElement {
                 background: var(--dv-bg, white);
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
                 color: inherit;
-                max-height: 200px;
+                max-height: 240px;
                 overflow-y: auto;
+            }
+            .search {
+                position: sticky;
+                top: 0;
+                z-index: 1;
+                box-sizing: border-box;
+                width: 100%;
+                padding: 4px 6px;
+                border: none;
+                border-bottom: 1px solid var(--dv-border);
+                background: var(--dv-bg, white);
+                color: inherit;
+                font: inherit;
+            }
+            .search:focus {
+                outline: 2px solid var(--focus-color, Highlight);
+                outline-offset: -2px;
+            }
+            .separator {
+                border-top: 1px solid var(--dv-border);
             }
             .option {
                 display: flex;
@@ -214,6 +292,10 @@ class FilterCombo extends HTMLElement {
                 padding: 4px 8px;
                 cursor: pointer;
                 user-select: none;
+                scroll-margin-block: 2.5em;
+            }
+            .option.dimmed {
+                opacity: 0.5;
             }
             .option:hover {
                 background: color-mix(in srgb, currentColor 8%, transparent);
@@ -228,6 +310,9 @@ class FilterCombo extends HTMLElement {
                 padding: 8px 12px;
                 color: color-mix(in srgb, currentColor 50%, transparent);
                 font-size: 0.875em;
+            }
+            .footer[hidden] {
+                display: none;
             }
             .footer {
                 position: sticky;
@@ -244,47 +329,68 @@ class FilterCombo extends HTMLElement {
                 <button type="button" class="trigger" tabindex="-1">▾</button>
             </div>
             <div popover="auto">
-                <div class="message">Loading…</div>
+                <input type="search" class="search" placeholder="Search values" autofocus>
+                <div class="list"><div class="message">Loading…</div></div>
+                <div class="message footer" hidden></div>
             </div>
         `
         this.updateAttributes()
     }
 
-    renderOptions() {
-        const popover = this.popover
-        if (!popover) return
-
+    // With an empty search, ticked values are pinned on top (dimmed when not in the options);
+    // with a search, only matches, ticked ones in place
+    layoutOptions() {
         if (!this._options) return
-        if (this._options.length === 0) {
-            popover.innerHTML = `<div class="message">No values</div>`
+        const texts = [...new Set(this._options.map(String))]
+        const search = this.search.value.trim().toLowerCase()
+        if (search) {
+            this._layout = { pinned: [], items: texts.filter(text => text.toLowerCase().includes(search)) }
             return
         }
-
-        const filterText = this.input.value.trim().toLowerCase()
-        const matching = filterText
-            ? this._options.filter(opt => String(opt).toLowerCase().includes(filterText))
-            : this._options
-
-        if (matching.length === 0) {
-            popover.innerHTML = `<div class="message">No matches</div>`
-            return
+        const selected = new Set(this.selectedValues)
+        const present = new Set(texts)
+        const dimmed = [...selected].filter(text => !present.has(text))
+        this._layout = {
+            pinned: [...texts.filter(text => selected.has(text)), ...dimmed],
+            items: texts.filter(text => !selected.has(text)),
         }
+    }
 
-        // The combo always gets the full list; narrowing and the cap are a matter of rendering
-        const shown = matching.slice(0, this.maxOptions)
-        const selected = this.parseSelectedValues()
-        const options = shown.map(opt => {
-            const val = String(opt)
-            const checked = selected.has(val) ? " checked" : ""
-            return `<div class="option">
-                <input type="checkbox" value="${val}" tabindex="-1"${checked}>
-                <span>${val}</span>
-            </div>`
-        }).join("")
-        const footer = shown.length < matching.length
-            ? `<div class="message footer">${shown.length} of ${matching.length.toLocaleString()} — type to narrow</div>`
-            : ""
-        popover.innerHTML = options + footer
+    // The combo always gets the full list; narrowing and the cap are a matter of rendering
+    renderOptions() {
+        if (!this._options || !this._layout) return
+        const { pinned, items } = this._layout
+        const selected = new Set(this.selectedValues)
+        const present = new Set(this._options.map(String))
+        const shown = items.slice(0, this.maxOptions)
+        const pinnedPresent = pinned.filter(text => present.has(text)).length
+
+        const nodes = pinned.map(text => this.buildOption(text, selected.has(text), !present.has(text)))
+        if (pinned.length && shown.length) nodes.push(this.buildElement("div", "separator"))
+        nodes.push(...shown.map(text => this.buildOption(text, selected.has(text), false)))
+        if (!pinnedPresent && !items.length) {
+            nodes.push(this.buildElement("div", "message", this._options.length ? "No matches" : "No values"))
+        }
+        this.list.replaceChildren(...nodes)
+        this.optionElements[this._highlightIndex]?.classList.add("highlighted")
+
+        // dimmed values are not counted
+        const footer = this.shadowRoot.querySelector(".footer")
+        footer.hidden = shown.length === items.length
+        footer.textContent = `${pinnedPresent + shown.length} of ${(pinnedPresent + items.length).toLocaleString()} — type to narrow`
+    }
+
+    buildOption(text, checked, dimmed) {
+        const option = this.buildElement("div", "option")
+        option.classList.toggle("dimmed", dimmed)
+        option.dataset.value = text
+        const checkbox = Object.assign(document.createElement("input"), { type: "checkbox", tabIndex: -1, checked })
+        option.append(checkbox, this.buildElement("span", "", text))
+        return option
+    }
+
+    buildElement(tag, className, text = "") {
+        return Object.assign(document.createElement(tag), { className, textContent: text })
     }
 
     updateAttributes() {
@@ -302,43 +408,23 @@ class FilterCombo extends HTMLElement {
     }
 
     // MARK: helpers
-    parseSelectedValues() {
-        const parts = this.input.value.split(",").map(p => p.trim()).filter(Boolean)
-        return new Set(parts.map(p => p.startsWith("=") ? p.slice(1) : p))
-    }
-
-    syncCheckboxes() {
-        const selected = this.parseSelectedValues()
-        this.popover?.querySelectorAll("input[type='checkbox']").forEach(cb => {
-            cb.checked = selected.has(cb.value)
+    syncChecks() {
+        const selected = new Set(this.selectedValues)
+        this.optionElements.forEach(option => {
+            option.querySelector("input").checked = selected.has(option.dataset.value)
         })
-    }
-
-    get optionCount() {
-        return this.popover?.querySelectorAll(".option").length ?? 0
     }
 
     setHighlight(index) {
         this._highlightIndex = index
-        const options = this.popover?.querySelectorAll(".option")
-        if (!options) return
-        options.forEach((opt, i) => opt.classList.toggle("highlighted", i === index))
-        options[index]?.scrollIntoView({ block: "nearest" })
+        this.optionElements.forEach((option, i) => option.classList.toggle("highlighted", i === index))
+        this.optionElements[index]?.scrollIntoView({ block: "nearest" })
     }
 
-    toggleHighlightedOption() {
-        const option = this.popover?.querySelectorAll(".option")[this._highlightIndex]
-        if (!option) return
-        const checkbox = option.querySelector("input[type='checkbox']")
-        checkbox.checked = !checkbox.checked
-        this.input.value = this.buildValueFromCheckboxes()
-        this.dispatchFilterEvent(this.input.value)
-    }
-
-    buildValueFromCheckboxes() {
-        const checked = this.popover?.querySelectorAll("input[type='checkbox']:checked")
-        if (!checked || checked.length === 0) return ""
-        return Array.from(checked).map(cb => `=${cb.value}`).join(", ")
+    // Closed from the keyboard: focus back to the input, whose keys apply again
+    closeList() {
+        this.popover.hidePopover()
+        this.input.focus()
     }
 
     dispatchFilterEvent(value) {
@@ -349,77 +435,28 @@ class FilterCombo extends HTMLElement {
     }
 
     // MARK: handlers
-    // Typing filters the table and never opens the list; an open list is refreshed by DataTable
+    // Typing filters the table and never opens the list
     handleInput() {
-        this.syncCheckboxes()
         this.dispatchFilterEvent(this.input.value)
-        this.setHighlight(-1)
     }
 
+    // The list's keys are on the search field, which has focus while the list is open
     handleKeydown(event) {
-        const isOpen = this.popover?.matches(":popover-open")
-
         if (event.key === "Escape") {
-            if (isOpen) {
-                this.popover.hidePopover()
-                return
-            }
             event.preventDefault()
             event.stopPropagation()
             this.clear()
             return
         }
 
-        if (event.key === "Enter") {
-            if (isOpen) {
-                event.preventDefault()
-                this.popover.hidePopover()
-            }
-            return
-        }
-
-        if (event.key === "ArrowDown") {
-            if (!isOpen && event.altKey) {
-                event.preventDefault()
-                event.stopPropagation()
-                this.popover.showPopover()
-                this.setHighlight(0)
-                return
-            }
-            if (!isOpen) return // propagate to table navigation
-
+        if (event.key === "ArrowDown" && event.altKey) {
             event.preventDefault()
             event.stopPropagation()
-            if (this._highlightIndex < this.optionCount - 1) {
-                this.setHighlight(this._highlightIndex + 1)
-            }
+            this.popover.showPopover()
             return
         }
 
-        if (event.key === "ArrowUp" && isOpen) {
-            event.preventDefault()
-            event.stopPropagation()
-            if (this._highlightIndex > 0) {
-                this.setHighlight(this._highlightIndex - 1)
-            } else {
-                this.popover.hidePopover()
-            }
-            return
-        }
-
-        if (event.key === " " && isOpen && this._highlightIndex >= 0) {
-            event.preventDefault()
-            this.toggleHighlightedOption()
-            return
-        }
-
-        if (!isOpen) {
-            const allowNavigation = this.shouldAllowNavigation(event)
-            if (!allowNavigation) {
-                event.stopPropagation()
-            }
-        } else {
-            // popover open: still prevent character keys from reaching table
+        if (!this.shouldAllowNavigation(event)) {
             event.stopPropagation()
         }
     }
@@ -445,40 +482,76 @@ class FilterCombo extends HTMLElement {
 
     handleClear() {
         this.clear()
-        this.syncCheckboxes()
         this.input.focus()
     }
 
     handleTriggerClick() {
-        if (this.popover.matches(":popover-open")) {
+        if (this.isOpen) {
             this.popover.hidePopover()
         } else {
             this.popover.showPopover()
         }
     }
 
+    // beforetoggle: the search and the list are ready when the popover shows
     handlePopoverToggle(event) {
+        this._layout = null
+        this._highlightIndex = -1
         if (event.newState === "open") {
+            this._consumedTerm = plainTerm(this.value)
+            this.search.value = this._consumedTerm ?? ""
             this.requestOptions()
-            this.syncCheckboxes()
-            this.setHighlight(-1)
         } else {
-            this.setHighlight(-1)
+            this._consumedTerm = null
         }
     }
 
     handlePopoverClick(event) {
         const option = event.target.closest(".option")
         if (!option) return
+        this._highlightIndex = [...this.optionElements].indexOf(option)
+        this.toggleValue(option.dataset.value)
+        this.setHighlight(this._highlightIndex)
+        this.search.focus()
+    }
 
-        const checkbox = option.querySelector("input[type='checkbox']")
-        if (event.target !== checkbox) {
-            checkbox.checked = !checkbox.checked
+    handleSearchInput() {
+        this._highlightIndex = -1
+        this.layoutOptions()
+        this.renderOptions()
+    }
+
+    // Every key stays in the list: none reaches the table while it is open
+    handleSearchKeydown(event) {
+        event.stopPropagation()
+        const last = this.optionElements.length - 1
+        switch (event.key) {
+            case "ArrowDown":
+                this.setHighlight(Math.min(this._highlightIndex + 1, last))
+                break
+            case "ArrowUp":
+                this.setHighlight(Math.max(this._highlightIndex - 1, -1))
+                break
+            case " ":
+                if (this._highlightIndex < 0) return   // a space in the search
+                this.toggleValue(this.optionElements[this._highlightIndex].dataset.value)
+                break
+            case "Escape":
+                if (!this.search.value) {
+                    this.closeList()
+                    break
+                }
+                this.search.value = ""
+                this.handleSearchInput()
+                break
+            case "Enter":
+            case "Tab":
+                this.closeList()
+                break
+            default:
+                return
         }
-
-        this.input.value = this.buildValueFromCheckboxes()
-        this.dispatchFilterEvent(this.input.value)
-        this.input.focus()
+        event.preventDefault()
     }
 }
 
