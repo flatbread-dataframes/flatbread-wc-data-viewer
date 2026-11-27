@@ -19,6 +19,7 @@ export class ScrollManager {
 
     handleScroll(event) {
         event.stopPropagation()
+        this.dataTable.cellTooltip.hide()
         this.dataTable.rowWindow.update()
     }
 

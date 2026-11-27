@@ -98,6 +98,29 @@ export class Stylesheet {
                 background: none;
             }
 
+            /* full value of a truncated cell (CellTooltip), anchored to the hovered cell */
+            .cell-tooltip {
+                position-anchor: --cell-tooltip;
+                position-area: block-end span-inline-end;
+                /* max-content: a squeezed tooltip would wrap instead of overflowing,
+                   and only overflow makes it try the other side */
+                position-try-fallbacks: flip-inline, flip-block, flip-block flip-inline;
+                margin: 0;
+                margin-block: .125rem;
+                padding: .25em .5em;
+                width: max-content;
+                max-width: min(40em, 90vw);
+                border: 1px solid var(--dv-border);
+                border-radius: .25em;
+                background: var(--dv-bg, white);
+                color: inherit;
+                font: inherit;
+                white-space: pre-wrap;
+                overflow-wrap: anywhere;
+                /* never under the pointer, so it cannot take the hover from its cell */
+                pointer-events: none;
+            }
+
             /* general button styling */
             button {
                 position: relative;

@@ -5,6 +5,7 @@ import { ScrollManager } from "./scroll-manager.js"
 import { ClickHandler } from "./click-handler.js"
 import { ColumnSizer } from "./column-sizer.js"
 import { RowWindow } from "./row-window.js"
+import { CellTooltip } from "./cell-tooltip.js"
 
 
 export class DataTable extends HTMLElement {
@@ -16,6 +17,7 @@ export class DataTable extends HTMLElement {
         this.clickHandler = new ClickHandler(this)
         this.columnSizer = new ColumnSizer(this)
         this.rowWindow = new RowWindow(this)
+        this.cellTooltip = new CellTooltip(this)
 
         this.handleKeydown = this.handleKeydown.bind(this)
         this.handleTheadFocusIn = this.handleTheadFocusIn.bind(this)
@@ -57,6 +59,7 @@ export class DataTable extends HTMLElement {
 
         this.clickHandler.addEventListeners()
         this.scrollManager.addEventListeners()
+        this.cellTooltip.addEventListeners()
         WheelHandlerMixin.addWheelHandling.call(this)
     }
 
@@ -72,6 +75,7 @@ export class DataTable extends HTMLElement {
 
         this.clickHandler.removeEventListeners()
         this.scrollManager.removeEventListeners()
+        this.cellTooltip.removeEventListeners()
         WheelHandlerMixin.removeWheelHandling.call(this)
     }
 
@@ -158,6 +162,7 @@ export class DataTable extends HTMLElement {
                 <thead>${this._tableBuilder.buildThead()}</thead>
                 <tbody tabindex="-1"></tbody>
             </table>
+            <div class="cell-tooltip" popover="manual" aria-hidden="true"></div>
         `
 
         this._stylesheet.setupStyles()

@@ -62,6 +62,8 @@ export class TbodyRenderer {
         // so focus never falls to the body. Only then, so a rebuild during keyboard navigation
         // moves focus once (row to row), not twice (row to tbody to row).
         if (hadFocus && (position < start || position >= end)) tbody.focus({ preventScroll: true })
+        // the tooltip's cell is about to be replaced
+        this.dataTable.cellTooltip.hide()
 
         tbody.innerHTML =
             this.buildSpacer(top) +
