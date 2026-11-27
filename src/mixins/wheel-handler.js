@@ -1,13 +1,11 @@
 export const WheelHandlerMixin = {
     addWheelHandling() {
-        this.addEventListener("wheel", this.handleWheel, {
-            passive: false,
-            capture: true
-        })
+        // passive: the handler only stops propagation, it never prevents scrolling
+        this.addEventListener("wheel", this.handleWheel, { passive: true, capture: true })
     },
 
     removeWheelHandling() {
-        this.removeEventListener("wheel", this.handleWheel)
+        this.removeEventListener("wheel", this.handleWheel, { capture: true })
     },
 
     handleWheel(event) {
