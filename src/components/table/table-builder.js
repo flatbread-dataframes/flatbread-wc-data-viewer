@@ -63,7 +63,7 @@ export class TableBuilder {
         const indexLevelNameLabelElement = `
             <th data-level="${level}" class="indexLevelNameLabel" ${colspan}>
                 <span>
-                    ${indexLevelNameLabel}
+                    <span class="label">${indexLevelNameLabel}</span>
                     ${sortButton}
                 </span>
             </th>
@@ -160,7 +160,7 @@ export class TableBuilder {
             ${isGroupEdge ? ' group-edge' : ''}
         >
             <span>
-                ${selectedValue}
+                <span class="label">${selectedValue}</span>
                 ${sortButton}
                 ${hideButton}
             </span>
@@ -193,8 +193,8 @@ export class TableBuilder {
             ${isGroupEdge ? ' group-edge' : ''}
         >
             <span>
-            ${hideButton}
-                ${span.value[level]}
+                ${hideButton}
+                <span class="label">${span.value[level]}</span>
             </span>
         </th>`
     }

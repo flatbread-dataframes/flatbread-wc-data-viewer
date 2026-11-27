@@ -121,13 +121,18 @@ export class ClickHandler {
             }
         } else return
 
-        const value = cell.textContent
+        const value = isInHead ? this.getHeaderLabel(cell) : cell.textContent
 
         this.dataTable.dispatchEvent(new CustomEvent("cell-click", {
             detail: { value, source, row, col },
             bubbles: true,
             composed: true
         }))
+    }
+
+    // The label of a header cell, without the sort and hide buttons
+    getHeaderLabel(cell) {
+        return cell.querySelector(".label")?.textContent ?? cell.textContent.trim()
     }
 
     dispatchRowData(viewRowIndex) {

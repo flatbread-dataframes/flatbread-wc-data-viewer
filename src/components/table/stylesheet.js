@@ -83,6 +83,10 @@ export class Stylesheet {
             thead th.columnLevelNameLabel > span {
                 margin-left: auto;
             }
+            /* an empty label would add a flex gap and widen the column */
+            thead .label:empty {
+                display: none;
+            }
             .columnFilter, .indexFilter {
                 border-top: 1px solid var(--dv-border);
             }
