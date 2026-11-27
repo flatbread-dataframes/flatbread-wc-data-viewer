@@ -107,9 +107,13 @@ export class ClickHandler {
             col = Array.from(tr.children).indexOf(cell)
         } else if (isInBody) {
             if (cell.tagName === "TH") {
+                if (cell.matches(".recordViewIcon")) return
                 source = "index"
-                row = Number(tr.dataset.viewRow)
-                col = Array.from(tr.children).filter(c => c.tagName === "TH").indexOf(cell)
+                col = Number(cell.dataset.level)
+                // A group cell reports the first row of its group; its tr can be the first row of the window
+                row = cell.matches(".group")
+                    ? this.dataTable.view.index.spans[col][Number(cell.dataset.group)].iloc
+                    : Number(tr.dataset.viewRow)
             } else {
                 source = "values"
                 row = Number(tr.dataset.viewRow)
