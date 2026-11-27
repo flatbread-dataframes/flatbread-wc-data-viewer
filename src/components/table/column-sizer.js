@@ -11,6 +11,13 @@ export class ColumnSizer {
         this._iconWidth = 0
         // Widths of the last measure, in table order
         this._widths = []
+        // Per column of the last measure, in table order: content width (widest of header and values,
+        // before group label excess) and minimum width for a user width
+        this._contents = []
+        this._minimums = []
+        // User widths per override key (see keyOf), for the ColumnWidths object they were set on
+        this._overrides = new Map()
+        this._overridesSource = null
     }
 
     // MARK: get/set
@@ -43,8 +50,67 @@ export class ColumnSizer {
 
         const { leaves, spans } = this.measureHeaders()
         const values = this.measureValues()
-        const widths = leaves.map((width, i) => Math.max(width, values[i]))
-        return this._widths = distributeExcess(widths, spans)
+        this._contents = leaves.map((width, i) => Math.max(width, values[i]))
+        this._minimums = this.measureMinimums(leaves)
+        // User widths come after the excess: narrowing the last leaf of a group clips the group label
+        return this._widths = distributeExcess(this._contents, spans)
+            .map((width, i) => this.userWidthAt(i) ?? width)
+    }
+
+    // Text columns can be narrowed to their header, other columns not below their content
+    measureMinimums(leaves) {
+        const nIndex = this.indexCount
+        return this._contents.map((width, i) => {
+            if (i < nIndex) return width
+            return isTruncatable(this.view.columns.attrs[i - nIndex].dtype) ? leaves[i] : width
+        })
+    }
+
+    // MARK: user widths
+    // Override key of a view column: its original column, so user widths survive sort, filter and
+    // hiding columns. The one place to change for keys a host can persist (column labels).
+    keyOf(iloc) {
+        return this.view.getOriginalColumnIndex(iloc)
+    }
+
+    setOverride(key, width) {
+        this.syncOverrides()
+        this._overrides.set(key, width)
+    }
+
+    // Returns whether there was a user width
+    deleteOverride(key) {
+        this.syncOverrides()
+        return this._overrides.delete(key)
+    }
+
+    // User widths belong to the data they were set on: dropped with the ColumnWidths object
+    // (data, locale, na-rep), as RowWindow.widthsApplied drops row heights
+    syncOverrides() {
+        if (this._overridesSource === this.columnWidths) return
+        this._overrides.clear()
+        this._overridesSource = this.columnWidths
+    }
+
+    // User width of the column at table position i, clamped to its minimum; null without one.
+    // Index levels and the record view icon have none.
+    userWidthAt(i) {
+        const iloc = i - this.indexCount
+        if (iloc < 0) return null
+        this.syncOverrides()
+        const width = this._overrides.get(this.keyOf(iloc))
+        return width === undefined ? null : Math.max(this._minimums[i], width)
+    }
+
+    // After measure(): the narrowest width a user can give a data column
+    minWidth(iloc) {
+        return this._minimums[this.indexCount + iloc]
+    }
+
+    // After measure(): whether a data column is narrower than its content (only text columns can be)
+    isNarrowed(iloc) {
+        const i = this.indexCount + iloc
+        return this._widths[i] < this._contents[i]
     }
 
     // Fonts are read from the first rendered row; without rows there is nothing to measure yet

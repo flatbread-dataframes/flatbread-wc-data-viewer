@@ -197,6 +197,26 @@ export class DataTable extends HTMLElement {
         this._stylesheet.updateIndexOffset()
     }
 
+    // MARK: user widths
+    // The only entry points for user column widths (drag, reset; later a host property).
+    // key: ColumnSizer.keyOf(iloc)
+    setColumnWidth(key, width) {
+        this.columnSizer.setOverride(key, width)
+        this.commitColumnWidths()
+    }
+
+    resetColumnWidth(key) {
+        if (this.columnSizer.deleteOverride(key)) this.commitColumnWidths()
+    }
+
+    // Other widths, the same rows: the first visible row is kept
+    commitColumnWidths() {
+        if (!this.shadowRoot.querySelector("table")) return
+        const anchor = this.rowWindow.anchor
+        this.applyColumnWidths()
+        this.rowWindow.measure(anchor)
+    }
+
     // MARK: handlers
     handleKeydown(event) {
         const zone = this.focusZone
