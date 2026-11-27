@@ -262,6 +262,9 @@ export class Stylesheet {
                 }
             `,
             rowFocus: `
+                tbody:focus {
+                    outline: none;
+                }
                 tbody tr:focus {
                     outline: none;
                 }

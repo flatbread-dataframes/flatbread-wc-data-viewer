@@ -48,9 +48,16 @@ export class TbodyRenderer {
         const tbody = this.tbody
         if (!tbody) return
 
+        // A row or the tbody itself (parked) has focus
         const hadFocus = this.dataTable.shadowRoot.activeElement?.closest("tbody") === tbody
+        const position = this.dataTable.tbodyPosition
         const top = this._geometry ? this._geometry.offsetOf(start) : 0
         const bottom = this._geometry ? this._geometry.total - this._geometry.offsetOf(end) : 0
+
+        // The focused row leaves the window: park focus on the tbody before the row is removed,
+        // so focus never falls to the body. Only then, so a rebuild during keyboard navigation
+        // moves focus once (row to row), not twice (row to tbody to row).
+        if (hadFocus && (position < start || position >= end)) tbody.focus({ preventScroll: true })
 
         tbody.innerHTML =
             this.buildSpacer(top) +
@@ -59,8 +66,8 @@ export class TbodyRenderer {
         this._start = start
         this._end = end
 
-        // The focused row was replaced; focus its successor if it is still in the window
-        if (hadFocus) this.rowAt(this.dataTable.tbodyPosition)?.focus({ preventScroll: true })
+        // The focused row was replaced, or focus is parked: focus the row if it is in the window
+        if (hadFocus) this.rowAt(position)?.focus({ preventScroll: true })
     }
 
     // Full rebuild; edge updates would replace this method

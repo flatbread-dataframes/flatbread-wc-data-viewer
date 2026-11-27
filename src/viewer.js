@@ -142,7 +142,7 @@ export class FlatbreadDataViewer extends HTMLElement {
                 this._viewMode = newValue === "record" ? "record" : "table"
                 if (this.isConnected && this._data.hasColumns) {
                     this.render()
-                    this._viewMode === "record" ? this.dataRecord.focus() : this.dataTable.focus()
+                    this._viewMode === "record" ? this.dataRecord.focus() : this.focusTable()
                 }
                 return
             case "src":
@@ -413,7 +413,18 @@ export class FlatbreadDataViewer extends HTMLElement {
     toggleViewMode() {
         const newView = this._viewMode === "table" ? "record" : "table"
         if (newView === "record" && this.view.visibleIndices.length === 0) return
+        // As Enter does: the record view opens on the focused row
+        if (newView === "record") this.dataRecord.recordIndex = this.dataTable.tbodyPosition
         this.setAttribute("view", newView)
+    }
+
+    // Focuses the row of the record shown last, so the table continues where the record view left off
+    focusTable() {
+        if (this.view.visibleIndices.length) {
+            this.dataTable.focusTbodyRow(this.dataRecord.recordIndex)
+        } else {
+            this.focus()
+        }
     }
 
     focusFirstFilter() {

@@ -147,7 +147,7 @@ export class DataTable extends HTMLElement {
             <table>
                 <colgroup></colgroup>
                 <thead>${this._tableBuilder.buildThead()}</thead>
-                <tbody></tbody>
+                <tbody tabindex="-1"></tbody>
             </table>
         `
 
