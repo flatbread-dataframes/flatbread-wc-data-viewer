@@ -107,6 +107,15 @@ export class DataTable extends HTMLElement {
         return this._tbodyPosition
     }
 
+    // Where focus is inside the table: "thead", "tbody" (a row, or the tbody while the row is
+    // outside the window) or null
+    get focusZone() {
+        const activeElement = this.shadowRoot.activeElement
+        if (activeElement?.closest("thead")) return "thead"
+        if (activeElement?.closest("tbody")) return "tbody"
+        return null
+    }
+
     get theadHeight() {
         return this.shadowRoot.querySelector("thead")?.getBoundingClientRect().height ?? 0
     }
@@ -175,21 +184,15 @@ export class DataTable extends HTMLElement {
 
     // MARK: handlers
     handleKeydown(event) {
-        const activeElement = this.shadowRoot.activeElement
+        const zone = this.focusZone
+        const handled =
+            zone === "thead" ? this.handleTheadNavigation(event)
+            : zone === "tbody" ? this.handleTbodyNavigation(event)
+            : false
 
-        if (activeElement?.closest("thead")) {
-            if (this.handleTheadNavigation(event)) {
-                event.preventDefault()
-                event.stopPropagation()
-            }
-            return
-        }
-
-        if (activeElement?.closest("tbody")) {
-            if (this.handleTbodyNavigation(event)) {
-                event.preventDefault()
-                event.stopPropagation()
-            }
+        if (handled) {
+            event.preventDefault()
+            event.stopPropagation()
         }
     }
 

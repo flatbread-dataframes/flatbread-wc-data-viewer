@@ -30,12 +30,8 @@ export class NavigationController {
         if (!viewerActive) return null
 
         if (viewerActive.matches("control-panel")) return "control-panel"
-        if (viewerActive.matches("data-table")) {
-            const tableActive = viewerActive.shadowRoot?.activeElement
-            if (tableActive?.closest("thead")) return "thead"
-            if (tableActive?.closest("tbody")) return "tbody"
-            return "thead"
-        }
+        // Focus on the data-table host itself (a click on the scroll container) counts as thead
+        if (viewerActive.matches("data-table")) return viewerActive.focusZone ?? "thead"
         if (viewerActive.matches("data-record")) return "record"
         return null
     }
