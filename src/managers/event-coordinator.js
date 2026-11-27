@@ -70,7 +70,9 @@ export class EventCoordinator {
     }
 
     // MARK: @interaction
+    // The internal event is replaced by one from the viewer; stopped so the host sees one event
     handleCellClick(event) {
+        event.stopPropagation()
         this.dataViewer.dispatchEvent(new CustomEvent("cell-click", {
             detail: event.detail,
             bubbles: true,
@@ -79,6 +81,7 @@ export class EventCoordinator {
     }
 
     handleFieldClick(event) {
+        event.stopPropagation()
         this.dataViewer.dispatchEvent(new CustomEvent("field-click", {
             detail: event.detail,
             bubbles: true,
