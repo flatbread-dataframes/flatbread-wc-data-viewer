@@ -8,6 +8,7 @@ A vanilla JavaScript web component for viewing tabular data with support for mul
 - Multi-index support for both rows and columns
 - Record view for detailed row inspection
 - Column visibility controls
+- Cell layout control: no-wrap or truncate
 - Keyboard navigation
 - Locale-aware number/date formatting
 

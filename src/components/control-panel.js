@@ -25,10 +25,13 @@ componentSheet.replaceSync(`
     action-button[data-action="toggle-export"] {
         anchor-name: --export-anchor;
     }
+    action-button[data-action="toggle-layout"] {
+        anchor-name: --layout-anchor;
+    }
     multi-selector {
         --ms-dropdown-background: var(--dv-bg, white);
     }
-    .export-popover {
+    [popover] {
         margin: 0;
         margin-top: .25rem;
         padding: 0.5em;
@@ -37,12 +40,22 @@ componentSheet.replaceSync(`
         background: var(--dv-bg, white);
         color: inherit;
         font: inherit;
-        position-anchor: --export-anchor;
         position-area: block-end span-inline-end;
     }
-    .export-popover:popover-open {
+    [popover]:popover-open {
         display: flex;
         gap: 0.5em;
+        align-items: center;
+    }
+    .export-popover {
+        position-anchor: --export-anchor;
+    }
+    .layout-popover {
+        position-anchor: --layout-anchor;
+    }
+    .layout-popover label {
+        display: flex;
+        gap: 0.25em;
         align-items: center;
     }
     .export-popover input {
@@ -57,8 +70,10 @@ export class ControlPanel extends HTMLElement {
         this.attachShadow({ mode: "open" })
         this.handleSelectionChange = this.handleSelectionChange.bind(this)
         this.handleToggleExport = this.handleToggleExport.bind(this)
+        this.handleToggleLayout = this.handleToggleLayout.bind(this)
         this.handleExportClick = this.handleExportClick.bind(this)
-        this.handleExportKeydown = this.handleExportKeydown.bind(this)
+        this.handleCellLayoutChange = this.handleCellLayoutChange.bind(this)
+        this.handlePopoverKeydown = this.handlePopoverKeydown.bind(this)
         this.handleMultiSelectorOpen = this.handleMultiSelectorOpen.bind(this)
         this._columnData = []
     }
@@ -74,18 +89,22 @@ export class ControlPanel extends HTMLElement {
 
     addEventListeners() {
         this.shadowRoot.addEventListener("change", this.handleSelectionChange)
+        this.shadowRoot.addEventListener("change", this.handleCellLayoutChange)
         this.shadowRoot.addEventListener("toggle-export", this.handleToggleExport)
+        this.shadowRoot.addEventListener("toggle-layout", this.handleToggleLayout)
         this.shadowRoot.addEventListener("click", this.handleExportClick)
-        this.shadowRoot.addEventListener("keydown", this.handleExportKeydown)
+        this.shadowRoot.addEventListener("keydown", this.handlePopoverKeydown)
         this.shadowRoot.addEventListener("ms-open", this.handleMultiSelectorOpen)
         this.addEventListener("keydown", this.handleKeydown)
     }
 
     removeEventListeners() {
         this.shadowRoot.removeEventListener("change", this.handleSelectionChange)
+        this.shadowRoot.removeEventListener("change", this.handleCellLayoutChange)
         this.shadowRoot.removeEventListener("toggle-export", this.handleToggleExport)
+        this.shadowRoot.removeEventListener("toggle-layout", this.handleToggleLayout)
         this.shadowRoot.removeEventListener("click", this.handleExportClick)
-        this.shadowRoot.removeEventListener("keydown", this.handleExportKeydown)
+        this.shadowRoot.removeEventListener("keydown", this.handlePopoverKeydown)
         this.shadowRoot.removeEventListener("ms-open", this.handleMultiSelectorOpen)
         this.removeEventListener("keydown", this.handleKeydown)
     }
@@ -145,6 +164,15 @@ export class ControlPanel extends HTMLElement {
         return this.shadowRoot.querySelector(".export-popover")
     }
 
+    get layoutPopover() {
+        return this.shadowRoot.querySelector(".layout-popover")
+    }
+
+    // The viewer owns the cell layout; the popover only shows it
+    get cellLayout() {
+        return this.dataViewer?.options.cellLayout
+    }
+
     // MARK: render
     render() {
         this.shadowRoot.adoptedStyleSheets = [baseSheet, interactiveSheet, componentSheet]
@@ -154,6 +182,7 @@ export class ControlPanel extends HTMLElement {
                 <action-button data-action="toggle-filter-row">Toggle</action-button>
                 <action-button data-action="clear-filters" disabled>Clear</action-button>
                 <action-button data-action="toggle-export">Export</action-button>
+                <action-button data-action="toggle-layout">Layout</action-button>
             </div>
             <div class="status-info">
                 <span id="row-count"></span>/
@@ -161,13 +190,18 @@ export class ControlPanel extends HTMLElement {
             </div>
             <label>Select columns:</label>
             <multi-selector name="columns"></multi-selector>
-            <div class="export-popover" popover>
+            <div class="export-popover" popover data-toggle="toggle-export">
                 <input type="text" value="export" aria-label="filename">
                 <button data-format="json">.json</button>
                 <button data-format="csv">.csv</button>
             </div>
+            <div class="layout-popover" popover data-toggle="toggle-layout" role="radiogroup" aria-label="cell layout">
+                <label><input type="radio" name="cell-layout" value="no-wrap">no-wrap</label>
+                <label><input type="radio" name="cell-layout" value="truncate">truncate</label>
+            </div>
         `
         this.updateMultiSelector()
+        this.updateCellLayout()
     }
 
     // MARK: update
@@ -206,6 +240,11 @@ export class ControlPanel extends HTMLElement {
         }
     }
 
+    updateCellLayout() {
+        const radio = this.shadowRoot.querySelector(`input[name="cell-layout"][value="${this.cellLayout}"]`)
+        if (radio) radio.checked = true
+    }
+
     updateMultiSelector() {
         const multiSelector = this.shadowRoot.querySelector("multi-selector")
 
@@ -217,7 +256,9 @@ export class ControlPanel extends HTMLElement {
     }
 
     // MARK: handlers
+    // The native change of the cell layout radios reaches the shadow root too
     handleSelectionChange(event) {
+        if (!event.target.matches("multi-selector")) return
         this.dispatchEvent(new CustomEvent("column-selection-changed", {
             detail: {
                 selectedColumns: event.detail,
@@ -273,12 +314,53 @@ export class ControlPanel extends HTMLElement {
         }
     }
 
+    // MARK: popovers
+    // Opens or closes a popover; when opened, focus moves to the element matching focusSelector
+    togglePopover(popover, focusSelector) {
+        popover.togglePopover()
+        if (popover.matches(":popover-open")) {
+            popover.querySelector(focusSelector)?.focus()
+        }
+    }
+
+    // Closes a popover and returns focus to the action button that opens it
+    closePopover(popover) {
+        popover.hidePopover()
+        this.shadowRoot.querySelector(`action-button[data-action="${popover.dataset.toggle}"]`).focus()
+    }
+
+    // Escape closes the popover (and does not clear the filters); arrow keys stay inside the popover
+    // instead of moving between control panel elements or navigation levels
+    handlePopoverKeydown(event) {
+        const popover = event.target.closest("[popover]")
+        if (!popover) return
+
+        if (event.key === "Escape") {
+            this.closePopover(popover)
+            event.stopPropagation()
+            return
+        }
+        if (popover === this.exportPopover) this.handleExportKeydown(event)
+        if (event.key.startsWith("Arrow")) event.stopPropagation()
+    }
+
+    // MARK: layout
+    handleToggleLayout() {
+        this.togglePopover(this.layoutPopover, "input:checked")
+    }
+
+    handleCellLayoutChange(event) {
+        if (!event.target.matches(`input[name="cell-layout"]`)) return
+        this.dispatchEvent(new CustomEvent("cell-layout-changed", {
+            detail: { cellLayout: event.target.value },
+            bubbles: true,
+            composed: true,
+        }))
+    }
+
     // MARK: export
     handleToggleExport() {
-        this.exportPopover.togglePopover()
-        if (this.exportPopover.matches(":popover-open")) {
-            this.exportPopover.querySelector("input").focus()
-        }
+        this.togglePopover(this.exportPopover, "input")
     }
 
     handleExportClick(event) {
@@ -301,16 +383,8 @@ export class ControlPanel extends HTMLElement {
         return name.replace(/\.(json|csv)$/i, "")
     }
 
+    // Keys inside the export popover; Escape is handled by handlePopoverKeydown
     handleExportKeydown(event) {
-        if (!event.target.closest(".export-popover")) return
-
-        if (event.key === "Escape") {
-            this.exportPopover.hidePopover()
-            this.shadowRoot.querySelector(`action-button[data-action="toggle-export"]`).focus()
-            event.stopPropagation()
-            return
-        }
-
         if (event.key === "Enter" && event.target.dataset?.format) {
             event.target.click()
             return

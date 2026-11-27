@@ -153,6 +153,7 @@ export class FlatbreadDataViewer extends HTMLElement {
                 // "wrap" follows with variable row heights; until then it is no-wrap
                 this.options.cellLayout = newValue === "truncate" ? "truncate" : "no-wrap"
                 this.dataTable?.updateCellLayout()
+                this.controlPanel?.updateCellLayout()
                 return
         }
 

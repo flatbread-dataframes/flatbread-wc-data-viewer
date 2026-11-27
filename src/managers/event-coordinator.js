@@ -12,6 +12,7 @@ export class EventCoordinator {
         this.handleFiltersChanged = this.handleFiltersChanged.bind(this)
         this.handleClearAllFilters = this.handleClearAllFilters.bind(this)
         this.handleColumnSelectionChange = this.handleColumnSelectionChange.bind(this)
+        this.handleCellLayoutChange = this.handleCellLayoutChange.bind(this)
         this.handleColumnSort = this.handleColumnSort.bind(this)
         this.handleIndexSort = this.handleIndexSort.bind(this)
         this.handleDataChange = this.handleDataChange.bind(this)
@@ -33,6 +34,7 @@ export class EventCoordinator {
         shadowRoot.addEventListener("column-sort", this.handleColumnSort)
         shadowRoot.addEventListener("index-sort", this.handleIndexSort)
         shadowRoot.addEventListener("column-selection-changed", this.handleColumnSelectionChange)
+        shadowRoot.addEventListener("cell-layout-changed", this.handleCellLayoutChange)
         shadowRoot.addEventListener("export-data", this.handleExportData)
     }
 
@@ -50,6 +52,7 @@ export class EventCoordinator {
         shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
         shadowRoot.removeEventListener("index-sort", this.handleIndexSort)
         shadowRoot.removeEventListener("column-selection-changed", this.handleColumnSelectionChange)
+        shadowRoot.removeEventListener("cell-layout-changed", this.handleCellLayoutChange)
         shadowRoot.removeEventListener("export-data", this.handleExportData)
     }
 
@@ -138,6 +141,12 @@ export class EventCoordinator {
         const selectedColumnIndices = event.detail.selectedColumns.map(Number)
         this.dataViewer.applyColumnFilter(selectedColumnIndices)
         this.dataViewer.updateControlPanelStatus()
+    }
+
+    // MARK: @layout
+    // Through the attribute, so a change from the control panel and one from the host take the same path
+    handleCellLayoutChange(event) {
+        this.dataViewer.setAttribute("cell-layout", event.detail.cellLayout)
     }
 
     // MARK: @sort
