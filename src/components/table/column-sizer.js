@@ -102,6 +102,16 @@ export class ColumnSizer {
         return width === undefined ? null : Math.max(this._minimums[i], width)
     }
 
+    // After measure(): the applied width of a data column
+    widthOf(iloc) {
+        return this._widths[this.indexCount + iloc]
+    }
+
+    // After measure(): the width a data column needs for its header and values (before group label excess)
+    contentWidth(iloc) {
+        return this._contents[this.indexCount + iloc]
+    }
+
     // After measure(): the narrowest width a user can give a data column
     minWidth(iloc) {
         return this._minimums[this.indexCount + iloc]
@@ -109,8 +119,7 @@ export class ColumnSizer {
 
     // After measure(): whether a data column is narrower than its content (only text columns can be)
     isNarrowed(iloc) {
-        const i = this.indexCount + iloc
-        return this._widths[i] < this._contents[i]
+        return this.widthOf(iloc) < this.contentWidth(iloc)
     }
 
     // Fonts are read from the first rendered row; without rows there is nothing to measure yet

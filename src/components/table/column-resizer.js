@@ -1,11 +1,12 @@
 // Resizes data columns by dragging the handle at the right edge of their header.
-// During a drag only the column's <col> changes; on release DataTable.setColumnWidth recomputes
-// the layout once (in wrap mode that re-estimates all row heights, too slow for every move).
+// During a drag only the column's <col> and its truncation change (DataTable.previewColumnWidth);
+// on release DataTable.setColumnWidth recomputes the layout once (in wrap mode that re-estimates
+// all row heights, too slow for every move).
 // A double click resets the column to its automatic width.
 export class ColumnResizer {
     constructor(dataTable) {
         this.dataTable = dataTable
-        // { handle, iloc, col, x, width, min } while dragging
+        // { handle, iloc, x, start, width, min } while dragging
         this._drag = null
 
         this.handlePointerOver = this.handlePointerOver.bind(this)
@@ -40,11 +41,6 @@ export class ColumnResizer {
 
     get isDragging() {
         return this._drag !== null
-    }
-
-    // The <col> of a data column: after the index levels and the record view icon
-    colOf(iloc) {
-        return this.root.querySelectorAll("colgroup col")[this.columnSizer.indexCount + iloc]
     }
 
     // MARK: guide
@@ -82,13 +78,13 @@ export class ColumnResizer {
         event.preventDefault()
 
         const iloc = Number(handle.closest("th").dataset.col)
-        const col = this.colOf(iloc)
+        const start = this.columnSizer.widthOf(iloc)
         this._drag = {
             handle,
             iloc,
-            col,
             x: event.clientX,
-            width: parseFloat(col.style.width),
+            start,
+            width: start,
             min: this.columnSizer.minWidth(iloc),
         }
         handle.setPointerCapture(event.pointerId)
@@ -100,20 +96,20 @@ export class ColumnResizer {
     }
 
     handlePointerMove(event) {
-        const { col, x, width, min } = this._drag
-        col.style.width = `${Math.max(min, Math.round(width + event.clientX - x))}px`
+        const drag = this._drag
+        drag.width = Math.max(drag.min, Math.round(drag.start + event.clientX - drag.x))
+        this.dataTable.previewColumnWidth(drag.iloc, drag.width)
     }
 
     handlePointerUp() {
-        const { col, iloc, width } = this.endDrag()
-        const newWidth = parseFloat(col.style.width)
+        const { iloc, start, width } = this.endDrag()
         // a click without movement changes nothing (also not the two clicks of a double click)
-        if (newWidth !== width) this.dataTable.setColumnWidth(this.columnSizer.keyOf(iloc), newWidth)
+        if (width !== start) this.dataTable.setColumnWidth(this.columnSizer.keyOf(iloc), width)
     }
 
     handlePointerCancel() {
-        const { col, width } = this.endDrag()
-        col.style.width = `${width}px`
+        const { iloc, start } = this.endDrag()
+        this.dataTable.previewColumnWidth(iloc, start)
     }
 
     handleDoubleClick(event) {

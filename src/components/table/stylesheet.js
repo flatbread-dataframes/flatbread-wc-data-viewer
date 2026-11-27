@@ -8,6 +8,7 @@ export class Stylesheet {
         this.options = options
         // Text columns a user narrowed below their content; written by updateNarrowedColumns
         this._narrowedSheet = new CSSStyleSheet()
+        this._narrowed = ""
     }
 
     // MARK: setup
@@ -385,7 +386,11 @@ export class Stylesheet {
     // A text column narrowed below its content truncates, also in no-wrap mode. Per column, not for
     // all text cells: in no-wrap the small difference between canvas and DOM text widths would turn
     // the last characters of a fitting value into an ellipsis (see the truncate block).
+    // Rewritten only when the columns change: called on every pointermove of a drag
     updateNarrowedColumns(ilocs) {
+        const narrowed = ilocs.join()
+        if (narrowed === this._narrowed) return
+        this._narrowed = narrowed
         this._narrowedSheet.replaceSync(ilocs.map(iloc => `
             tbody td[data-col="${iloc}"] {
                 overflow: hidden;

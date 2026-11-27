@@ -197,7 +197,7 @@ export class DataTable extends HTMLElement {
         this.rowWindow.widthsApplied(widths, remeasure)
         this.shadowRoot.querySelector("colgroup").innerHTML = this._tableBuilder.buildColgroup(widths)
         this._stylesheet.updateIndexOffsets(widths.slice(0, this.view.index.nlevels + 1))
-        this._stylesheet.updateNarrowedColumns(this.view.columns.ilocs.filter(iloc => this.columnSizer.isNarrowed(iloc)))
+        this.updateNarrowedColumns()
         this._stylesheet.updateTheadOffset()
         this._stylesheet.updateIndexOffset()
     }
@@ -220,6 +220,21 @@ export class DataTable extends HTMLElement {
         const anchor = this.rowWindow.anchor
         this.applyColumnWidths()
         this.rowWindow.measure(anchor)
+    }
+
+    // A width during a drag: only the <col> and the column's truncation, the rest follows on commit
+    previewColumnWidth(iloc, width) {
+        const col = this.shadowRoot.querySelectorAll("colgroup col")[this.columnSizer.indexCount + iloc]
+        col.style.width = `${width}px`
+        this.updateNarrowedColumns({ iloc, width })
+    }
+
+    // Text columns narrower than their content truncate; preview: { iloc, width } of a column being dragged
+    updateNarrowedColumns(preview = null) {
+        const ilocs = this.view.columns.ilocs.filter(iloc => iloc === preview?.iloc
+            ? preview.width < this.columnSizer.contentWidth(iloc)
+            : this.columnSizer.isNarrowed(iloc))
+        this._stylesheet.updateNarrowedColumns(ilocs)
     }
 
     // MARK: handlers
