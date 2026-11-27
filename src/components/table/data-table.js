@@ -173,6 +173,15 @@ export class DataTable extends HTMLElement {
         }
     }
 
+    // Cell layout change: the same rows with other column widths, so the first visible row is kept
+    updateCellLayout() {
+        if (!this.shadowRoot.querySelector("table")) return
+        const anchor = this.rowWindow.anchor
+        this._stylesheet.updateComposedStyles()
+        this.applyColumnWidths()
+        this.rowWindow.measure(anchor)
+    }
+
     // Fixes the column widths; the table switches to fixed layout once the colgroup has cols
     applyColumnWidths(remeasure = false) {
         const widths = this.columnSizer.measure(remeasure)

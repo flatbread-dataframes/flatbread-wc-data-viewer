@@ -65,7 +65,7 @@ export class FlatbreadDataViewer extends HTMLElement {
             "view", "src", "locale", "na-rep", "height",
             "hide-group-borders", "hide-row-borders",
             "hide-thead-border", "hide-index-border",
-            "hide-filter-row",
+            "hide-filter-row", "cell-layout",
         ]
     }
 
@@ -75,6 +75,7 @@ export class FlatbreadDataViewer extends HTMLElement {
             naRep: "-",
             overscan: 20,
             height: "600px",
+            cellLayout: "no-wrap",
             styling: {
                 groupBorders: true,
                 rowBorders: true,
@@ -147,6 +148,11 @@ export class FlatbreadDataViewer extends HTMLElement {
                 return
             case "src":
                 this.loadDataFromSrc(newValue)
+                return
+            case "cell-layout":
+                // "wrap" follows with variable row heights; until then it is no-wrap
+                this.options.cellLayout = newValue === "truncate" ? "truncate" : "no-wrap"
+                this.dataTable?.updateCellLayout()
                 return
         }
 

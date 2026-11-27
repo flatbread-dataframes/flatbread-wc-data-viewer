@@ -1,4 +1,5 @@
 import { baseSheet } from "../../styles/base.js"
+import { TRUNCATABLE_CELLS } from "./cell-layout.js"
 
 export class Stylesheet {
     constructor(dataTable, data, options) {
@@ -272,10 +273,23 @@ export class Stylesheet {
                     background-color: color-mix(in srgb, var(--focus-color) 25%, var(--dv-bg));
                 }
             `,
+            // Only in truncate mode: in no-wrap the small difference between canvas and DOM text
+            // widths would turn the last characters of a fitting value into an ellipsis
+            truncate: `
+                tbody ${TRUNCATABLE_CELLS} {
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+            `,
+        }
+        // blocks not toggled by a styling option
+        const enabled = {
+            rowFocus: true,
+            truncate: this.options.cellLayout === "truncate",
         }
 
         return Object.entries(styleBlocks)
-            .filter(([key]) => key === "rowFocus" || this.options.styling[key])
+            .filter(([key]) => enabled[key] ?? this.options.styling[key])
             .map(([, style]) => style)
             .join("\n")
     }

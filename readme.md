@@ -38,6 +38,7 @@ Load the component:
 - `hide-index-border` - Hide index/data separator
 - `hide-thead-border` - Hide header border
 - `hide-filter-row` - Hide filter inputs
+- `cell-layout` - Cell layout: "no-wrap" (default, columns fit their widest value) or "truncate" (columns fit their header; longer text is cut off with an ellipsis, numbers and dates are never cut off)
 
 ## CSS Custom Properties
 
