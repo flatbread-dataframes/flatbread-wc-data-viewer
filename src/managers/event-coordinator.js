@@ -9,13 +9,12 @@ export class EventCoordinator {
         this.handleEnterRecordView = this.handleEnterRecordView.bind(this)
         this.handleExitRecordView = this.handleExitRecordView.bind(this)
         this.handleToggleFilterRow = this.handleToggleFilterRow.bind(this)
-        this.handleFiltersChanged = this.handleFiltersChanged.bind(this)
+        this.handleFilterChange = this.handleFilterChange.bind(this)
         this.handleClearAllFilters = this.handleClearAllFilters.bind(this)
         this.handleColumnSelectionChange = this.handleColumnSelectionChange.bind(this)
         this.handleCellLayoutChange = this.handleCellLayoutChange.bind(this)
         this.handleResetColumnWidths = this.handleResetColumnWidths.bind(this)
-        this.handleColumnSort = this.handleColumnSort.bind(this)
-        this.handleIndexSort = this.handleIndexSort.bind(this)
+        this.handleSortChange = this.handleSortChange.bind(this)
         this.handleDataChange = this.handleDataChange.bind(this)
         this.handleExportData = this.handleExportData.bind(this)
     }
@@ -30,10 +29,9 @@ export class EventCoordinator {
         shadowRoot.addEventListener("enter-record-view", this.handleEnterRecordView)
         shadowRoot.addEventListener("exit-record-view", this.handleExitRecordView)
         shadowRoot.addEventListener("toggle-filter-row", this.handleToggleFilterRow)
-        shadowRoot.addEventListener("filters-changed", this.handleFiltersChanged)
+        shadowRoot.addEventListener("filter-change", this.handleFilterChange)
         shadowRoot.addEventListener("clear-filters", this.handleClearAllFilters)
-        shadowRoot.addEventListener("column-sort", this.handleColumnSort)
-        shadowRoot.addEventListener("index-sort", this.handleIndexSort)
+        shadowRoot.addEventListener("sort-change", this.handleSortChange)
         shadowRoot.addEventListener("column-selection-changed", this.handleColumnSelectionChange)
         shadowRoot.addEventListener("cell-layout-changed", this.handleCellLayoutChange)
         shadowRoot.addEventListener("reset-column-widths", this.handleResetColumnWidths)
@@ -49,10 +47,9 @@ export class EventCoordinator {
         shadowRoot.removeEventListener("enter-record-view", this.handleEnterRecordView)
         shadowRoot.removeEventListener("exit-record-view", this.handleExitRecordView)
         shadowRoot.removeEventListener("toggle-filter-row", this.handleToggleFilterRow)
-        shadowRoot.removeEventListener("filters-changed", this.handleFiltersChanged)
+        shadowRoot.removeEventListener("filter-change", this.handleFilterChange)
         shadowRoot.removeEventListener("clear-filters", this.handleClearAllFilters)
-        shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
-        shadowRoot.removeEventListener("index-sort", this.handleIndexSort)
+        shadowRoot.removeEventListener("sort-change", this.handleSortChange)
         shadowRoot.removeEventListener("column-selection-changed", this.handleColumnSelectionChange)
         shadowRoot.removeEventListener("cell-layout-changed", this.handleCellLayoutChange)
         shadowRoot.removeEventListener("reset-column-widths", this.handleResetColumnWidths)
@@ -116,23 +113,17 @@ export class EventCoordinator {
         this.dataViewer.controlPanel.showFilters = !this.dataViewer.hasAttribute("hide-filter-row")
     }
 
-    handleFiltersChanged(event) {
-        const { indexFilters, columnFilters } = event.detail
-
-        this.dataViewer._filterManager.applyFilters(this.dataViewer.view, indexFilters, columnFilters)
-
-        // Update UI components
-        const hasActiveFilters = indexFilters.length > 0 || columnFilters.length > 0
-        this.dataViewer.controlPanel?.updateClearButtonState(hasActiveFilters)
-        this.dataViewer.dataTable?.renderTbody()
-        this.dataViewer.updateControlPanelStatus()
-        this.dataViewer.dataTable?.resetTbodyPosition()
+    // Filter and sort events are internal: composed to leave the table, stopped here
+    handleFilterChange(event) {
+        event.stopPropagation()
+        const { key, expression } = event.detail
+        this.dataViewer.view.setFilter(key, expression)
+        this.dataViewer.updateRows()
     }
 
     handleClearAllFilters() {
-        if (this.dataViewer.dataTable) {
-            this.dataViewer.dataTable.clearAllFilters()
-        }
+        this.dataViewer.view.clearFilters()
+        this.dataViewer.updateRows()
         this.dataViewer.focus()
     }
 
@@ -154,32 +145,11 @@ export class EventCoordinator {
     }
 
     // MARK: @sort
-    handleColumnSort(event) {
-        const { columnIndex, sortState } = event.detail
-        if (sortState === "none") {
-            this.dataViewer.view.reset()
-        } else {
-            this.dataViewer.view.sortByColumn(columnIndex, sortState)
-        }
-
-        if (this.dataViewer.dataTable) {
-            this.dataViewer.dataTable.renderTbody()
-        }
-        this.dataViewer.dataTable?.resetTbodyPosition()
-    }
-
-    handleIndexSort(event) {
-        const { level, sortState } = event.detail
-        if (sortState === "none") {
-            this.dataViewer.view.reset()
-        } else {
-            this.dataViewer.view.sortByIndex(level, sortState)
-        }
-
-        if (this.dataViewer.dataTable) {
-            this.dataViewer.dataTable.renderTbody()
-        }
-        this.dataViewer.dataTable?.resetTbodyPosition()
+    handleSortChange(event) {
+        event.stopPropagation()
+        const { key, direction } = event.detail
+        this.dataViewer.view.sort = direction === "none" ? null : { key, direction }
+        this.dataViewer.updateRows()
     }
 
     // MARK: @export

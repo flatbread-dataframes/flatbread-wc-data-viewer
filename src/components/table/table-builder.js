@@ -1,3 +1,5 @@
+import { columnKey, levelKey } from "../../data/view.js"
+
 export class TableBuilder {
     constructor(dataViewer) {
         this.dataViewer = dataViewer
@@ -27,12 +29,8 @@ export class TableBuilder {
         return `<button class="hide-button" tabindex="-1" data-hide-type="${type}" ${dataAttrs}><span>✕</span></button>`
     }
 
-    buildSortButton(type, value) {
-        const dataAttr = type === "column"
-            ? `data-col="${value}"`
-            : `data-level="${value}"`
-
-        return `<sort-button ${dataAttr}></sort-button>`
+    buildSortButton(key) {
+        return `<sort-button data-key="${key}"></sort-button>`
     }
 
     buildColumnLevelNameLabel(level) {
@@ -62,7 +60,7 @@ export class TableBuilder {
         // The last level also spans the record view icon column; names can be missing or incomplete
         const isLastLevel = level === index.nlevels - 1
         const colspan = isLastLevel ? `colspan="2"` : ""
-        const sortButton = this.buildSortButton("index", level)
+        const sortButton = this.buildSortButton(levelKey(level))
         const indexLevelNameLabelElement = `
             <th data-level="${level}" class="indexLevelNameLabel" ${colspan}>
                 <span>
@@ -90,7 +88,7 @@ export class TableBuilder {
             ${isGroupEdge ? ' group-edge' : ''}
             class="columnFilter"
         >
-            <filter-combo></filter-combo>
+            <filter-combo data-key="${columnKey(originalColIndex)}"></filter-combo>
         </th>`
     }
 
@@ -125,7 +123,7 @@ export class TableBuilder {
                 class="indexFilter"
                 ${colspan}
             >
-                <filter-combo></filter-combo>
+                <filter-combo data-key="${levelKey(level)}"></filter-combo>
             </th>`
         })
     }
@@ -149,8 +147,8 @@ export class TableBuilder {
         const selectedValue = Array.isArray(value) ? value.at(-1) : value
         const groups = attrs.groups.join(" ")
         const hideButton = this.buildHideButton('column', iloc)
-        const sortButton = this.buildSortButton('column', iloc)
         const originalColIndex = this.getOriginalColumnIndex(iloc)
+        const sortButton = this.buildSortButton(columnKey(originalColIndex))
 
         const isIndexEdge = iloc === 0
         const isGroupEdge = this.dataViewer.view.columns.edges.slice(1).includes(iloc)

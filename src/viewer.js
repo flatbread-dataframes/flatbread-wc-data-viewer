@@ -3,7 +3,6 @@ import { View } from "./data/view.js"
 import { Formatter } from "./build/formatter.js"
 import { ColumnWidths } from "./build/column-widths.js"
 import { EventCoordinator } from "./managers/event-coordinator.js"
-import { FilterManager } from "./managers/filter-manager.js"
 import { NavigationController } from "./managers/navigation-controller.js"
 import "./components/record/data-record.js"
 import "./components/table/data-table.js"
@@ -96,7 +95,6 @@ export class FlatbreadDataViewer extends HTMLElement {
 
         this._data = new Data()
         this._eventCoordinator = new EventCoordinator(this)
-        this._filterManager = new FilterManager()
         this._navigationController = new NavigationController(this)
         this._formatter = new Formatter(this.options)
     }
@@ -336,14 +334,14 @@ export class FlatbreadDataViewer extends HTMLElement {
         const columnTree = this.buildColumnTree()
         this.controlPanel.dataViewer = this
         this.controlPanel.columnData = columnTree
+        this.updateControlPanelStatus()
+    }
 
-        // Add view info for status display
-        this.controlPanel.viewInfo = {
-            visibleRows: this.view.visibleIndices.length,
-            totalRows: this.data.index.length,
-            visibleColumns: this.view.columns.length,
-            totalColumns: this.data.columns.length
-        }
+    // MARK: @rows
+    // After a change of the filters or the sort in the view
+    updateRows() {
+        this.dataTable?.updateRows()
+        this.updateControlPanelStatus()
     }
 
     // MARK: @column
@@ -424,6 +422,7 @@ export class FlatbreadDataViewer extends HTMLElement {
                 visibleColumns: this.view.columns.length,
                 totalColumns: this.data.columns.length
             }
+            controlPanel.updateClearButtonState(this.view.hasFilters)
         }
     }
 

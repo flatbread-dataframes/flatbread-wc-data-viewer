@@ -25,8 +25,6 @@ export class DataTable extends HTMLElement {
         this.handleTheadFocusIn = this.handleTheadFocusIn.bind(this)
         this.handleFilterInput = this.handleFilterInput.bind(this)
         this.handleFilterOptionsRequest = this.handleFilterOptionsRequest.bind(this)
-        this.handleColumnSort = this.handleColumnSort.bind(this)
-        this.handleIndexSort = this.handleIndexSort.bind(this)
         this.handleWheel = WheelHandlerMixin.handleWheel.bind(this)
         this.handleFontsLoaded = this.handleFontsLoaded.bind(this)
 
@@ -55,8 +53,6 @@ export class DataTable extends HTMLElement {
         this.shadowRoot.addEventListener("focusin", this.handleTbodyFocusIn)
         this.shadowRoot.addEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.addEventListener("filter-options-request", this.handleFilterOptionsRequest)
-        this.shadowRoot.addEventListener("column-sort", this.handleColumnSort)
-        this.shadowRoot.addEventListener("index-sort", this.handleIndexSort)
         document.fonts.addEventListener("loadingdone", this.handleFontsLoaded)
 
         this.clickHandler.addEventListeners()
@@ -72,8 +68,6 @@ export class DataTable extends HTMLElement {
         this.shadowRoot.removeEventListener("focusin", this.handleTbodyFocusIn)
         this.shadowRoot.removeEventListener("filter-input", this.handleFilterInput)
         this.shadowRoot.removeEventListener("filter-options-request", this.handleFilterOptionsRequest)
-        this.shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
-        this.shadowRoot.removeEventListener("index-sort", this.handleIndexSort)
         document.fonts.removeEventListener("loadingdone", this.handleFontsLoaded)
 
         this.clickHandler.removeEventListeners()
@@ -168,6 +162,7 @@ export class DataTable extends HTMLElement {
             </table>
             <div class="cell-tooltip" popover="manual" aria-hidden="true"></div>
         `
+        this.syncControls()
 
         this._stylesheet.setupStyles()
         this.rowWindow.renderInitial(anchor)
@@ -180,6 +175,26 @@ export class DataTable extends HTMLElement {
         if (this.shadowRoot.querySelector("tbody") && this._tableBuilder) {
             this.rowWindow.reset()
         }
+    }
+
+    // After a change of the filters or the sort: the controls follow the view, rows from the top
+    updateRows() {
+        this.syncControls()
+        this.shadowRoot.querySelectorAll("filter-combo").forEach(combo => combo.invalidateOptions())
+        this.renderTbody()
+        this.resetTbodyPosition()
+    }
+
+    // The filter inputs and sort buttons show the view's state; the thead is built with empty controls
+    syncControls() {
+        this.shadowRoot.querySelectorAll("filter-combo").forEach(combo => {
+            const expression = this.view.filterFor(combo.dataset.key)
+            // only a real difference is written, so the input being typed in keeps its caret
+            if (combo.value.trim() !== expression.trim()) combo.value = expression
+        })
+        this.shadowRoot.querySelectorAll("sort-button").forEach(button => {
+            button.sortState = this.view.sortStateFor(button.dataset.key)
+        })
     }
 
     // Cell layout change: the same rows with other column widths, so the first visible row is kept
@@ -287,86 +302,13 @@ export class DataTable extends HTMLElement {
         filterCombo.options = unique.length <= threshold ? unique : null
     }
 
+    // The combo knows no key: it is read here and sent on, composed, to the viewer
     handleFilterInput(event) {
-        const allFilters = {
-            indexFilters: this.getIndexFilters(),
-            columnFilters: this.getColumnFilters()
-        }
-
-        this.dispatchEvent(new CustomEvent("filters-changed", {
-            detail: allFilters,
+        this.dispatchEvent(new CustomEvent("filter-change", {
+            detail: { key: event.target.dataset.key, expression: event.detail.value },
             bubbles: true,
             composed: true
         }))
-
-        this.shadowRoot.querySelectorAll("filter-combo").forEach(fc => fc.invalidateOptions())
-    }
-
-    getIndexFilters() {
-        const indexFilterInputs = this.shadowRoot.querySelectorAll(".indexFilter filter-combo")
-        return Array.from(indexFilterInputs).map(filterEl => {
-            const th = filterEl.closest("th")
-            const level = parseInt(th.dataset.level)
-            return { level, value: filterEl.value.trim() }
-        }).filter(filter => filter.value !== "")
-    }
-
-    getColumnFilters() {
-        const columnFilterInputs = this.shadowRoot.querySelectorAll(".columnFilter filter-combo")
-        return Array.from(columnFilterInputs).map(filterEl => {
-            const th = filterEl.closest("th")
-            const col = parseInt(th.dataset.col)
-            return { col, value: filterEl.value.trim() }
-        }).filter(filter => filter.value !== "")
-    }
-
-    clearAllFilters() {
-        const allFilterInputs = this.shadowRoot.querySelectorAll("filter-combo")
-        allFilterInputs.forEach(filterInput => filterInput.clear())
-
-        this.dispatchEvent(new CustomEvent("filters-changed", {
-            detail: {
-                indexFilters: [],
-                columnFilters: []
-            },
-            bubbles: true,
-            composed: true
-        }))
-    }
-
-    // MARK: @sort
-    handleIndexSort(event) {
-        this.clearAllSorts()
-        const clickedHeader = event.target
-        if (clickedHeader && event.detail.sortState !== "none") {
-            clickedHeader.sortState = event.detail.sortState
-        }
-
-        this.dispatchEvent(new CustomEvent("index-sort", {
-            detail: event.detail,
-            bubbles: true,
-            composed: true
-        }))
-    }
-
-    handleColumnSort(event) {
-        this.clearAllSorts()
-        const clickedHeader = event.target
-        if (clickedHeader && event.detail.sortState !== "none") {
-            clickedHeader.sortState = event.detail.sortState
-        }
-
-        this.dispatchEvent(new CustomEvent("column-sort", {
-            detail: event.detail,
-            bubbles: true,
-            composed: true
-        }))
-    }
-
-    clearAllSorts() {
-        this.shadowRoot.querySelectorAll('sort-button').forEach(btn => {
-            btn.clearSort()
-        })
     }
 
     // MARK: @thead

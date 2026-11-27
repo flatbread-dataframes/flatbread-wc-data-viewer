@@ -1,11 +1,23 @@
 import { Columns } from "../axis/columns.js"
 import { Index } from "../axis/index.js"
 import { createComparator, sortComparator } from "./compare.js"
+import { createPredicate } from "./filter.js"
+
+// Keys of filters and sort: data ilocs and index levels, so hiding columns does not move them
+export const columnKey = iloc => `col:${iloc}`
+export const levelKey = level => `level:${level}`
+
+const parseKey = key => {
+    const [axis, n] = key.split(":")
+    return [axis, Number(n)]
+}
 
 export class View {
     constructor(data, { locale = "default" } = {}) {
         this.data = data
-        this.locale = locale
+        this._locale = locale
+        this._filters = new Map()   // key → expression
+        this._sort = null           // { key, direction }
 
         this._visibleIndices = null
         this._visibleColumnIndices = null
@@ -63,44 +75,87 @@ export class View {
         return rows.map(row => this._visibleColumnIndices.map(col => row[col]))
     }
 
-    // Filtering methods
-    filter(predicate) {
-        this._visibleIndices = this.data.index.ilocs.filter(i => predicate(this.data.values[i], i))
-        this.invalidateCache()
-        return this
-    }
-
+    // Column selection: does not change which rows are visible
     filterColumns(columnIndices) {
         this._visibleColumnIndices = columnIndices
         this.invalidateCache()
         return this
     }
 
-    // Sorting methods
-    sortByColumn(columnIndex, direction = "asc") {
-        const iloc = this.getOriginalColumnIndex(columnIndex)
-        return this.sortRows(i => this.data.values[i][iloc], this.data.columns.dtypes?.[iloc], direction)
+    // MARK: filters and sort
+    get locale() {
+        return this._locale
     }
 
-    sortByIndex(level = -1, direction = "asc") {
-        const { values, dtypes } = this.data.index
-        const valueAt = i => Array.isArray(values[i]) ? values[i].at(level) : values[i]
-        return this.sortRows(valueAt, dtypes?.at(level), direction)
+    // The sort order depends on the locale
+    set locale(value) {
+        this._locale = value
+        if (this._sort) this.update()
     }
 
-    // Sorts the visible rows by one value per data row (valueAt takes a data iloc)
-    sortRows(valueAt, dtype, direction) {
-        const compare = sortComparator(createComparator(dtype, this.locale), direction)
-        this.visibleIndices.sort((a, b) => compare(valueAt(a), valueAt(b)))
+    get hasFilters() {
+        return this._filters.size > 0
+    }
+
+    filterFor(key) {
+        return this._filters.get(key) ?? ""
+    }
+
+    setFilter(key, expression) {
+        if (expression.trim()) this._filters.set(key, expression)
+        else this._filters.delete(key)
+        this.update()
+    }
+
+    clearFilters() {
+        this._filters.clear()
+        this.update()
+    }
+
+    get sort() {
+        return this._sort
+    }
+
+    // { key, direction } or null
+    set sort(sort) {
+        this._sort = sort
+        this.update()
+    }
+
+    sortStateFor(key) {
+        return this._sort?.key === key ? this._sort.direction : "none"
+    }
+
+    // The only place that computes the visible rows from the filters and the sort
+    update() {
+        const predicate = createPredicate(this._filters, key => this.valueGetter(key))
+        const ilocs = this.data.index.ilocs
+        this._visibleIndices = predicate ? ilocs.filter(predicate) : ilocs
+        if (this._sort) this.sortRows(this._sort)
         this.invalidateCache()
-        return this
     }
 
-    // Reset to original order
-    reset() {
-        this._visibleIndices = [...this.data.index.ilocs]
-        this.invalidateCache()
-        return this
+    sortRows({ key, direction }) {
+        const valueAt = this.valueGetter(key)
+        const compare = sortComparator(createComparator(this.dtypeOf(key), this.locale), direction)
+        this._visibleIndices.sort((a, b) => compare(valueAt(a), valueAt(b)))
+    }
+
+    // A function data iloc → the key's value in that row
+    valueGetter(key) {
+        const [axis, n] = parseKey(key)
+        if (axis === "col") {
+            const { values } = this.data
+            return i => values[i][n]
+        }
+        const { values } = this.data.index
+        return i => Array.isArray(values[i]) ? values[i][n] : values[i]
+    }
+
+    dtypeOf(key) {
+        const [axis, n] = parseKey(key)
+        const { dtypes } = axis === "col" ? this.data.columns : this.data.index
+        return dtypes?.[n]
     }
 
     // Clear cached computed properties

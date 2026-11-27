@@ -1,6 +1,6 @@
 export class SortButton extends HTMLElement {
     static get observedAttributes() {
-        return ["data-col", "data-level", "sort-state"]
+        return ["sort-state"]
     }
 
     constructor() {
@@ -61,19 +61,13 @@ export class SortButton extends HTMLElement {
         this.setSortAndNotify(next)
     }
 
+    // Composed: handled by the viewer, which writes the state back to every sort button
     setSortAndNotify(sortState) {
         this.sortState = sortState
-
-        const isColumnSort = this.hasAttribute("data-col")
-        const eventName = isColumnSort ? "column-sort" : "index-sort"
-
-        const detail = isColumnSort
-            ? { columnIndex: parseInt(this.dataset.col), sortState }
-            : { level: parseInt(this.dataset.level), sortState }
-
-        this.dispatchEvent(new CustomEvent(eventName, {
-            detail,
-            bubbles: true
+        this.dispatchEvent(new CustomEvent("sort-change", {
+            detail: { key: this.dataset.key, direction: sortState },
+            bubbles: true,
+            composed: true
         }))
     }
 
@@ -98,10 +92,6 @@ export class SortButton extends HTMLElement {
         this._sortState = value
         this.setAttribute("sort-state", value)
         this.updateMarker()
-    }
-
-    clearSort() {
-        this.sortState = "none"
     }
 }
 
