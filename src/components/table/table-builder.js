@@ -4,6 +4,12 @@ export class TableBuilder {
     }
 
     // MARK: Thead
+    // Column group rows (one per outer column level), columns row, index labels row, filter row.
+    // The filter row counts when hidden: only its inputs are hidden, the row stays.
+    get headerRowCount() {
+        return this.dataViewer.view.columns.nlevels + 2
+    }
+
     buildThead() {
         const columnGroupsRows =
             this.dataViewer.view.columns.ilevels
@@ -98,7 +104,7 @@ export class TableBuilder {
                 ${isGroupEdge ? " group-edge" : ""}
             ></th>`
         })
-        return `<tr class="index-labels-row">${indexLevelNameLabels.join("")}${emptyCells.join("")}</tr>`
+        return `<tr class="index-labels-row" aria-rowindex="${this.headerRowCount - 1}">${indexLevelNameLabels.join("")}${emptyCells.join("")}</tr>`
     }
 
     buildFilterRow() {
@@ -106,7 +112,7 @@ export class TableBuilder {
         const columnFilters = this.dataViewer.view.columns.ilocs.map(iloc =>
             this.buildColumnFilter(iloc)
         )
-        return `<tr class="filter-row">${indexFilters.join("")}${columnFilters.join("")}</tr>`
+        return `<tr class="filter-row" aria-rowindex="${this.headerRowCount}">${indexFilters.join("")}${columnFilters.join("")}</tr>`
     }
 
     buildIndexFilters() {
@@ -129,7 +135,7 @@ export class TableBuilder {
         // in a multiindex this is the lowest level
         const columnLevelNameLabelElement = this.buildColumnLevelNameLabel(-1)
         const columnHeaders = this.dataViewer.view.columns.map((value, idx) => this.buildColumnLabel(value, idx))
-        return `<tr class="columns-row">${columnLevelNameLabelElement}${columnHeaders.join("")}</tr>`
+        return `<tr class="columns-row" aria-rowindex="${this.headerRowCount - 2}">${columnLevelNameLabelElement}${columnHeaders.join("")}</tr>`
     }
 
     getOriginalColumnIndex(viewColIndex) {
@@ -172,7 +178,7 @@ export class TableBuilder {
             this.dataViewer.view.columns.spans[level]
                 .map((span, iloc) => this.buildColumnGroupLabel(span, iloc, level))
                 .join("")
-        return `<tr class="column-groups-row" data-level="${level}">${columnLevelNameLabelElement}${headers}</tr>`
+        return `<tr class="column-groups-row" data-level="${level}" aria-rowindex="${level + 1}">${columnLevelNameLabelElement}${headers}</tr>`
     }
 
     buildColumnGroupLabel(span, iloc, level) {
@@ -210,11 +216,14 @@ export class TableBuilder {
             const rowElements = row.map((value, iloc) => this.buildCell(value, iloc))
             indexRows[idx] = indexRows[idx].concat(rowElements)
         })
+        // position in the full table, so screen readers announce the real row
+        const firstRowIndex = this.headerRowCount + start + 1
         return indexRows.map((row, idx) => {
             const attributes = {
                 tabindex: -1,
                 "data-view-row": start + idx,
                 "data-group-start": groupStarts[idx].join(" ") || null,
+                "aria-rowindex": firstRowIndex + idx,
             }
             return `<tr ${this.buildAttributeString(attributes)}>${row.join("")}</tr>`
         }).join("")

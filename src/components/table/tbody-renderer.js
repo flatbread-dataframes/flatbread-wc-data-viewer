@@ -36,6 +36,10 @@ export class TbodyRenderer {
         return view.index.nlevels + 1 + view.columns.length
     }
 
+    get rowCount() {
+        return this.dataTable.tableBuilder.headerRowCount + this.dataTable.view.visibleIndices.length
+    }
+
     // The tr of a view row, or null outside the window
     rowAt(viewRow) {
         if (viewRow < this._start || viewRow >= this._end) return null
@@ -65,6 +69,8 @@ export class TbodyRenderer {
             this.buildSpacer(bottom)
         this._start = start
         this._end = end
+        // all rows of the table, not only the rendered ones (see aria-rowindex in buildTbody)
+        tbody.parentElement.setAttribute("aria-rowcount", this.rowCount)
 
         // The focused row was replaced, or focus is parked: focus the row if it is in the window
         if (hadFocus) this.rowAt(position)?.focus({ preventScroll: true })
