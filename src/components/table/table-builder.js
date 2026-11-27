@@ -296,15 +296,28 @@ export class TableBuilder {
         const attrs = this.dataViewer.view.columns.attrs[iloc]
         const formattedValue = this.dataViewer.formatter.formatValue(value, attrs.dtype, attrs.formatOptions)
         const groups = attrs.groups.join(" ")
-        const isIndexEdge = iloc === 0
-        const isGroupEdge = this.dataViewer.view.columns.edges.slice(1).includes(iloc)
         return `<td
             data-col="${iloc}"
             data-groups="${groups}"
             data-dtype="${attrs.dtype}"
-            ${isIndexEdge ? ' index-edge' : ''}
-            ${isGroupEdge ? ' group-edge' : ''}
+            ${this.buildEdgeAttributes(iloc)}
         >${formattedValue}</td>`
+    }
+
+    // Data cells and spacer cells both draw the index border and the column group lines
+    buildEdgeAttributes(iloc) {
+        const isIndexEdge = iloc === 0
+        const isGroupEdge = this.dataViewer.view.columns.edges.slice(1).includes(iloc)
+        return `${isIndexEdge ? "index-edge" : ""} ${isGroupEdge ? "group-edge" : ""}`.trim()
+    }
+
+    // The cells of a data row without content, so the column lines continue through the spacers.
+    // Index cells keep data-level for their sticky offsets.
+    buildSpacerCells() {
+        const view = this.dataViewer.view
+        const indexCells = view.index.ilevels.map(level => `<th data-level="${level}"></th>`)
+        const dataCells = view.columns.attrs.map((_, iloc) => `<td ${this.buildEdgeAttributes(iloc)}></td>`)
+        return [...indexCells, `<th class="recordViewIcon"></th>`, ...dataCells].join("")
     }
 
     buildAttributeString(attributes) {

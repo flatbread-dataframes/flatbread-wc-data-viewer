@@ -91,11 +91,10 @@ export class Stylesheet {
             .columnFilter, .indexFilter {
                 border-top: 1px solid var(--dv-border);
             }
-            /* spacers stand in for the rows outside the window; their height is set inline */
-            tbody tr.spacer > td {
+            /* spacers stand in for the rows outside the window; their height is set inline.
+               Their cells keep the borders, so the index and column group lines continue. */
+            tbody tr.spacer > :where(th, td) {
                 padding: 0;
-                border: 0;
-                background: none;
             }
 
             /* full value of a truncated cell (CellTooltip), anchored to the hovered cell */
@@ -261,7 +260,7 @@ export class Stylesheet {
                 }
             `,
             hoverEffect: `
-                tbody tr:hover :where(td, th:not(.group)) {
+                tbody tr:not(.spacer):hover :where(td, th:not(.group)) {
                     background-color: var(--dv-hover);
                 }
             `,

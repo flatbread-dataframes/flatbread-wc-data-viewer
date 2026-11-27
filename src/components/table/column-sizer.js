@@ -58,7 +58,8 @@ export class ColumnSizer {
         const leaves = Array(nIndex + this.view.columns.length).fill(0)
         const spans = []
 
-        const icon = this.root.querySelector("tbody .recordViewIcon")
+        // a data row: the spacers have an icon cell without a button
+        const icon = this.root.querySelector("tbody tr[data-view-row] .recordViewIcon")
         if (icon) this._iconWidth = requiredWidth(icon)
         leaves[nIndex - 1] = this._iconWidth
 

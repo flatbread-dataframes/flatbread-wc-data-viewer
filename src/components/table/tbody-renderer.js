@@ -30,12 +30,6 @@ export class TbodyRenderer {
         return this.dataTable.shadowRoot.querySelector("tbody")
     }
 
-    get columnCount() {
-        const view = this.dataTable.view
-        // index levels + record view icon + data columns
-        return view.index.nlevels + 1 + view.columns.length
-    }
-
     get rowCount() {
         return this.dataTable.tableBuilder.headerRowCount + this.dataTable.view.visibleIndices.length
     }
@@ -65,10 +59,12 @@ export class TbodyRenderer {
         // the tooltip's cell is about to be replaced
         this.dataTable.cellTooltip.hide()
 
+        const tableBuilder = this.dataTable.tableBuilder
+        const spacerCells = tableBuilder.buildSpacerCells()
         tbody.innerHTML =
-            this.buildSpacer(top) +
-            this.dataTable.tableBuilder.buildTbody(start, end) +
-            this.buildSpacer(bottom)
+            this.buildSpacer(top, spacerCells) +
+            tableBuilder.buildTbody(start, end) +
+            this.buildSpacer(bottom, spacerCells)
         this._start = start
         this._end = end
         // all rows of the table, not only the rendered ones (see aria-rowindex in buildTbody)
@@ -91,7 +87,8 @@ export class TbodyRenderer {
         }
     }
 
-    buildSpacer(height) {
-        return `<tr class="spacer" aria-hidden="true"><td colspan="${this.columnCount}" style="height: ${height}px"></td></tr>`
+    // A row of empty cells (see TableBuilder.buildSpacerCells) with the height of the rows it stands in for
+    buildSpacer(height, cells) {
+        return `<tr class="spacer" aria-hidden="true" style="height: ${height}px">${cells}</tr>`
     }
 }
