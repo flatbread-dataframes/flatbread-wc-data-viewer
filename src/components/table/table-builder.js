@@ -3,15 +3,6 @@ export class TableBuilder {
         this.dataViewer = dataViewer
     }
 
-    buildTable(buffer) {
-        return `
-            <table>
-                <thead>${this.buildThead()}</thead>
-                <tbody>${this.buildTbody(0, buffer)}</tbody>
-            </table>
-        `
-    }
-
     // MARK: Thead
     buildThead() {
         const columnGroupsRows =

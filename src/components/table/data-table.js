@@ -4,6 +4,7 @@ import { WheelHandlerMixin } from "../../mixins/wheel-handler.js"
 import { ScrollManager } from "./scroll-manager.js"
 import { ClickHandler } from "./click-handler.js"
 import { ColumnSizer } from "./column-sizer.js"
+import { RowWindow } from "./row-window.js"
 
 
 export class DataTable extends HTMLElement {
@@ -14,6 +15,7 @@ export class DataTable extends HTMLElement {
         this.scrollManager = new ScrollManager(this)
         this.clickHandler = new ClickHandler(this)
         this.columnSizer = new ColumnSizer(this)
+        this.rowWindow = new RowWindow(this)
 
         this.handleKeydown = this.handleKeydown.bind(this)
         this.handleTheadFocusIn = this.handleTheadFocusIn.bind(this)
@@ -97,6 +99,18 @@ export class DataTable extends HTMLElement {
         return this._dataViewer?.options
     }
 
+    get tableBuilder() {
+        return this._tableBuilder
+    }
+
+    get tbodyPosition() {
+        return this._tbodyPosition
+    }
+
+    get theadHeight() {
+        return this.shadowRoot.querySelector("thead")?.getBoundingClientRect().height ?? 0
+    }
+
     get theadNavigableElements() {
         const nGroupLevels = this.view.columns.ilevels.length - 1
 
@@ -122,25 +136,31 @@ export class DataTable extends HTMLElement {
     }
 
     // MARK: render
+    // Keeps the first visible row when the view is the same (column changes, view mode toggles)
     render() {
         if (!this.dataViewer) return
+
+        // before the table is replaced (see RowWindow.anchor)
+        const anchor = this.rowWindow.anchor
 
         this.shadowRoot.innerHTML = `
             <table>
                 <colgroup></colgroup>
                 <thead>${this._tableBuilder.buildThead()}</thead>
-                <tbody>${this._tableBuilder.buildTbody(0, this.options.buffer)}</tbody>
+                <tbody></tbody>
             </table>
         `
 
         this._stylesheet.setupStyles()
+        this.rowWindow.renderInitial(anchor)
         this.applyColumnWidths()
+        this.rowWindow.measure(anchor)
     }
 
+    // Filter and sort
     renderTbody() {
-        const tbody = this.shadowRoot.querySelector("tbody")
-        if (tbody && this._tableBuilder) {
-            tbody.innerHTML = this._tableBuilder.buildTbody(0, this.options.buffer)
+        if (this.shadowRoot.querySelector("tbody") && this._tableBuilder) {
+            this.rowWindow.reset()
         }
     }
 
@@ -174,7 +194,10 @@ export class DataTable extends HTMLElement {
     }
 
     handleFontsLoaded() {
-        if (this.shadowRoot.querySelector("table")) this.applyColumnWidths(true)
+        if (!this.shadowRoot.querySelector("table")) return
+        const anchor = this.rowWindow.anchor
+        this.applyColumnWidths(true)
+        this.rowWindow.measure(anchor)
     }
 
     // MARK: @filter
@@ -576,7 +599,6 @@ export class DataTable extends HTMLElement {
                 const totalRows = this.view.visibleIndices.length
                 if (next >= totalRows) return true
                 this._tbodyPosition = next
-                this.ensureRowRendered(next)
                 this.focusTbodyRow(next)
                 return true
             }
@@ -587,7 +609,6 @@ export class DataTable extends HTMLElement {
             }
             case "End": {
                 this._tbodyPosition = totalRows - 1
-                this.ensureRowRendered(this._tbodyPosition)
                 this.focusTbodyRow(this._tbodyPosition)
                 return true
             }
@@ -603,45 +624,15 @@ export class DataTable extends HTMLElement {
         return false
     }
 
-    ensureRowRendered(index) {
-        const tbody = this.shadowRoot.querySelector("tbody")
-        const renderedCount = tbody.rows.length
-        if (index < renderedCount) return
-
-        const end = index + this.dataViewer.options.buffer
-        tbody.insertAdjacentHTML("beforeend", this._tableBuilder.buildTbody(renderedCount, end))
-    }
-
     focusTbodyRow(index) {
-        this.ensureRowRendered(index)
-        const tbody = this.shadowRoot.querySelector("tbody")
-        const row = tbody.rows[index]
-        if (row) {
-            row.focus()
-            this.scrollRowIntoView(row)
-        }
-    }
-
-    scrollRowIntoView(row) {
-        const containerRect = this.getBoundingClientRect()
-        const rowRect = row.getBoundingClientRect()
-
-        // account for sticky thead
-        const thead = this.shadowRoot.querySelector("thead")
-        const theadHeight = thead ? thead.getBoundingClientRect().height : 0
-
-        if (rowRect.top < containerRect.top + theadHeight) {
-            this.scrollTop -= (containerRect.top + theadHeight - rowRect.top)
-        } else if (rowRect.bottom > containerRect.bottom) {
-            this.scrollTop += (rowRect.bottom - containerRect.bottom)
-        }
+        this.rowWindow.scrollToRow(index)
+        this.rowWindow.rowAt(index)?.focus({ preventScroll: true })
     }
 
     handleTbodyFocusIn(event) {
-        const row = event.target.closest("tr")
-        if (row && row.closest("tbody")) {
-            const index = Array.from(row.parentNode.children).indexOf(row)
-            this._tbodyPosition = index
+        const row = event.target.closest("tr[data-view-row]")
+        if (row?.closest("tbody")) {
+            this._tbodyPosition = Number(row.dataset.viewRow)
         }
     }
 

@@ -14,7 +14,6 @@ export class EventCoordinator {
         this.handleColumnSelectionChange = this.handleColumnSelectionChange.bind(this)
         this.handleColumnSort = this.handleColumnSort.bind(this)
         this.handleIndexSort = this.handleIndexSort.bind(this)
-        this.handleLoadMoreRows = this.handleLoadMoreRows.bind(this)
         this.handleDataChange = this.handleDataChange.bind(this)
         this.handleExportData = this.handleExportData.bind(this)
     }
@@ -34,7 +33,6 @@ export class EventCoordinator {
         shadowRoot.addEventListener("column-sort", this.handleColumnSort)
         shadowRoot.addEventListener("index-sort", this.handleIndexSort)
         shadowRoot.addEventListener("column-selection-changed", this.handleColumnSelectionChange)
-        shadowRoot.addEventListener("load-more-rows", this.handleLoadMoreRows)
         shadowRoot.addEventListener("export-data", this.handleExportData)
     }
 
@@ -52,7 +50,6 @@ export class EventCoordinator {
         shadowRoot.removeEventListener("column-sort", this.handleColumnSort)
         shadowRoot.removeEventListener("index-sort", this.handleIndexSort)
         shadowRoot.removeEventListener("column-selection-changed", this.handleColumnSelectionChange)
-        shadowRoot.removeEventListener("load-more-rows", this.handleLoadMoreRows)
         shadowRoot.removeEventListener("export-data", this.handleExportData)
     }
 
@@ -168,15 +165,6 @@ export class EventCoordinator {
             this.dataViewer.dataTable.renderTbody()
         }
         this.dataViewer.dataTable?.resetTbodyPosition()
-    }
-
-    // MARK: @scroll
-    handleLoadMoreRows(event) {
-        const { currentRowCount, bufferSize } = event.detail
-        const dataTable = this.dataViewer.dataTable
-        if (dataTable) {
-            dataTable.ensureRowRendered(currentRowCount + bufferSize - 1)
-        }
     }
 
     // MARK: @export

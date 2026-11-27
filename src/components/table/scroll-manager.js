@@ -1,34 +1,29 @@
+// Detects changes of the viewport (scrolling, resizing) and lets the row window follow
 export class ScrollManager {
     constructor(dataTable) {
         this.dataTable = dataTable
         this.handleScroll = this.handleScroll.bind(this)
+        this.handleResize = this.handleResize.bind(this)
+        this._resizeObserver = new ResizeObserver(this.handleResize)
     }
 
     addEventListeners() {
         this.dataTable.addEventListener("scroll", this.handleScroll)
+        this._resizeObserver.observe(this.dataTable)
     }
 
     removeEventListeners() {
         this.dataTable.removeEventListener("scroll", this.handleScroll)
+        this._resizeObserver.disconnect()
     }
 
     handleScroll(event) {
         event.stopPropagation()
-        const table = event.target
-        const tbody = this.dataTable.shadowRoot.querySelector("tbody")
+        this.dataTable.rowWindow.update()
+    }
 
-        const scrollThreshold = 150
-        const nearBottom = table.scrollHeight - (table.scrollTop + table.clientHeight) < scrollThreshold
-
-        if (nearBottom && tbody) {
-            this.dataTable.dispatchEvent(new CustomEvent("load-more-rows", {
-                detail: {
-                    currentRowCount: tbody.rows.length,
-                    bufferSize: this.dataTable.dataViewer.options.buffer
-                },
-                bubbles: true,
-                composed: true
-            }))
-        }
+    // Also fires when the table gets a layout box, e.g. when a hidden ancestor is shown
+    handleResize() {
+        this.dataTable.rowWindow.resize()
     }
 }

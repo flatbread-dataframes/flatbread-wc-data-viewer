@@ -41,6 +41,8 @@ export class Stylesheet {
             :host {
                 display: block;
                 padding-bottom: 12px;
+                /* a window update replaces the rows; anchoring to them would make the content jump */
+                overflow-anchor: none;
             }
             table {
                 border-collapse: separate;
@@ -83,6 +85,12 @@ export class Stylesheet {
             }
             .columnFilter, .indexFilter {
                 border-top: 1px solid var(--dv-border);
+            }
+            /* spacers stand in for the rows outside the window; their height is set inline */
+            tbody tr.spacer > td {
+                padding: 0;
+                border: 0;
+                background: none;
             }
 
             /* general button styling */

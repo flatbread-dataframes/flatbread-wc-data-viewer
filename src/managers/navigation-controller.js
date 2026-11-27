@@ -126,7 +126,7 @@ export class NavigationController {
 
         if (level === "tbody") {
             const dataTable = this.dataViewer.dataTable
-            if (dataTable) dataTable.focusTbodyRow(dataTable._tbodyPosition)
+            if (dataTable) dataTable.focusTbodyRow(dataTable.tbodyPosition)
             return
         }
 

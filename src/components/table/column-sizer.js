@@ -41,7 +41,7 @@ export class ColumnSizer {
 
     // Fonts are read from the first rendered row; without rows there is nothing to measure yet
     measureFonts() {
-        const row = this.root.querySelector("tbody tr")
+        const row = this.root.querySelector("tbody tr[data-view-row]")
         const cell = row?.querySelector("td")
         const index = row?.querySelector("th")
         if (!cell || !index) return

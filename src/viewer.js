@@ -73,7 +73,7 @@ export class FlatbreadDataViewer extends HTMLElement {
         return {
             locale: "default",
             naRep: "-",
-            buffer: 30,
+            overscan: 20,
             height: "600px",
             styling: {
                 groupBorders: true,

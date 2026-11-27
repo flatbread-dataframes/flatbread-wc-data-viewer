@@ -15,7 +15,7 @@ export class ClickHandler {
     handleClick(event) {
         if (this.handleHideClick(event)) return
 
-        if (event.target.closest(".filter-row")) return
+        if (event.target.closest(".filter-row, .spacer")) return
 
         if (event.shiftKey || event.ctrlKey) {
             return this.handleDataExtractionClick(event)
@@ -58,7 +58,7 @@ export class ClickHandler {
         const isInBody = tr.closest("tbody") !== null
 
         if (event.shiftKey && isInBody) {
-            const viewRowIndex = Array.from(tr.parentNode.children).indexOf(tr)
+            const viewRowIndex = Number(tr.dataset.viewRow)
             this.dispatchRowData(viewRowIndex)
             return
         }
@@ -108,11 +108,11 @@ export class ClickHandler {
         } else if (isInBody) {
             if (cell.tagName === "TH") {
                 source = "index"
-                row = Array.from(tr.parentNode.children).indexOf(tr)
+                row = Number(tr.dataset.viewRow)
                 col = Array.from(tr.children).filter(c => c.tagName === "TH").indexOf(cell)
             } else {
                 source = "values"
-                row = Array.from(tr.parentNode.children).indexOf(tr)
+                row = Number(tr.dataset.viewRow)
                 col = Array.from(tr.children).filter(c => c.tagName === "TD").indexOf(cell)
             }
         } else return
