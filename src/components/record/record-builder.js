@@ -72,12 +72,13 @@ export class RecordBuilder {
             return this.buildRecordField(columnValue, value, attrs.dtype, attrs.formatOptions)
         })
 
-        return `<div class="record-fields">${fields.join("")}</div>`
+        return `<div class="record-body flat" style="--rows: ${fields.length}"><div class="record-fields">${fields.join("")}</div></div>`
     }
 
     buildGroupedFields() {
         const groups = this.buildFieldGroups()
-        return groups.map(group => this.buildFieldGroup(group)).join("")
+        const rows = groups.reduce((sum, group) => sum + group.fields.length + 2, 0)
+        return `<div class="record-body" style="--rows: ${rows}">${groups.map(group => this.buildFieldGroup(group)).join("")}</div>`
     }
 
     buildFieldGroups() {

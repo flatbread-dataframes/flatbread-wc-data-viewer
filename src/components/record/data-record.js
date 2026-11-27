@@ -52,26 +52,37 @@ componentSheet.replaceSync(`
         font-weight: 600;
         font-size: 1.1em;
     }
+    .record-body {
+        columns: 20rem max(1, round(down, var(--rows) / 8, 1));
+        column-gap: 2.5rem;
+    }
     .field-group {
-        margin-bottom: 2rem;
+        break-inside: avoid;
+        padding-bottom: 1.5rem;
+    }
+    .field-group:has(.record-field:nth-child(13)) {
+        break-inside: auto;
     }
     .group-title {
-        margin: 0 0 1rem 0;
+        margin: 0 0 0.75rem 0;
         padding-bottom: 0.5rem;
         border-bottom: 1px solid var(--dv-border);
         font-size: 1.1em;
         font-weight: 600;
+        break-after: avoid;
     }
     .record-fields {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1rem;
+        grid-template-columns: max-content minmax(0, 1fr);
+        gap: 0.375rem 0.75rem;
+        max-width: 36rem;
     }
     .record-field {
         display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 0.5rem;
+        grid-template-columns: subgrid;
+        grid-column: span 2;
         align-items: baseline;
+        break-inside: avoid;
     }
     .field-label {
         font-weight: 500;
