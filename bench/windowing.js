@@ -101,7 +101,7 @@ const STYLE_VARIANTS = {
     "no sticky": rules => removeProperty(rules, "position", "sticky"),
     "no :has() (fixed layout kept)": rules => deleteRules(rules, text => text.includes(":has(") && !text.includes("colgroup")),
     "no hover, group lines, borders": rules => deleteRules(rules, text => /:hover|data-group-start|group-edge|last-of-type|index-edge/.test(text)),
-    "minimal (fixed layout, spacers)": rules => deleteRules(rules, text => !/colgroup|spacer/.test(text)),
+    "minimal (fixed layout, spacers)": rules => deleteRules(rules, text => !/colgroup|tr\.spacer >/.test(text)),
 }
 
 function removeProperty(sheet, property, value = null) {
@@ -207,27 +207,6 @@ class WindowingBench {
         this.renderer.tbody.lastElementChild.getBoundingClientRect()
     }
 
-    // Prototype of an edge update, correct for a flat index only: the window moves down by k rows.
-    // Sets the renderer's private _start and _end, because it stands in for TbodyRenderer.update.
-    edgeShift(k) {
-        const { renderer, geometry } = this
-        const { start, end, tbody } = renderer
-        const newStart = start + k
-        const newEnd = Math.min(geometry.count, end + k)
-
-        const range = document.createRange()
-        range.setStartBefore(tbody.rows[1])
-        range.setEndAfter(tbody.rows[k])
-        range.deleteContents()
-        const bottomSpacer = tbody.lastElementChild
-        bottomSpacer.insertAdjacentHTML("beforebegin", this.dataTable.tableBuilder.buildTbody(end, newEnd))
-        tbody.firstElementChild.cells[0].style.height = `${geometry.offsetOf(newStart)}px`
-        bottomSpacer.cells[0].style.height = `${geometry.total - geometry.offsetOf(newEnd)}px`
-
-        renderer._start = newStart
-        renderer._end = newEnd
-    }
-
     // MARK: measurements
     async handleRun() {
         this.running = true
@@ -267,8 +246,7 @@ class WindowingBench {
         ].join("\n")
     }
 
-    // Full rebuild against the edge update prototype, for the same move of the window:
-    // down by the rows a hysteresis update moves it (overscan − margin)
+    // Full rebuild for the move of the window a hysteresis update makes: down by overscan − margin rows
     async measureRebuilds() {
         const rows = []
         for (const name of Object.keys(DATASETS)) {
@@ -278,23 +256,22 @@ class WindowingBench {
                     for (const overscan of OVERSCANS) {
                         this.setStatus(`rebuilds: ${name}, ${height}, ${layout}, overscan ${overscan}`)
                         this.viewer.options.overscan = overscan
-                        rows.push([name, height, overscan, layout, ...await this.measurePositions(overscan, name === "flat")])
+                        rows.push([name, height, overscan, layout, ...await this.measurePositions(overscan)])
                     }
                 }
             }
         }
         return [
             `## Rebuild cost (ms, median / p95 over ${POSITIONS} positions; the window moves down by "shift" rows)`,
-            "sync: update until layout is done. frame: until the frame is rendered. edge: prototype, flat index only.",
-            formatTable(["data", "height", "overscan", "layout", "rows", "shift", "full sync", "full frame", "edge sync", "edge frame", "full frame/row"], rows),
+            "sync: update until layout is done. frame: until the frame is rendered.",
+            formatTable(["data", "height", "overscan", "layout", "rows", "shift", "sync", "frame", "frame/row"], rows),
         ].join("\n")
     }
 
-    async measurePositions(overscan, withEdge) {
+    async measurePositions(overscan) {
         const shift = overscan - Math.ceil(overscan / 2)
         const rnd = seeded(overscan)
         const full = []
-        const edge = []
         let rows = 0
         for (let i = 0; i < POSITIONS; i++) {
             const count = this.geometry.count
@@ -310,21 +287,12 @@ class WindowingBench {
                 this.renderer.update(start + shift, end + shift)
                 this.forceLayout()
             }))
-            if (withEdge) {
-                this.rowWindow.update(true)
-                await frame()
-                edge.push(await frameCost(() => {
-                    this.edgeShift(shift)
-                    this.forceLayout()
-                }))
-            }
             this.rowWindow.update(true)
         }
         const fullFrame = full.map(cost => cost.frame)
         return [
             rows, shift,
             pair(full.map(cost => cost.sync)), pair(fullFrame),
-            pair(edge.map(cost => cost.sync)), pair(edge.map(cost => cost.frame)),
             ms(median(fullFrame) / shift),
         ]
     }
@@ -393,7 +361,7 @@ class WindowingBench {
             this.setStatus(`stylesheet: ${variant}`)
             apply(sheet)
             await settle()
-            const [, , , fullFrame] = await this.measurePositions(20, false)
+            const [, , , fullFrame] = await this.measurePositions(20)
             rows.push([variant, fullFrame, sheet.cssRules.length])
             sheet.replaceSync(original)
         }
