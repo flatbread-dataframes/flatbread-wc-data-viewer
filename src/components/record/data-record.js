@@ -171,7 +171,7 @@ export class DataRecord extends HTMLElement {
         }
 
         const originalIndex = this.dataViewer.view.visibleIndices[this._currentRecordIndex]
-        const values = this.dataViewer.view.values[this._currentRecordIndex]
+        const values = this.dataViewer.view.valuesSlice(this._currentRecordIndex, this._currentRecordIndex + 1)[0]
         const indexValue = this.dataViewer.view.index.values[this._currentRecordIndex]
 
         return {
