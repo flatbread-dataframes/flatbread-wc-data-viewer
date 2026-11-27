@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wc-data-viewer: windowing bench</title>
+    <style>
+        body {
+            margin: 1rem;
+            font-family: system-ui, sans-serif;
+        }
+        fieldset {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            margin-block-end: 1rem;
+        }
+        #status {
+            font-family: monospace;
+        }
+        #viewer-container flatbread-data-viewer {
+            font-size: .9em;
+        }
+        pre {
+            font-size: .85em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Windowing bench</h1>
+    <p>
+        Measurements: leave this tab in front until the results appear (about two minutes), then copy them.
+        Feel: load a dataset, scroll the table yourself and raise the delay until scrolling feels jerky.
+    </p>
+
+    <fieldset id="run-controls">
+        <legend>Measurements</legend>
+        <button type="button" id="run">Run measurements</button>
+        <button type="button" id="copy" disabled>Copy results</button>
+        <span id="status"></span>
+    </fieldset>
+
+    <fieldset id="feel-controls">
+        <legend>Feel</legend>
+        <label>Data
+            <select id="feel-data">
+                <option value="flat">flat 50k × 30</option>
+                <option value="multi">multi-index 20k × 30</option>
+            </select>
+        </label>
+        <label>Overscan
+            <select id="feel-overscan">
+                <option>10</option>
+                <option selected>20</option>
+                <option>40</option>
+            </select>
+        </label>
+        <label>Layout
+            <select id="feel-layout">
+                <option>no-wrap</option>
+                <option>truncate</option>
+            </select>
+        </label>
+        <button type="button" id="feel-load">Load</button>
+        <label>Delay per rebuild
+            <input type="range" id="feel-delay" min="0" max="40" value="0">
+            <output id="feel-delay-value">0 ms</output>
+        </label>
+        <span id="feel-stats"></span>
+    </fieldset>
+
+    <div id="viewer-container"></div>
+
+    <script type="module" src="../src/viewer.js"></script>
+    <script type="module" src="windowing.js"></script>
+</body>
+</html>
