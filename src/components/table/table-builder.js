@@ -216,7 +216,7 @@ export class TableBuilder {
     // MARK: Tbody
     buildTbody(start, end) {
         const indexRows = this.buildIndexRows(start, end)
-        const dataView = this.dataViewer.view.values.slice(start, end)
+        const dataView = this.dataViewer.view.valuesSlice(start, end)
         dataView.forEach((row, idx) => {
             const rowElements = row.map((value, iloc) => this.buildCell(value, iloc))
             indexRows[idx] = indexRows[idx].concat(rowElements)

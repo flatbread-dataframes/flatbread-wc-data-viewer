@@ -49,14 +49,16 @@ export class View {
         return this.index.groupingLevels
     }
 
+    // All rows of the view: builds a new array on every access, so prefer valuesSlice for a part
     get values() {
-        const rowFiltered = this.visibleIndices.map(i => this.data.values[i])
-        if (this._visibleColumnIndices === null) {
-            return rowFiltered
-        }
-        return rowFiltered.map(row =>
-            this._visibleColumnIndices.map(colIdx => row[colIdx])
-        )
+        return this.valuesSlice(0, this.length)
+    }
+
+    // View rows [start, end), restricted to the visible columns
+    valuesSlice(start, end) {
+        const rows = this.visibleIndices.slice(start, end).map(i => this.data.values[i])
+        if (this._visibleColumnIndices === null) return rows
+        return rows.map(row => this._visibleColumnIndices.map(col => row[col]))
     }
 
     // Filtering methods
