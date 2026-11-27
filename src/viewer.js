@@ -12,54 +12,53 @@ import "./components/filter-combo.js"
 import "./components/sort-button.js"
 import "./vendor/wc-multi-selector.js"
 
-export class FlatbreadDataViewer extends HTMLElement {
-    get styles() {
-        return `
-            :root {
-                box-sizing: border-box;
-            }
-            :host {
-                --dv-bg: var(--background-color, white);
-                --dv-hover: color-mix(in srgb, var(--dv-bg) 90%, currentColor 5%);
-                --dv-border: var(--border-color, color-mix(in srgb, var(--dv-bg) 90%, currentColor 70%));
-                --focus-color: color-mix(in srgb, var(--dv-bg) 90%, currentColor 50%);
+// The height is set per viewer, in its own sheet (see updateHeight)
+const viewerSheet = new CSSStyleSheet()
+viewerSheet.replaceSync(`
+    :root {
+        box-sizing: border-box;
+    }
+    :host {
+        --dv-bg: var(--background-color, white);
+        --dv-hover: color-mix(in srgb, var(--dv-bg) 90%, currentColor 5%);
+        --dv-border: var(--border-color, color-mix(in srgb, var(--dv-bg) 90%, currentColor 70%));
+        --focus-color: color-mix(in srgb, var(--dv-bg) 90%, currentColor 50%);
 
-                display: grid;
-                height: ${this.options.height};
-                grid-template-areas:
-                    "control-panel"
-                    "view";
-                grid-template-rows: auto 1fr;
+        display: grid;
+        grid-template-areas:
+            "control-panel"
+            "view";
+        grid-template-rows: auto 1fr;
 
-                outline: none;
-            }
-
-            control-panel {
-                grid-area: control-panel;
-            }
-
-            data-table,
-            data-record {
-                grid-area: view;
-                overflow-y: auto;
-                scrollbar-gutter: stable;
-            }
-
-            :host([view="record"]) data-table {
-                visibility: hidden;
-            }
-            :host([view="record"]) data-record {
-                display: block;
-            }
-            :host([view="table"]) data-table {
-                visibility: visible;
-            }
-            :host([view="table"]) data-record {
-                display: none;
-            }
-        `
+        outline: none;
     }
 
+    control-panel {
+        grid-area: control-panel;
+    }
+
+    data-table,
+    data-record {
+        grid-area: view;
+        overflow-y: auto;
+        scrollbar-gutter: stable;
+    }
+
+    :host([view="record"]) data-table {
+        visibility: hidden;
+    }
+    :host([view="record"]) data-record {
+        display: block;
+    }
+    :host([view="table"]) data-table {
+        visibility: visible;
+    }
+    :host([view="table"]) data-record {
+        display: none;
+    }
+`)
+
+export class FlatbreadDataViewer extends HTMLElement {
     static get observedAttributes() {
         return [
             "view", "src", "locale", "na-rep", "height",
@@ -91,6 +90,9 @@ export class FlatbreadDataViewer extends HTMLElement {
         super()
         this.attachShadow({ mode: "open" })
         this.options = { ...FlatbreadDataViewer.defaults }
+        this._heightSheet = new CSSStyleSheet()
+        this.shadowRoot.adoptedStyleSheets = [viewerSheet, this._heightSheet]
+        this.updateHeight()
 
         this._data = new Data()
         this._eventCoordinator = new EventCoordinator(this)
@@ -149,6 +151,10 @@ export class FlatbreadDataViewer extends HTMLElement {
             case "src":
                 this.loadDataFromSrc(newValue)
                 return
+            case "height":
+                this.options.height = newValue ?? FlatbreadDataViewer.defaults.height
+                this.updateHeight()
+                return
             case "cell-layout":
                 // anything else, including no attribute, is no-wrap
                 this.options.cellLayout = ["wrap", "truncate"].includes(newValue) ? newValue : "no-wrap"
@@ -197,9 +203,6 @@ export class FlatbreadDataViewer extends HTMLElement {
             case "na-rep":
                 this.options.naRep = newValue ?? FlatbreadDataViewer.defaults.naRep
                 this.invalidateColumnWidths()
-                break
-            case "height":
-                this.options.height = newValue ?? FlatbreadDataViewer.defaults.height
                 break
         }
         this.render()
@@ -281,7 +284,6 @@ export class FlatbreadDataViewer extends HTMLElement {
     render() {
         if (!this.shadowRoot.querySelector("control-panel")) {
             this.shadowRoot.innerHTML = `
-                <style>${this.styles}</style>
                 <control-panel></control-panel>
                 <data-table></data-table>
                 <data-record></data-record>
@@ -298,6 +300,11 @@ export class FlatbreadDataViewer extends HTMLElement {
         if (this.dataTable) {
             this.dataTable.dataViewer = this
         }
+    }
+
+    // The container resizes; the table follows through its ResizeObserver
+    updateHeight() {
+        this._heightSheet.replaceSync(`:host { height: ${this.options.height}; }`)
     }
 
     updateStylesheet() {
@@ -445,10 +452,7 @@ export class FlatbreadDataViewer extends HTMLElement {
 
     // MARK: @error
     showErrorMessage(message) {
-        this.shadowRoot.innerHTML = `
-            ${this.getStyleSheet()}
-            <p style="color: red;">${message}</p>
-        `
+        this.shadowRoot.innerHTML = `<p style="color: red;">${message}</p>`
     }
 }
 
