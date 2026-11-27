@@ -9,6 +9,8 @@ export class ColumnSizer {
         this.dataTable = dataTable
         // Last measured width of the record view icon column; kept for renders without rows
         this._iconWidth = 0
+        // Widths of the last measure, in table order
+        this._widths = []
     }
 
     // MARK: get/set
@@ -41,7 +43,7 @@ export class ColumnSizer {
         const { leaves, spans } = this.measureHeaders()
         const values = this.measureValues()
         const widths = leaves.map((width, i) => Math.max(width, values[i]))
-        return distributeExcess(widths, spans)
+        return this._widths = distributeExcess(widths, spans)
     }
 
     // Fonts are read from the first rendered row; without rows there is nothing to measure yet
@@ -103,6 +105,43 @@ export class ColumnSizer {
         })
         return values
     }
+
+    // MARK: text
+    // For estimating wrapped row heights, after measure(): the text columns (original column and
+    // characters that fit on a line), the height of a line of text in a data cell and the cell's
+    // vertical padding and borders. Needs a rendered data row.
+    textLayout() {
+        const nIndex = this.indexCount
+        const columns = this.view.columns.ilocs
+            .filter(iloc => isTruncatable(this.view.columns.attrs[iloc].dtype))
+            .map(iloc => {
+                const header = this.root.querySelector(`thead .columns-row th[data-col="${iloc}"]`)
+                const col = this.view.getOriginalColumnIndex(iloc)
+                const width = this._widths[nIndex + iloc] - horizontalExtra(header)
+                const charWidth = this.columnWidths.charWidth(col)
+                // at least one character per line: a value never takes more lines than characters
+                return { col, charsPerLine: charWidth ? Math.max(1, width / charWidth) : Infinity }
+            })
+        const cell = this.root.querySelector("tbody tr[data-view-row] td")
+        return { columns, lineHeight: this.measureLineHeight(cell), padding: verticalExtra(cell) }
+    }
+
+    // Distance between two lines of text in the cell's font: with line-height normal it comes from
+    // the font (including its line gap, which canvas text metrics leave out), so it is measured
+    measureLineHeight(cell) {
+        const style = getComputedStyle(cell)
+        const probe = document.createElement("div")
+        for (const property of ["fontStyle", "fontWeight", "fontSize", "fontFamily", "lineHeight"]) {
+            probe.style[property] = style[property]
+        }
+        probe.style.position = "absolute"
+        probe.style.visibility = "hidden"
+        probe.innerHTML = "x<br>x"
+        this.root.append(probe)
+        const height = probe.getBoundingClientRect().height / 2
+        probe.remove()
+        return height
+    }
 }
 
 // MARK: helpers
@@ -120,6 +159,12 @@ function requiredWidth(cell) {
 function horizontalPadding(cell) {
     const style = getComputedStyle(cell)
     return parseFloat(style.paddingLeft) + parseFloat(style.paddingRight)
+}
+
+function verticalExtra(cell) {
+    const style = getComputedStyle(cell)
+    return parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
+        + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth)
 }
 
 function horizontalExtra(cell) {

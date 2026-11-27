@@ -190,6 +190,7 @@ export class DataTable extends HTMLElement {
     // Fixes the column widths; the table switches to fixed layout once the colgroup has cols
     applyColumnWidths(remeasure = false) {
         const widths = this.columnSizer.measure(remeasure)
+        this.rowWindow.widthsApplied(widths, remeasure)
         this.shadowRoot.querySelector("colgroup").innerHTML = this._tableBuilder.buildColgroup(widths)
         this._stylesheet.updateIndexOffsets(widths.slice(0, this.view.index.nlevels + 1))
         this._stylesheet.updateTheadOffset()

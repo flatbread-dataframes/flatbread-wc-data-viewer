@@ -23,6 +23,7 @@ export class ColumnWidths {
         )
 
         this._columnWidths = this._columnCandidates.map(() => 0)
+        this._charWidths = this._columnCandidates.map(() => 0)
         this._indexWidths = this._indexCandidates.map(() => 0)
         this._isMeasured = false
     }
@@ -34,12 +35,18 @@ export class ColumnWidths {
     // fonts: { cell, index } as CSS font shorthands (td font, tbody th font)
     measure({ cell, index }) {
         const context = new OffscreenCanvas(1, 1).getContext("2d")
-        const widest = (strings, font) => {
+        const measureAll = (strings, font) => {
             context.font = font
-            return strings.reduce((max, string) => Math.max(max, context.measureText(string).width), 0)
+            return strings.map(string => context.measureText(string).width)
         }
-        this._columnWidths = this._columnCandidates.map(strings => widest(strings, cell))
-        this._indexWidths = this._indexCandidates.map(strings => widest(strings, index))
+        const columns = this._columnCandidates.map(strings => measureAll(strings, cell))
+        this._columnWidths = columns.map(widths => Math.max(0, ...widths))
+        // average width of a character in the measured strings, for estimating wrapped lines
+        this._charWidths = columns.map((widths, col) => {
+            const chars = this._columnCandidates[col].reduce((sum, string) => sum + string.length, 0)
+            return chars ? widths.reduce((sum, width) => sum + width, 0) / chars : 0
+        })
+        this._indexWidths = this._indexCandidates.map(strings => Math.max(0, ...measureAll(strings, index)))
         this._isMeasured = true
     }
 
@@ -50,6 +57,11 @@ export class ColumnWidths {
 
     indexWidth(level) {
         return Math.ceil(this._indexWidths[level]) + 1
+    }
+
+    // Average px per character of a column's longest values; 0 for a column without values
+    charWidth(originalCol) {
+        return this._charWidths[originalCol]
     }
 }
 

@@ -49,8 +49,7 @@ export class TbodyRenderer {
         // A row or the tbody itself (parked) has focus
         const hadFocus = this.dataTable.shadowRoot.activeElement?.closest("tbody") === tbody
         const position = this.dataTable.tbodyPosition
-        const top = this._geometry ? this._geometry.offsetOf(start) : 0
-        const bottom = this._geometry ? this._geometry.total - this._geometry.offsetOf(end) : 0
+        const [top, bottom] = this.spacerHeights(start, end)
 
         // The focused row leaves the window: park focus on the tbody before the row is removed,
         // so focus never falls to the body. Only then, so a rebuild during keyboard navigation
@@ -85,10 +84,24 @@ export class TbodyRenderer {
         return [...this.tbody.rows].slice(1, -1).map(row => row.getBoundingClientRect().height)
     }
 
-    // Passes the rendered row heights to the geometry, in one call per window
+    // Passes the rendered row heights to the geometry, in one call per window.
+    // Returns whether they changed the geometry (only estimated heights can).
     reportHeights() {
-        if (!this._geometry) return
-        this._geometry.setMeasured(this._start, this.measureRows())
+        if (!this._geometry) return false
+        return this._geometry.setMeasured(this._start, this.measureRows())
+    }
+
+    // The geometry changed after rendering: the spacers follow it, the rows stay
+    updateSpacers() {
+        const rows = this.tbody.rows
+        const [top, bottom] = this.spacerHeights(this._start, this._end)
+        rows[0].style.height = `${top}px`
+        rows[rows.length - 1].style.height = `${bottom}px`
+    }
+
+    spacerHeights(start, end) {
+        if (!this._geometry) return [0, 0]
+        return [this._geometry.offsetOf(start), this._geometry.total - this._geometry.offsetOf(end)]
     }
 
     // A row of empty cells (see TableBuilder.buildSpacerCells) with the height of the rows it stands in for
