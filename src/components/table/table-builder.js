@@ -51,14 +51,11 @@ export class TableBuilder {
     }
 
     buildIndexLevelNameLabel(level) {
-        const indexLevelNameLabel =
-            this.dataViewer.view.index.names
-                ? this.dataViewer.view.index.names.at(level) ?? ""
-                : ""
-        const colspan =
-            this.dataViewer.view.index.names.length - 1 === level
-                ? `colspan="2"`
-                : ""
+        const index = this.dataViewer.view.index
+        const indexLevelNameLabel = index.names?.[level] ?? ""
+        // The last level also spans the record view icon column; names can be missing or incomplete
+        const isLastLevel = level === index.nlevels - 1
+        const colspan = isLastLevel ? `colspan="2"` : ""
         const sortButton = this.buildSortButton("index", level)
         const indexLevelNameLabelElement = `
             <th data-level="${level}" class="indexLevelNameLabel" ${colspan}>
