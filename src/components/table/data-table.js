@@ -203,8 +203,12 @@ export class DataTable extends HTMLElement {
     }
 
     // MARK: user widths
-    // The only entry points for user column widths (drag, reset; later a host property).
+    // The only entry points for user column widths (drag, reset, reset all; later a host property).
     // key: ColumnSizer.keyOf(iloc)
+    get userWidthCount() {
+        return this.columnSizer.userWidthCount
+    }
+
     setColumnWidth(key, width) {
         this.columnSizer.setOverride(key, width)
         this.commitColumnWidths()
@@ -212,6 +216,10 @@ export class DataTable extends HTMLElement {
 
     resetColumnWidth(key) {
         if (this.columnSizer.deleteOverride(key)) this.commitColumnWidths()
+    }
+
+    resetColumnWidths() {
+        if (this.columnSizer.clearOverrides()) this.commitColumnWidths()
     }
 
     // Other widths, the same rows: the first visible row is kept

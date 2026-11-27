@@ -73,6 +73,12 @@ export class ColumnSizer {
         return this.view.getOriginalColumnIndex(iloc)
     }
 
+    // User widths of the visible columns
+    get userWidthCount() {
+        this.syncOverrides()
+        return this.view.columns.ilocs.filter(iloc => this._overrides.has(this.keyOf(iloc))).length
+    }
+
     setOverride(key, width) {
         this.syncOverrides()
         this._overrides.set(key, width)
@@ -82,6 +88,14 @@ export class ColumnSizer {
     deleteOverride(key) {
         this.syncOverrides()
         return this._overrides.delete(key)
+    }
+
+    // All columns, also hidden ones; returns whether there were user widths
+    clearOverrides() {
+        this.syncOverrides()
+        const had = this._overrides.size > 0
+        this._overrides.clear()
+        return had
     }
 
     // User widths belong to the data they were set on: dropped with the ColumnWidths object

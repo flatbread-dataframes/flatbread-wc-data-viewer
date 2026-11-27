@@ -269,6 +269,11 @@ export class FlatbreadDataViewer extends HTMLElement {
         return this.shadowRoot.querySelector("data-table")
     }
 
+    // User widths of the visible columns, for the layout popover's reset button
+    get userColumnWidthCount() {
+        return this.dataTable?.userWidthCount ?? 0
+    }
+
     get dataRecord() {
         return this.shadowRoot.querySelector("data-record")
     }

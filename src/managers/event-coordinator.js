@@ -13,6 +13,7 @@ export class EventCoordinator {
         this.handleClearAllFilters = this.handleClearAllFilters.bind(this)
         this.handleColumnSelectionChange = this.handleColumnSelectionChange.bind(this)
         this.handleCellLayoutChange = this.handleCellLayoutChange.bind(this)
+        this.handleResetColumnWidths = this.handleResetColumnWidths.bind(this)
         this.handleColumnSort = this.handleColumnSort.bind(this)
         this.handleIndexSort = this.handleIndexSort.bind(this)
         this.handleDataChange = this.handleDataChange.bind(this)
@@ -35,6 +36,7 @@ export class EventCoordinator {
         shadowRoot.addEventListener("index-sort", this.handleIndexSort)
         shadowRoot.addEventListener("column-selection-changed", this.handleColumnSelectionChange)
         shadowRoot.addEventListener("cell-layout-changed", this.handleCellLayoutChange)
+        shadowRoot.addEventListener("reset-column-widths", this.handleResetColumnWidths)
         shadowRoot.addEventListener("export-data", this.handleExportData)
     }
 
@@ -53,6 +55,7 @@ export class EventCoordinator {
         shadowRoot.removeEventListener("index-sort", this.handleIndexSort)
         shadowRoot.removeEventListener("column-selection-changed", this.handleColumnSelectionChange)
         shadowRoot.removeEventListener("cell-layout-changed", this.handleCellLayoutChange)
+        shadowRoot.removeEventListener("reset-column-widths", this.handleResetColumnWidths)
         shadowRoot.removeEventListener("export-data", this.handleExportData)
     }
 
@@ -144,6 +147,10 @@ export class EventCoordinator {
     // Through the attribute, so a change from the control panel and one from the host take the same path
     handleCellLayoutChange(event) {
         this.dataViewer.setAttribute("cell-layout", event.detail.cellLayout)
+    }
+
+    handleResetColumnWidths() {
+        this.dataViewer.dataTable?.resetColumnWidths()
     }
 
     // MARK: @sort

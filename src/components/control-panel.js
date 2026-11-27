@@ -72,6 +72,14 @@ componentSheet.replaceSync(`
         gap: 0.25em;
         align-items: center;
     }
+    /* the cell layout radios, set apart from the reset button */
+    .cell-layouts {
+        display: flex;
+        gap: 0.5em;
+        align-items: center;
+        padding-inline-end: 0.5em;
+        border-inline-end: 1px solid var(--dv-border);
+    }
     .export-popover input {
         width: 8em;
         padding: 0.15em 0.35em;
@@ -87,6 +95,7 @@ export class ControlPanel extends HTMLElement {
         this.handleToggleLayout = this.handleToggleLayout.bind(this)
         this.handleExportClick = this.handleExportClick.bind(this)
         this.handleCellLayoutChange = this.handleCellLayoutChange.bind(this)
+        this.handleResetWidthsClick = this.handleResetWidthsClick.bind(this)
         this.handlePopoverKeydown = this.handlePopoverKeydown.bind(this)
         this.handleMultiSelectorOpen = this.handleMultiSelectorOpen.bind(this)
         this._columnData = []
@@ -107,6 +116,7 @@ export class ControlPanel extends HTMLElement {
         this.shadowRoot.addEventListener("toggle-export", this.handleToggleExport)
         this.shadowRoot.addEventListener("toggle-layout", this.handleToggleLayout)
         this.shadowRoot.addEventListener("click", this.handleExportClick)
+        this.shadowRoot.addEventListener("click", this.handleResetWidthsClick)
         this.shadowRoot.addEventListener("keydown", this.handlePopoverKeydown)
         this.shadowRoot.addEventListener("ms-open", this.handleMultiSelectorOpen)
         this.addEventListener("keydown", this.handleKeydown)
@@ -118,6 +128,7 @@ export class ControlPanel extends HTMLElement {
         this.shadowRoot.removeEventListener("toggle-export", this.handleToggleExport)
         this.shadowRoot.removeEventListener("toggle-layout", this.handleToggleLayout)
         this.shadowRoot.removeEventListener("click", this.handleExportClick)
+        this.shadowRoot.removeEventListener("click", this.handleResetWidthsClick)
         this.shadowRoot.removeEventListener("keydown", this.handlePopoverKeydown)
         this.shadowRoot.removeEventListener("ms-open", this.handleMultiSelectorOpen)
         this.removeEventListener("keydown", this.handleKeydown)
@@ -187,6 +198,15 @@ export class ControlPanel extends HTMLElement {
         return this.dataViewer?.options.cellLayout
     }
 
+    // Likewise the user column widths: the table owns them, the popover shows their count
+    get userColumnWidthCount() {
+        return this.dataViewer?.userColumnWidthCount ?? 0
+    }
+
+    get buttonResetWidths() {
+        return this.shadowRoot.querySelector(".reset-widths")
+    }
+
     // MARK: render
     render() {
         this.shadowRoot.adoptedStyleSheets = [baseSheet, interactiveSheet, componentSheet]
@@ -211,10 +231,13 @@ export class ControlPanel extends HTMLElement {
                 <button data-format="json">.json</button>
                 <button data-format="csv">.csv</button>
             </div>
-            <div class="layout-popover" popover data-toggle="toggle-layout" role="radiogroup" aria-label="cell layout">
-                <label><input type="radio" name="cell-layout" value="no-wrap">no-wrap</label>
-                <label><input type="radio" name="cell-layout" value="wrap">wrap</label>
-                <label><input type="radio" name="cell-layout" value="truncate">truncate</label>
+            <div class="layout-popover" popover data-toggle="toggle-layout">
+                <div class="cell-layouts" role="radiogroup" aria-label="cell layout">
+                    <label><input type="radio" name="cell-layout" value="no-wrap">no-wrap</label>
+                    <label><input type="radio" name="cell-layout" value="wrap">wrap</label>
+                    <label><input type="radio" name="cell-layout" value="truncate">truncate</label>
+                </div>
+                <button class="reset-widths">Reset column widths</button>
             </div>
         `
         this.updateMultiSelector()
@@ -260,6 +283,13 @@ export class ControlPanel extends HTMLElement {
     updateCellLayout() {
         const radio = this.shadowRoot.querySelector(`input[name="cell-layout"][value="${this.cellLayout}"]`)
         if (radio) radio.checked = true
+    }
+
+    // Widths only change by dragging in the table, which closes the popover: updated when it opens
+    updateResetWidths() {
+        const count = this.userColumnWidthCount
+        this.buttonResetWidths.textContent = count ? `Reset column widths (${count})` : "Reset column widths"
+        this.buttonResetWidths.disabled = count === 0
     }
 
     updateMultiSelector() {
@@ -363,7 +393,17 @@ export class ControlPanel extends HTMLElement {
 
     // MARK: layout
     handleToggleLayout() {
+        this.updateResetWidths()
         this.togglePopover(this.layoutPopover, "input:checked")
+    }
+
+    handleResetWidthsClick(event) {
+        if (!event.target.closest(".reset-widths")) return
+        this.dispatchEvent(new CustomEvent("reset-column-widths", {
+            bubbles: true,
+            composed: true,
+        }))
+        this.closePopover(this.layoutPopover)
     }
 
     handleCellLayoutChange(event) {
