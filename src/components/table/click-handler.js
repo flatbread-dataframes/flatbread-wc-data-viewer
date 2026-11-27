@@ -13,6 +13,8 @@ export class ClickHandler {
     }
 
     handleClick(event) {
+        // the click that ends a drag or a reset (ColumnResizer) is not a header click
+        if (event.target.closest(".resize-handle")) return
         if (this.handleHideClick(event)) return
 
         if (event.target.closest(".filter-row, .spacer")) return

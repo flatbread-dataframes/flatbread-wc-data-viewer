@@ -6,12 +6,14 @@ export class Stylesheet {
         this.dataTable = dataTable
         this.data = data
         this.options = options
+        // Text columns a user narrowed below their content; written by updateNarrowedColumns
+        this._narrowedSheet = new CSSStyleSheet()
     }
 
     // MARK: setup
     setupStyles() {
         this._componentSheet = this.getIntegratedStyleSheet()
-        this.dataTable.shadowRoot.adoptedStyleSheets = [baseSheet, this._componentSheet]
+        this.dataTable.shadowRoot.adoptedStyleSheets = [baseSheet, this._componentSheet, this._narrowedSheet]
     }
 
     // MARK: get/set
@@ -206,6 +208,35 @@ export class Stylesheet {
                 background-color: color-mix(in srgb, currentColor 30%, var(--dv-bg));
             }
 
+            /* column resizing (ColumnResizer): a handle at the right edge of a data column header,
+               with a guide line down to the last visible row while hovered or dragged */
+            thead .columns-row th[data-col] {
+                position: relative;
+            }
+            .resize-handle {
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                width: 6px;
+                cursor: col-resize;
+                touch-action: none;
+            }
+            .resize-handle::after {
+                content: "";
+                position: absolute;
+                top: 0;
+                right: 0;
+                width: 2px;
+                height: var(--resize-guide-height, 100%);
+                background-color: var(--focus-color);
+                opacity: 0;
+                pointer-events: none;
+            }
+            .resize-handle:hover::after,
+            .resize-handle.dragging::after {
+                opacity: 1;
+            }
         `
     }
 
@@ -221,8 +252,10 @@ export class Stylesheet {
                 top: 0;
                 z-index: 7;
             }
+            /* clip, not hidden: hidden makes the th a scroll container and the label would stick to it */
             thead .column-groups-row th:not(.columnLevelNameLabel) {
                 text-align: left;
+                overflow: clip;
             }
             thead .column-groups-row th:not(.columnLevelNameLabel) > span {
                 display: inline-flex;
@@ -347,6 +380,17 @@ export class Stylesheet {
             this.table.style.setProperty(`--index-col-${i}-offset`, `${offset}px`)
             offset += width
         })
+    }
+
+    // A text column narrowed below its content truncates, also in no-wrap mode. Per column, not for
+    // all text cells: in no-wrap the small difference between canvas and DOM text widths would turn
+    // the last characters of a fitting value into an ellipsis (see the truncate block).
+    updateNarrowedColumns(ilocs) {
+        this._narrowedSheet.replaceSync(ilocs.map(iloc => `
+            tbody td[data-col="${iloc}"] {
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }`).join(""))
     }
 
     updateTheadOffset() {

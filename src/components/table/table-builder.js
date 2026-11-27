@@ -167,6 +167,7 @@ export class TableBuilder {
                 ${sortButton}
                 ${hideButton}
             </span>
+            <div class="resize-handle" aria-hidden="true"></div>
         </th>`
     }
 

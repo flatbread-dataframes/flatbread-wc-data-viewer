@@ -1,6 +1,7 @@
 import { TRUNCATABLE_CELLS } from "./cell-layout.js"
 
-// Shows the full value of a truncated cell (truncate mode) after a short hover.
+// Shows the full value of a truncated cell (truncate mode, or a text column a user narrowed
+// below its content) after a short hover.
 // One shared popover in the data-table shadow root, anchored to the hovered cell.
 // Visual only (aria-hidden): the cell itself still holds the full value for screen readers.
 export class CellTooltip {
@@ -42,6 +43,12 @@ export class CellTooltip {
         return this.dataTable.options?.cellLayout === "truncate"
     }
 
+    // A column is only narrowed in no-wrap mode: in truncate and wrap mode the content width of a
+    // text column is its header width, which is also its minimum (so wrapped cells get no tooltip)
+    isActiveFor(cell) {
+        return this.isActive || this.dataTable.columnSizer.isNarrowed(Number(cell.dataset.col))
+    }
+
     // MARK: show/hide
     // Only when the value is actually cut off, and only while the cell is still rendered
     show(cell) {
@@ -67,7 +74,7 @@ export class CellTooltip {
         if (cell === this._cell) return
 
         this.hide()
-        if (!cell || !this.isActive) return
+        if (!cell || !this.isActiveFor(cell)) return
 
         this._cell = cell
         this._timer = setTimeout(() => this.show(cell), this.delay)

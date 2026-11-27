@@ -6,6 +6,7 @@ import { ClickHandler } from "./click-handler.js"
 import { ColumnSizer } from "./column-sizer.js"
 import { RowWindow } from "./row-window.js"
 import { CellTooltip } from "./cell-tooltip.js"
+import { ColumnResizer } from "./column-resizer.js"
 
 
 export class DataTable extends HTMLElement {
@@ -18,6 +19,7 @@ export class DataTable extends HTMLElement {
         this.columnSizer = new ColumnSizer(this)
         this.rowWindow = new RowWindow(this)
         this.cellTooltip = new CellTooltip(this)
+        this.columnResizer = new ColumnResizer(this)
 
         this.handleKeydown = this.handleKeydown.bind(this)
         this.handleTheadFocusIn = this.handleTheadFocusIn.bind(this)
@@ -60,6 +62,7 @@ export class DataTable extends HTMLElement {
         this.clickHandler.addEventListeners()
         this.scrollManager.addEventListeners()
         this.cellTooltip.addEventListeners()
+        this.columnResizer.addEventListeners()
         WheelHandlerMixin.addWheelHandling.call(this)
     }
 
@@ -76,6 +79,7 @@ export class DataTable extends HTMLElement {
         this.clickHandler.removeEventListeners()
         this.scrollManager.removeEventListeners()
         this.cellTooltip.removeEventListeners()
+        this.columnResizer.removeEventListeners()
         WheelHandlerMixin.removeWheelHandling.call(this)
     }
 
@@ -193,6 +197,7 @@ export class DataTable extends HTMLElement {
         this.rowWindow.widthsApplied(widths, remeasure)
         this.shadowRoot.querySelector("colgroup").innerHTML = this._tableBuilder.buildColgroup(widths)
         this._stylesheet.updateIndexOffsets(widths.slice(0, this.view.index.nlevels + 1))
+        this._stylesheet.updateNarrowedColumns(this.view.columns.ilocs.filter(iloc => this.columnSizer.isNarrowed(iloc)))
         this._stylesheet.updateTheadOffset()
         this._stylesheet.updateIndexOffset()
     }
