@@ -12,7 +12,6 @@ class FilterCombo extends HTMLElement {
         this._instanceId = FilterCombo._instanceCount++
         this._anchorName = `--fc-${this._instanceId}`
         this._options = null
-        this._optionsRequested = false
         this._highlightIndex = -1
 
         this.handleInput = this.handleInput.bind(this)
@@ -116,9 +115,16 @@ class FilterCombo extends HTMLElement {
         }
     }
 
-    invalidateOptions() {
-        this._options = null
-        this._optionsRequested = false
+    // The options depend on the other filters: an open list asks again, a closed one asks when it opens
+    refreshOptions() {
+        if (this.popover?.matches(":popover-open")) this.requestOptions()
+    }
+
+    requestOptions() {
+        this.dispatchEvent(new CustomEvent("filter-options-request", {
+            bubbles: true,
+            composed: true
+        }))
     }
 
     // MARK: render
@@ -441,13 +447,7 @@ class FilterCombo extends HTMLElement {
 
     handlePopoverToggle(event) {
         if (event.newState === "open") {
-            if (!this._optionsRequested) {
-                this._optionsRequested = true
-                this.dispatchEvent(new CustomEvent("filter-options-request", {
-                    bubbles: true,
-                    composed: true
-                }))
-            }
+            this.requestOptions()
             this.syncCheckboxes()
             this.setHighlight(-1)
         } else {

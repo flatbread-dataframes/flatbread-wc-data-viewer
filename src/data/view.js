@@ -141,6 +141,19 @@ export class View {
         this._visibleIndices.sort((a, b) => compare(valueAt(a), valueAt(b)))
     }
 
+    // Unique non-null values of a column or index level in the rows that pass every other filter,
+    // so a value list does not narrow itself; ascending in the dtype's order
+    optionValues(key) {
+        const filters = new Map(this._filters)
+        filters.delete(key)
+        const predicate = createPredicate(filters, k => this.valueGetter(k))
+        const ilocs = this.data.index.ilocs
+        const values = new Set((predicate ? ilocs.filter(predicate) : ilocs).map(this.valueGetter(key)))
+        values.delete(null)
+        values.delete(undefined)
+        return [...values].sort(createComparator(this.dtypeOf(key), this.locale))
+    }
+
     // A function data iloc → the key's value in that row
     valueGetter(key) {
         const [axis, n] = parseKey(key)

@@ -180,7 +180,7 @@ export class DataTable extends HTMLElement {
     // After a change of the filters or the sort: the controls follow the view, rows from the top
     updateRows() {
         this.syncControls()
-        this.shadowRoot.querySelectorAll("filter-combo").forEach(combo => combo.invalidateOptions())
+        this.shadowRoot.querySelectorAll("filter-combo").forEach(combo => combo.refreshOptions())
         this.renderTbody()
         this.resetTbodyPosition()
     }
@@ -282,24 +282,12 @@ export class DataTable extends HTMLElement {
     }
 
     // MARK: @filter
+    // The combo's key selects the column or index level, so hidden columns do not shift it
     handleFilterOptionsRequest(event) {
-        const filterCombo = event.target
-        const th = filterCombo.closest("th")
-
-        if (th.classList.contains("columnFilter")) {
-            const col = parseInt(th.dataset.col)
-            const values = this.view.values.map(row => row[col])
-            this.setFilterOptions(filterCombo, values)
-        } else if (th.classList.contains("indexFilter")) {
-            const level = parseInt(th.dataset.level)
-            const values = this.view.index.values.map(v => Array.isArray(v) ? v[level] : v)
-            this.setFilterOptions(filterCombo, values)
-        }
-    }
-
-    setFilterOptions(filterCombo, values, threshold = 30) {
-        const unique = [...new Set(values)].filter(v => v != null).sort()
-        filterCombo.options = unique.length <= threshold ? unique : null
+        const combo = event.target
+        const values = this.view.optionValues(combo.dataset.key)
+        // TEMPORARY until the combo caps its own list (design step 3): null shows "too many"
+        combo.options = values.length <= 30 ? values : null
     }
 
     // The combo knows no key: it is read here and sent on, composed, to the viewer
