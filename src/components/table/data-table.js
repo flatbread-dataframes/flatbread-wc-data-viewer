@@ -653,7 +653,9 @@ export class DataTable extends HTMLElement {
         return false
     }
 
+    // Sets the position as well: focusin does not fire when the document has no focus
     focusTbodyRow(index) {
+        this._tbodyPosition = index
         this.rowWindow.scrollToRow(index)
         this.rowWindow.rowAt(index)?.focus({ preventScroll: true })
     }

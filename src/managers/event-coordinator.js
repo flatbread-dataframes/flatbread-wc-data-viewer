@@ -93,11 +93,8 @@ export class EventCoordinator {
     }
 
     // MARK: @view
+    // The viewer opens the record view on the focused row (tbodyPosition)
     handleEnterRecordView(event) {
-        const { viewRowIndex } = event.detail
-        // Index first: switching the view renders the record view
-        const dataRecord = this.dataViewer.dataRecord
-        if (dataRecord) dataRecord.recordIndex = viewRowIndex
         this.dataViewer.setAttribute("view", "record")
     }
 

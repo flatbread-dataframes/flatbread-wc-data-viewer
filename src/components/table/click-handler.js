@@ -83,6 +83,8 @@ export class ClickHandler {
     handleRecordViewClick(event) {
         event.stopPropagation()
         const viewRowIndex = parseInt(event.target.closest("th").dataset.viewRow)
+        // The record view opens on the focused row; a click does not focus the button in every browser
+        this.dataTable.focusTbodyRow(viewRowIndex)
 
         this.dataTable.dispatchEvent(new CustomEvent("enter-record-view", {
             detail: { viewRowIndex },

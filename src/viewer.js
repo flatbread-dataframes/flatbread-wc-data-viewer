@@ -144,6 +144,9 @@ export class FlatbreadDataViewer extends HTMLElement {
             case "view":
                 this._viewMode = newValue === "record" ? "record" : "table"
                 if (this.isConnected && this._data.hasColumns) {
+                    // The record view opens on the focused row, whatever switched the view (Enter, Ctrl+R,
+                    // the record view icon or the host)
+                    if (this._viewMode === "record") this.dataRecord.recordIndex = this.dataTable.tbodyPosition
                     this.render()
                     this._viewMode === "record" ? this.dataRecord.focus() : this.focusTable()
                 }
@@ -337,11 +340,6 @@ export class FlatbreadDataViewer extends HTMLElement {
         }
     }
 
-    // MARK: @record
-    enterRecordView(viewRowIndex) {
-        this.setAttribute("view", "record")
-    }
-
     // MARK: @column
     applyColumnFilter(selectedColumnIndices) {
         if (selectedColumnIndices.length === 0) {
@@ -427,8 +425,6 @@ export class FlatbreadDataViewer extends HTMLElement {
     toggleViewMode() {
         const newView = this._viewMode === "table" ? "record" : "table"
         if (newView === "record" && this.view.visibleIndices.length === 0) return
-        // As Enter does: the record view opens on the focused row
-        if (newView === "record") this.dataRecord.recordIndex = this.dataTable.tbodyPosition
         this.setAttribute("view", newView)
     }
 
