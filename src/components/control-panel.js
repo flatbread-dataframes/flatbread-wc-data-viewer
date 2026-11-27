@@ -19,6 +19,20 @@ componentSheet.replaceSync(`
         font-family: monospace;
         opacity: 0.8;
     }
+    .actions {
+        display: flex;
+        gap: 0.25em;
+        align-items: center;
+    }
+    /* the filter buttons and their label, set apart from export and layout */
+    .filter-actions {
+        display: flex;
+        gap: 0.25em;
+        align-items: center;
+        padding-inline-end: 0.5em;
+        margin-inline-end: 0.25em;
+        border-inline-end: 1px solid var(--dv-border);
+    }
     action-button {
         width: 4em;
     }
@@ -177,10 +191,12 @@ export class ControlPanel extends HTMLElement {
     render() {
         this.shadowRoot.adoptedStyleSheets = [baseSheet, interactiveSheet, componentSheet]
         this.shadowRoot.innerHTML = `
-            <div>
-                <label>Filters:</label>
-                <action-button data-action="toggle-filter-row">Toggle</action-button>
-                <action-button data-action="clear-filters" disabled>Clear</action-button>
+            <div class="actions">
+                <div class="filter-actions" role="group" aria-labelledby="filters-label">
+                    <span id="filters-label">Filters:</span>
+                    <action-button data-action="toggle-filter-row">Toggle</action-button>
+                    <action-button data-action="clear-filters" disabled>Clear</action-button>
+                </div>
                 <action-button data-action="toggle-export">Export</action-button>
                 <action-button data-action="toggle-layout">Layout</action-button>
             </div>
