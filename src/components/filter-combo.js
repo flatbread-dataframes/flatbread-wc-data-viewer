@@ -6,6 +6,10 @@ class FilterCombo extends HTMLElement {
         return ["placeholder", "disabled"]
     }
 
+    static get defaults() {
+        return { maxOptions: 50 }
+    }
+
     constructor() {
         super()
         this.attachShadow({ mode: "open" })
@@ -13,6 +17,7 @@ class FilterCombo extends HTMLElement {
         this._anchorName = `--fc-${this._instanceId}`
         this._options = null
         this._highlightIndex = -1
+        this.maxOptions = FilterCombo.defaults.maxOptions
 
         this.handleInput = this.handleInput.bind(this)
         this.handleKeydown = this.handleKeydown.bind(this)
@@ -224,6 +229,12 @@ class FilterCombo extends HTMLElement {
                 color: color-mix(in srgb, currentColor 50%, transparent);
                 font-size: 0.875em;
             }
+            .footer {
+                position: sticky;
+                bottom: 0;
+                border-top: 1px solid var(--dv-border);
+                background: var(--dv-bg, white);
+            }
         `)
         this.shadowRoot.adoptedStyleSheets = [sheet]
         this.shadowRoot.innerHTML = `
@@ -243,23 +254,26 @@ class FilterCombo extends HTMLElement {
         const popover = this.popover
         if (!popover) return
 
-        if (!this._options || this._options.length === 0) {
-            popover.innerHTML = `<div class="message">Too many unique values — use text filter</div>`
+        if (!this._options) return
+        if (this._options.length === 0) {
+            popover.innerHTML = `<div class="message">No values</div>`
             return
         }
 
         const filterText = this.input.value.trim().toLowerCase()
-        const filtered = filterText
+        const matching = filterText
             ? this._options.filter(opt => String(opt).toLowerCase().includes(filterText))
             : this._options
 
-        if (filtered.length === 0) {
+        if (matching.length === 0) {
             popover.innerHTML = `<div class="message">No matches</div>`
             return
         }
 
+        // The combo always gets the full list; narrowing and the cap are a matter of rendering
+        const shown = matching.slice(0, this.maxOptions)
         const selected = this.parseSelectedValues()
-        popover.innerHTML = filtered.map(opt => {
+        const options = shown.map(opt => {
             const val = String(opt)
             const checked = selected.has(val) ? " checked" : ""
             return `<div class="option">
@@ -267,6 +281,10 @@ class FilterCombo extends HTMLElement {
                 <span>${val}</span>
             </div>`
         }).join("")
+        const footer = shown.length < matching.length
+            ? `<div class="message footer">${shown.length} of ${matching.length.toLocaleString()} — type to narrow</div>`
+            : ""
+        popover.innerHTML = options + footer
     }
 
     updateAttributes() {

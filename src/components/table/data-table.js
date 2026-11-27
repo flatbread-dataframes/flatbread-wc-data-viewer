@@ -285,9 +285,7 @@ export class DataTable extends HTMLElement {
     // The combo's key selects the column or index level, so hidden columns do not shift it
     handleFilterOptionsRequest(event) {
         const combo = event.target
-        const values = this.view.optionValues(combo.dataset.key)
-        // TEMPORARY until the combo caps its own list (design step 3): null shows "too many"
-        combo.options = values.length <= 30 ? values : null
+        combo.options = this.view.optionValues(combo.dataset.key)
     }
 
     // The combo knows no key: it is read here and sent on, composed, to the viewer
