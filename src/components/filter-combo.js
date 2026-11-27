@@ -331,17 +331,11 @@ class FilterCombo extends HTMLElement {
     }
 
     // MARK: handlers
+    // Typing filters the table and never opens the list; an open list is refreshed by DataTable
     handleInput() {
         this.syncCheckboxes()
         this.dispatchFilterEvent(this.input.value)
-
-        if (this._options && this._options.length > 0) {
-            this.renderOptions()
-            if (!this.popover.matches(":popover-open")) {
-                this.popover.showPopover()
-            }
-            this.setHighlight(-1)
-        }
+        this.setHighlight(-1)
     }
 
     handleKeydown(event) {
