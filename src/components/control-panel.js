@@ -197,8 +197,8 @@ export class ControlPanel extends HTMLElement {
                     <action-button data-action="toggle-filter-row">Toggle</action-button>
                     <action-button data-action="clear-filters" disabled>Clear</action-button>
                 </div>
-                <action-button data-action="toggle-export">Export</action-button>
                 <action-button data-action="toggle-layout">Layout</action-button>
+                <action-button data-action="toggle-export">Export</action-button>
             </div>
             <div class="status-info">
                 <span id="row-count"></span>/
