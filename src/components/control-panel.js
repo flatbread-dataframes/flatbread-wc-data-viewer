@@ -22,7 +22,7 @@ componentSheet.replaceSync(`
     }
     /* label and multi-selector wrap as one unit */
     .column-selection {
-        flex: 1 1 auto;
+        flex: none;
         display: flex;
         gap: 0.5em;
         align-items: center;
@@ -52,6 +52,8 @@ componentSheet.replaceSync(`
     }
     multi-selector {
         --ms-dropdown-background: var(--dv-bg, white);
+        --ms-min-width: 21rem;
+        flex: none;
     }
     [popover] {
         margin: 0;
