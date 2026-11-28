@@ -36,11 +36,11 @@ export class UniformRowGeometry {
 }
 
 // Maps scroll positions to view rows and back, for rows of different heights (wrap mode).
-// Heights are kept per original row, in an array shared with the geometries of later views,
+// Heights are kept per source row, in an array shared with the geometries of later views,
 // so measured heights survive sorting and filtering. Unmeasured rows hold an estimate.
 export class VariableRowGeometry {
     constructor(indices, heights) {
-        // view row → original row
+        // view row → source row
         this._indices = indices
         this._heights = heights
         // offsets[i]: top of view row i; offsets[count]: the full height
@@ -94,10 +94,10 @@ export class VariableRowGeometry {
     }
 }
 
-// Estimated height per original row: the lines of its longest wrapping value plus the cell padding,
+// Estimated height per source row: the lines of its longest wrapping value plus the cell padding,
 // and at least the height of a row without wrapped values (base; cells that never wrap, such as
 // the record view icon, can make that more than one line plus padding).
-// columns: the wrapping columns as { col (original column), charsPerLine }
+// columns: the wrapping columns as { col (source iloc), charsPerLine }
 // Character counts of the raw values stand in for their formatted widths.
 export function estimateHeights(values, columns, { base, lineHeight, padding }) {
     const heights = new Float64Array(values.length)

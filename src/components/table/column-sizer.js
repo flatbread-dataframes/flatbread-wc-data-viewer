@@ -67,10 +67,10 @@ export class ColumnSizer {
     }
 
     // MARK: user widths
-    // Override key of a view column: its original column, so user widths survive sort, filter and
+    // Override key of a view column: its source iloc, so user widths survive sort, filter and
     // hiding columns. The one place to change for keys a host can persist (column labels).
     keyOf(iloc) {
-        return this.view.getOriginalColumnIndex(iloc)
+        return this.view.columns.sourceIlocs[iloc]
     }
 
     // User widths of the visible columns
@@ -187,26 +187,27 @@ export class ColumnSizer {
             const label = this.root.querySelector(`thead .indexLevelNameLabel[data-level="${level}"]`)
             values[level] = this.columnWidths.indexWidth(level) + horizontalPadding(label)
         })
+        const sourceIlocs = this.view.columns.sourceIlocs
         this.view.columns.ilocs.forEach(iloc => {
             if (this.hasHeaderWidths && isTruncatable(this.view.columns.attrs[iloc].dtype)) return
             const header = this.root.querySelector(`thead .columns-row th[data-col="${iloc}"]`)
-            const original = this.view.getOriginalColumnIndex(iloc)
-            values[nIndex + iloc] = this.columnWidths.columnWidth(original) + horizontalExtra(header)
+            values[nIndex + iloc] = this.columnWidths.columnWidth(sourceIlocs[iloc]) + horizontalExtra(header)
         })
         return values
     }
 
     // MARK: text
-    // For estimating wrapped row heights, after measure(): the text columns (original column and
+    // For estimating wrapped row heights, after measure(): the text columns (source iloc and
     // characters that fit on a line), the height of a line of text in a data cell and the cell's
     // vertical padding and borders. Needs a rendered data row.
     textLayout() {
         const nIndex = this.indexCount
+        const sourceIlocs = this.view.columns.sourceIlocs
         const columns = this.view.columns.ilocs
             .filter(iloc => isTruncatable(this.view.columns.attrs[iloc].dtype))
             .map(iloc => {
                 const header = this.root.querySelector(`thead .columns-row th[data-col="${iloc}"]`)
-                const col = this.view.getOriginalColumnIndex(iloc)
+                const col = sourceIlocs[iloc]
                 const width = this._widths[nIndex + iloc] - horizontalExtra(header)
                 const charWidth = this.columnWidths.charWidth(col)
                 // at least one character per line: a value never takes more lines than characters

@@ -417,7 +417,7 @@ export class FlatbreadDataViewer extends HTMLElement {
         const controlPanel = this.shadowRoot.querySelector("control-panel")
         if (controlPanel) {
             controlPanel.viewInfo = {
-                visibleRows: this.view.visibleIndices.length,
+                visibleRows: this.view.length,
                 totalRows: this.data.index.length,
                 visibleColumns: this.view.columns.length,
                 totalColumns: this.data.columns.length
@@ -429,13 +429,13 @@ export class FlatbreadDataViewer extends HTMLElement {
     // MARK: @keyboard
     toggleViewMode() {
         const newView = this._viewMode === "table" ? "record" : "table"
-        if (newView === "record" && this.view.visibleIndices.length === 0) return
+        if (newView === "record" && this.view.length === 0) return
         this.setAttribute("view", newView)
     }
 
     // Focuses the row of the record shown last, so the table continues where the record view left off
     focusTable() {
-        if (this.view.visibleIndices.length) {
+        if (this.view.length) {
             this.dataTable.focusTbodyRow(this.dataRecord.recordIndex)
         } else {
             this.focus()

@@ -25,7 +25,7 @@ export class RecordBuilder {
 
     buildRecordNavigation() {
         const current = this.dataViewer.currentRecordIndex + 1
-        const total = this.dataViewer.view.visibleIndices.length
+        const total = this.dataViewer.view.length
         const record = this.dataViewer.currentRecord
 
         const indexAttrs = this.dataViewer.view.index.attrs

@@ -577,7 +577,7 @@ export class DataTable extends HTMLElement {
 
     // MARK: @tbody
     handleTbodyNavigation(event) {
-        const totalRows = this.view.visibleIndices.length
+        const totalRows = this.view.length
 
         switch (event.key) {
             case "ArrowUp": {
@@ -590,7 +590,7 @@ export class DataTable extends HTMLElement {
             }
             case "ArrowDown": {
                 const next = this._tbodyPosition + 1
-                const totalRows = this.view.visibleIndices.length
+                const totalRows = this.view.length
                 if (next >= totalRows) return true
                 this._tbodyPosition = next
                 this.focusTbodyRow(next)

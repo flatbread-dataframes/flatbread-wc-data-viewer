@@ -31,7 +31,7 @@ export class TbodyRenderer {
     }
 
     get rowCount() {
-        return this.dataTable.tableBuilder.headerRowCount + this.dataTable.view.visibleIndices.length
+        return this.dataTable.tableBuilder.headerRowCount + this.dataTable.view.length
     }
 
     // The tr of a view row, or null outside the window

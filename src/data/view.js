@@ -1,5 +1,3 @@
-import { Columns } from "../axis/columns.js"
-import { Index } from "../axis/index.js"
 import { createComparator, sortComparator } from "./compare.js"
 import { createPredicate } from "./filter.js"
 
@@ -19,44 +17,21 @@ export class View {
         this._filters = new Map()   // key → expression
         this._sort = null           // { key, direction }
 
-        this._visibleIndices = null
+        // Source ilocs of the visible rows, in view order; written only by update()
+        this._visibleIndices = data.index.ilocs
         this._visibleColumnIndices = null
         this._viewIndex = null
         this._viewColumns = null
     }
 
-    get visibleIndices() {
-        if (this._visibleIndices === null) {
-            this._visibleIndices = [...this.data.index.ilocs]
-        }
-        return this._visibleIndices
-    }
-
+    // The view's axes: their sourceIlocs map view positions to positions in the data
     get columns() {
-        if (this._visibleColumnIndices === null) {
-            return this.data.columns
-        }
-        if (this._viewColumns) return this._viewColumns
-        const src = this.data.columns
-        return this._viewColumns = new Columns({
-            values: this._visibleColumnIndices.map(i => src.values[i]),
-            names: src.names,
-            dtypes: this._visibleColumnIndices.map(i => src.dtypes?.[i]),
-            formatOptions: this._visibleColumnIndices.map(i => src.formatOptions?.[i]),
-            nlevels: src.nlevels,
-        })
+        if (this._visibleColumnIndices === null) return this.data.columns
+        return this._viewColumns ??= this.data.columns.take(this._visibleColumnIndices)
     }
 
     get index() {
-        if (this._viewIndex) return this._viewIndex
-        const src = this.data.index
-        return this._viewIndex = new Index({
-            values: this.visibleIndices.map(i => src.values[i]),
-            names: src.names,
-            dtypes: src.dtypes,
-            formatOptions: src.formatOptions,
-            nlevels: src.nlevels,
-        })
+        return this._viewIndex ??= this.data.index.take(this._visibleIndices)
     }
 
     get groupingLevels() {
@@ -70,12 +45,12 @@ export class View {
 
     // View rows [start, end), restricted to the visible columns
     valuesSlice(start, end) {
-        const rows = this.visibleIndices.slice(start, end).map(i => this.data.values[i])
+        const rows = this._visibleIndices.slice(start, end).map(i => this.data.values[i])
         if (this._visibleColumnIndices === null) return rows
         return rows.map(row => this._visibleColumnIndices.map(col => row[col]))
     }
 
-    // Column selection: does not change which rows are visible
+    // Column selection, as source ilocs (null: all columns); does not change which rows are visible
     filterColumns(columnIndices) {
         this._visibleColumnIndices = columnIndices
         this.invalidateCache()
@@ -126,7 +101,8 @@ export class View {
         return this._sort?.key === key ? this._sort.direction : "none"
     }
 
-    // The only place that computes the visible rows from the filters and the sort
+    // The only place that computes the visible rows from the filters and the sort. Always a new array,
+    // sorted before invalidateCache(): a view index that was taken from it never sees it change.
     update() {
         const predicate = createPredicate(this._filters, key => this.valueGetter(key))
         const ilocs = this.data.index.ilocs
@@ -177,22 +153,8 @@ export class View {
         this._viewColumns = null
     }
 
-    // Utility methods
+    // Number of visible rows
     get length() {
-        return this.visibleIndices.length
-    }
-
-    isVisible(originalIndex) {
-        return this.visibleIndices.includes(originalIndex)
-    }
-
-    getOriginalIndex(viewIndex) {
-        return this.visibleIndices[viewIndex]
-    }
-
-    getOriginalColumnIndex(viewColIndex) {
-        return this._visibleColumnIndices
-            ? this._visibleColumnIndices[viewColIndex]
-            : viewColIndex
+        return this._visibleIndices.length
     }
 }

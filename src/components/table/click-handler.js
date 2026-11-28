@@ -45,8 +45,8 @@ export class ClickHandler {
             const span = this.dataTable.dataViewer.view.columns.spans[level][groupIndex]
             multiSelector.removeSelectedValues(span.value[level])
         } else if (hideType === "column") {
-            const originalColIndex = parseInt(hideButton.closest("th").dataset.originalCol)
-            multiSelector.removeSelectedValues(originalColIndex)
+            const iloc = Number(hideButton.dataset.col)
+            multiSelector.removeSelectedValues(this.dataTable.view.columns.sourceIlocs[iloc])
         }
 
         return true
@@ -74,7 +74,7 @@ export class ClickHandler {
                 }
             }
 
-            const colIndex = this.getColumnIndex(cell, tr)
+            const colIndex = this.getColumnIndex(cell)
             if (colIndex !== -1) {
                 this.dispatchColumnData(colIndex)
                 return
@@ -140,10 +140,11 @@ export class ClickHandler {
     }
 
     dispatchRowData(viewRowIndex) {
+        const view = this.dataTable.view
         const rowData = {
-            index: this.dataTable.dataViewer.view.index.values[viewRowIndex],
-            values: this.dataTable.dataViewer.view.values[viewRowIndex],
-            originalIndex: this.dataTable.dataViewer.view.visibleIndices[viewRowIndex]
+            index: view.index.values[viewRowIndex],
+            values: view.valuesSlice(viewRowIndex, viewRowIndex + 1)[0],
+            originalIndex: view.index.sourceIlocs[viewRowIndex]
         }
 
         this.dataTable.dispatchEvent(new CustomEvent("row-data", {
@@ -187,16 +188,8 @@ export class ClickHandler {
         }))
     }
 
-    getColumnIndex(cell, tr) {
-        if (cell.dataset.originalCol) {
-            return parseInt(cell.dataset.originalCol)
-        }
-
-        const tdIndex = Array.from(tr.querySelectorAll('td')).indexOf(cell)
-        const table = tr.closest('table')
-        const headerRow = table.querySelector('thead tr:has(.columnFilter)')
-        const correspondingTh = headerRow.querySelectorAll('th[data-original-col]')[tdIndex]
-
-        return correspondingTh ? parseInt(correspondingTh.dataset.originalCol) : -1
+    // View iloc of a column header, filter or value cell; -1 for other cells
+    getColumnIndex(cell) {
+        return cell.dataset.col === undefined ? -1 : Number(cell.dataset.col)
     }
 }

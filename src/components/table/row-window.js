@@ -13,7 +13,7 @@ export class RowWindow {
         this._laidOut = false
         // Uniform geometry: the measured height of a row
         this._rowHeight = 0
-        // Variable geometry: heights per original row, estimated or measured (see VariableRowGeometry),
+        // Variable geometry: heights per source row, estimated or measured (see VariableRowGeometry),
         // and what they were computed for (see widthsApplied)
         this._rowHeights = null
         this._heightsKey = null
@@ -25,7 +25,7 @@ export class RowWindow {
     }
 
     get count() {
-        return this.view.visibleIndices.length
+        return this.view.length
     }
 
     get overscan() {
@@ -69,7 +69,7 @@ export class RowWindow {
     // With the previous row height the spacers give the table its full height,
     // so the layout forced by measuring does not clamp scrollTop.
     renderInitial(anchor = null) {
-        // heights per original row are only valid for the rows of the same view
+        // heights per source row are only valid for the rows of the same view
         const sameView = this._view === this.view
         this._view = this.view
         if (this.isVariable) {
@@ -117,7 +117,7 @@ export class RowWindow {
     }
 
     createVariableGeometry() {
-        return new VariableRowGeometry(this.view.visibleIndices, this._rowHeights ?? new Float64Array(0))
+        return new VariableRowGeometry(this.view.index.sourceIlocs, this._rowHeights ?? new Float64Array(0))
     }
 
     // Heights of all rows, estimated from their longest wrapping value (see estimateHeights).
@@ -134,10 +134,9 @@ export class RowWindow {
     // Row heights follow from the data, the visible columns and their widths (and fonts):
     // measured heights are kept while these stay the same, so that a render that changes none of them
     // (back from the record view, a height change) does not fall back to estimates.
-    // Sorting and filtering keep them as well: heights are kept per original row.
+    // Sorting and filtering keep them as well: heights are kept per source row.
     widthsApplied(widths, remeasure = false) {
-        const view = this.view
-        const columns = view.columns.ilocs.map(iloc => view.getOriginalColumnIndex(iloc))
+        const columns = this.view.columns.sourceIlocs
         const key = { source: this.dataTable.columnSizer.columnWidths, layout: `${columns}|${widths}` }
         const same = this._heightsKey?.source === key.source && this._heightsKey.layout === key.layout
         if (remeasure || !same) this._rowHeights = null

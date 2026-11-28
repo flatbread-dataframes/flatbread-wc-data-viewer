@@ -177,11 +177,11 @@ export class DataRecord extends HTMLElement {
     }
 
     get currentRecord() {
-        if (!this.dataViewer || !this.dataViewer.view.visibleIndices.length) {
+        if (!this.dataViewer || !this.dataViewer.view.length) {
             return null
         }
 
-        const originalIndex = this.dataViewer.view.visibleIndices[this._currentRecordIndex]
+        const originalIndex = this.dataViewer.view.index.sourceIlocs[this._currentRecordIndex]
         const values = this.dataViewer.view.valuesSlice(this._currentRecordIndex, this._currentRecordIndex + 1)[0]
         const indexValue = this.dataViewer.view.index.values[this._currentRecordIndex]
 
@@ -203,7 +203,7 @@ export class DataRecord extends HTMLElement {
 
     // The view can shrink (filtering, new data) while the record index is kept
     clampRecordIndex() {
-        const total = this.dataViewer.view.visibleIndices.length
+        const total = this.dataViewer.view.length
         const index = Math.min(this._currentRecordIndex, Math.max(total - 1, 0))
         if (index !== this._currentRecordIndex) this.recordIndex = index
     }
@@ -285,7 +285,7 @@ export class DataRecord extends HTMLElement {
     navigateRecord(direction) {
         if (!this.dataViewer) return
 
-        const totalRecords = this.dataViewer.view.visibleIndices.length
+        const totalRecords = this.dataViewer.view.length
         if (totalRecords === 0) return
 
         switch (direction) {

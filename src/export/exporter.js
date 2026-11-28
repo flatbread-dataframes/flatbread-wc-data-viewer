@@ -1,8 +1,9 @@
 function buildRows(view) {
-    return view.visibleIndices.map((_, rowIdx) => {
+    // view.values builds every row on each access: read it once
+    const values = view.values
+    return view.index.values.map((idx, rowIdx) => {
         const row = {}
 
-        const idx = view.index.values[rowIdx]
         if (Array.isArray(idx)) {
             view.index.names?.forEach((name, level) => {
                 row[name ?? `index_${level}`] = idx[level]
@@ -13,7 +14,7 @@ function buildRows(view) {
 
         view.columns.values.forEach((col, colIdx) => {
             const key = Array.isArray(col) ? col.join(" > ") : col
-            row[key] = view.values[rowIdx][colIdx]
+            row[key] = values[rowIdx][colIdx]
         })
 
         return row

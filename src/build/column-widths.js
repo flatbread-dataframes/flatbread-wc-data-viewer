@@ -51,8 +51,8 @@ export class ColumnWidths {
     }
 
     // Text widths in px, rounded up with 1px to absorb differences between canvas and DOM text layout
-    columnWidth(originalCol) {
-        return Math.ceil(this._columnWidths[originalCol]) + 1
+    columnWidth(sourceIloc) {
+        return Math.ceil(this._columnWidths[sourceIloc]) + 1
     }
 
     indexWidth(level) {
@@ -60,8 +60,8 @@ export class ColumnWidths {
     }
 
     // Average px per character of a column's longest values; 0 for a column without values
-    charWidth(originalCol) {
-        return this._charWidths[originalCol]
+    charWidth(sourceIloc) {
+        return this._charWidths[sourceIloc]
     }
 }
 

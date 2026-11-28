@@ -75,20 +75,19 @@ export class TableBuilder {
     buildColumnFilter(iloc) {
         const attrs = this.dataViewer.view.columns.attrs[iloc]
         const groups = attrs.groups.join(" ")
-        const originalColIndex = this.getOriginalColumnIndex(iloc)
+        const key = this.columnKeyAt(iloc)
 
         const isIndexEdge = iloc === 0
         const isGroupEdge = this.dataViewer.view.columns.edges.slice(1).includes(iloc)
 
         return `<th
             data-col="${iloc}"
-            data-original-col="${originalColIndex}"
             data-groups="${groups}"
             ${isIndexEdge ? ' index-edge' : ''}
             ${isGroupEdge ? ' group-edge' : ''}
             class="columnFilter"
         >
-            <filter-combo data-key="${columnKey(originalColIndex)}"></filter-combo>
+            <filter-combo data-key="${key}"></filter-combo>
         </th>`
     }
 
@@ -136,8 +135,9 @@ export class TableBuilder {
         return `<tr class="columns-row" aria-rowindex="${this.headerRowCount - 2}">${columnLevelNameLabelElement}${columnHeaders.join("")}</tr>`
     }
 
-    getOriginalColumnIndex(viewColIndex) {
-        return this.dataViewer.view.getOriginalColumnIndex(viewColIndex)
+    // Filter and sort key of the view column at iloc: its source iloc, so hiding columns does not move it
+    columnKeyAt(iloc) {
+        return columnKey(this.dataViewer.view.columns.sourceIlocs[iloc])
     }
 
     buildColumnLabel(value, iloc) {
@@ -147,15 +147,13 @@ export class TableBuilder {
         const selectedValue = Array.isArray(value) ? value.at(-1) : value
         const groups = attrs.groups.join(" ")
         const hideButton = this.buildHideButton('column', iloc)
-        const originalColIndex = this.getOriginalColumnIndex(iloc)
-        const sortButton = this.buildSortButton(columnKey(originalColIndex))
+        const sortButton = this.buildSortButton(this.columnKeyAt(iloc))
 
         const isIndexEdge = iloc === 0
         const isGroupEdge = this.dataViewer.view.columns.edges.slice(1).includes(iloc)
 
         return `<th
             data-col="${iloc}"
-            data-original-col="${originalColIndex}"
             data-groups="${groups}"
             ${isIndexEdge ? ' index-edge' : ''}
             ${isGroupEdge ? ' group-edge' : ''}
