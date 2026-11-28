@@ -5,19 +5,27 @@ import { interactiveSheet } from "../styles/interactive.js"
 const componentSheet = new CSSStyleSheet()
 componentSheet.replaceSync(`
     :host {
-        display: grid;
-        grid-template-columns: auto 1fr auto 1fr;
+        display: flex;
+        flex-wrap: wrap;
         gap: 0.5em;
         align-items: center;
         padding: 0.25em;
     }
     .status-info {
-        justify-self: center;
+        flex: 1 1 auto;
+        justify-content: center;
         display: flex;
         gap: 1rem;
         font-size: 0.9em;
         font-family: monospace;
         opacity: 0.8;
+    }
+    /* label and multi-selector wrap as one unit */
+    .column-selection {
+        flex: 1 1 auto;
+        display: flex;
+        gap: 0.5em;
+        align-items: center;
     }
     .actions {
         display: flex;
@@ -236,8 +244,10 @@ export class ControlPanel extends HTMLElement {
                 <span id="row-count"></span>/
                 <span id="column-count"></span>
             </div>
-            <label>Select columns:</label>
-            <multi-selector name="columns"></multi-selector>
+            <div class="column-selection">
+                <label>Select columns:</label>
+                <multi-selector name="columns"></multi-selector>
+            </div>
             <div class="export-popover" popover data-toggle="toggle-export">
                 <input type="text" value="export" aria-label="filename">
                 <button data-format="json">.json</button>
