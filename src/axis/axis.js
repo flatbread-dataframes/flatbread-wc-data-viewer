@@ -1,11 +1,15 @@
 export class Axis {
     // nlevels is used only when values is empty (e.g. a filtered view without rows);
-    // otherwise the levels follow from the values
-    constructor(values, nlevels) {
+    // otherwise the levels follow from the values.
+    // sourceIlocs is set by take(): the positions of the entries in the axis they were taken from.
+    constructor(values, { names, nlevels, sourceIlocs } = {}) {
         this.values = values
+        this.names = names
         this.nlevels = Array.isArray(values[0]) ? values[0].length
             : values.length ? 1
             : nlevels ?? 1
+        this._sourceIlocs = sourceIlocs ?? null
+        this._lookups = []
         this.spans = this.getSpans()
         this.groupingLevels = this.getGroupingLevels()
         this.edges = this.getEdges()
@@ -19,6 +23,51 @@ export class Axis {
     get ilocs() { return [...Array(this.length).keys()] }
     // Returns whether axis has multiple levels
     get isMultiIndex() { return this.nlevels > 1 }
+
+    // Position of every entry in the source (the data); an axis that was not taken is its own source
+    get sourceIlocs() {
+        return this._sourceIlocs ??= this.ilocs
+    }
+
+    // MARK: labels
+    // Positions of a label, ascending; [] when unknown. An array, because labels can repeat.
+    // A flat axis takes a scalar. A multi-index takes a tuple, read as a path from the outer level
+    // down: a shorter tuple is a group and gives every position in it. Labels match exactly (1 ≠ "1").
+    locate(label) {
+        if (Array.isArray(label) !== this.isMultiIndex) return []
+        const depth = this.isMultiIndex ? label.length : 1
+        if (depth < 1 || depth > this.nlevels) return []
+        return this.lookup(depth).get(JSON.stringify(label)) ?? []
+    }
+
+    // Label → positions for paths of one depth; built on first use and kept, as an axis does not change
+    lookup(depth) {
+        if (!this._lookups[depth]) {
+            const lookup = new Map()
+            this.values.forEach((value, iloc) => {
+                const key = JSON.stringify(this.isMultiIndex ? value.slice(0, depth) : value)
+                if (lookup.has(key)) lookup.get(key).push(iloc)
+                else lookup.set(key, [iloc])
+            })
+            this._lookups[depth] = lookup
+        }
+        return this._lookups[depth]
+    }
+
+    // Level of a name; -1 when unknown, repeated, or null (unnamed levels cannot be found by name)
+    levelOf(name) {
+        if (name === null || name === undefined) return -1
+        const levels = this.ilevels.filter(level => this.names?.[level] === name)
+        return levels.length === 1 ? levels[0] : -1
+    }
+
+    // MARK: subsets
+    // An axis of the entries at ilocs, in that order, that keeps their positions in the source.
+    // Keeps the ilocs array (no copy): the caller must not change it afterwards.
+    take(ilocs) {
+        const sourceIlocs = this._sourceIlocs ? ilocs.map(iloc => this._sourceIlocs[iloc]) : ilocs
+        return new this.constructor({ ...this.subset(ilocs), sourceIlocs })
+    }
 
     // Iterator
     [Symbol.iterator]() {
