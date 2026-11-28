@@ -29,13 +29,13 @@ export class RecordBuilder {
         const record = this.dataViewer.currentRecord
 
         const indexAttrs = this.dataViewer.view.index.attrs
-        const indexDisplay = Array.isArray(record.indexValue)
-            ? record.indexValue.map((value, level) => {
+        const indexDisplay = Array.isArray(record.row.loc)
+            ? record.row.loc.map((value, level) => {
                 const attrs = indexAttrs[level]
                 return this.dataViewer.formatter.formatValue(value, attrs.dtype, attrs.formatOptions)
             }).join(" | ")
             : this.dataViewer.formatter.formatValue(
-                record.indexValue,
+                record.row.loc,
                 indexAttrs[0]?.dtype,
                 indexAttrs[0]?.formatOptions
             )
@@ -69,7 +69,7 @@ export class RecordBuilder {
         const fields = this.dataViewer.view.columns.values.map((columnValue, iloc) => {
             const value = record.values[iloc]
             const attrs = this.dataViewer.view.columns.attrs[iloc]
-            return this.buildRecordField(columnValue, value, attrs.dtype, attrs.formatOptions)
+            return this.buildRecordField(columnValue, value, attrs.dtype, attrs.formatOptions, iloc)
         })
 
         return `<div class="record-body flat" style="--rows: ${fields.length}"><div class="record-fields">${fields.join("")}</div></div>`
@@ -105,7 +105,8 @@ export class RecordBuilder {
                 label: fieldLabel,
                 value: value,
                 dtype: attrs.dtype,
-                formatOptions: attrs.formatOptions
+                formatOptions: attrs.formatOptions,
+                iloc
             })
         })
 
@@ -114,7 +115,7 @@ export class RecordBuilder {
 
     buildFieldGroup(group) {
         const fields = group.fields.map(field =>
-            this.buildRecordField(field.label, field.value, field.dtype, field.formatOptions)
+            this.buildRecordField(field.label, field.value, field.dtype, field.formatOptions, field.iloc)
         ).join("")
 
         const groupTitle = group.path.length > 0 ? group.path.at(-1) : "Fields"
@@ -127,11 +128,12 @@ export class RecordBuilder {
         `
     }
 
-    buildRecordField(label, value, dtype, formatOptions) {
+    // iloc: the view column of the field, read back by field-click
+    buildRecordField(label, value, dtype, formatOptions, iloc) {
         const formattedValue = this.dataViewer.formatter.formatValue(value, dtype, formatOptions)
 
         return `
-            <div class="record-field">
+            <div class="record-field" data-col="${iloc}">
                 <label class="field-label">${label}:</label>
                 <span class="field-value" data-dtype="${dtype}">${formattedValue}</span>
             </div>

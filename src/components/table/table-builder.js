@@ -258,7 +258,7 @@ export class TableBuilder {
             "data-dtype": attrs.dtype,
         }
         const formattedValue = this.dataViewer.formatter.formatValue(span.value[level], attrs.dtype, attrs.formatOptions)
-        // no whitespace around the span: cell-click reports the cell's textContent as its value
+        // no whitespace around the span: cell-click reports the cell's textContent as its text
         return `<th ${this.buildAttributeString(attributes)}><span>${formattedValue}</span></th>`
     }
 

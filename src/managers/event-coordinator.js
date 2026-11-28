@@ -93,8 +93,10 @@ export class EventCoordinator {
     }
 
     // MARK: @view
-    // The viewer opens the record view on the focused row (tbodyPosition)
+    // The viewer opens the record view on the focused row (tbodyPosition).
+    // Internal: its detail is a view position, so it does not reach the host
     handleEnterRecordView(event) {
+        event.stopPropagation()
         this.dataViewer.setAttribute("view", "record")
     }
 

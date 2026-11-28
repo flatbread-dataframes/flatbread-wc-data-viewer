@@ -61,6 +61,22 @@ export class Axis {
         return levels.length === 1 ? levels[0] : -1
     }
 
+    // MARK: identities
+    // Identity of the entry at iloc, as the public events report it: its label and its source position
+    entry(iloc) {
+        return { loc: this.values[iloc], iloc: this.sourceIlocs[iloc] }
+    }
+
+    // Identities of all entries, in axis order
+    entries() {
+        return this.ilocs.map(iloc => this.entry(iloc))
+    }
+
+    // Identity of a level: its name (null when unnamed) and its position
+    levelEntry(level) {
+        return { loc: this.names?.[level] ?? null, iloc: level }
+    }
+
     // MARK: subsets
     // An axis of the entries at ilocs, in that order, that keeps their positions in the source.
     // Keeps the ilocs array (no copy): the caller must not change it afterwards.

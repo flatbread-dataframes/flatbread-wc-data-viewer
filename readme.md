@@ -53,25 +53,64 @@ data-viewer {
 
 ## Events
 
-- `data-changed` - Fired when data is loaded/updated
-- `cell-click` - Fired on cell interaction
-- `field-click` - Fired on record field interaction
+Events identify rows and columns by their label and their position in the data, never by their position on screen, so they stay valid when rows are sorted or filtered and columns are hidden:
+
+```js
+{ loc, iloc }   // loc: the label (a tuple on a multi-index); iloc: the position in the data (pandas iloc)
+```
+
+A level is identified the same way: `{ loc: name, iloc: level }` (`loc` is `null` for an unnamed level). A group (an upper level of a multi-index) has only `loc`, its leading part of the tuple, since the rows or columns in a group need not be adjacent in the data.
+
+`value` is the raw value from the data and `text` is the text as shown (formatted).
+
+| Event | When | `detail` |
+|---|---|---|
+| `data-changed` | Data loaded or updated | The `Data` object |
+| `cell-click` | Click on a cell | `{ source, value, text, ... }`, see below |
+| `row-data` | Shift+click on a row | `{ row, columns, values }` |
+| `column-data` | Ctrl+click on a column | `{ column, dtype, rows, values }`; on an index level `{ level, dtype, rows, values }` |
+| `field-click` | Click on a field in the record view | `{ source, value, text, dtype, row, column }` |
+
+`cell-click` by `source`:
+
+| `source` | Cell | Also in `detail` |
+|---|---|---|
+| `"values"` | A value | `row`, `column` |
+| `"index"` | An index value | `row`, `level`; a group cell has `row: { loc }` |
+| `"column"` | A column label | `column`; a group label has `column: { loc }` and `level` |
+| `"index-name"`, `"column-name"` | A level name | `level` |
+
+`row-data` and `column-data` hold what is shown: the visible columns and the rows under the current filters, in the order on screen. `columns` and `rows` are the identities of the entries in `values`, in the same order. In `field-click`, `value` and `text` are those of the field's value, also when its label is clicked (`source`: `"field-label"` or `"field-value"`).
+
+### Properties
+
+- `currentRecord` - The record shown in the record view: `{ row, values }`, `values` as shown
+- `currentRecordIndex` - Position of that record in the view (the record view's navigation state; changes with sorting and filtering)
 
 ## Data Format
 
-Expected JSON structure:
 ```json
 {
-    "columns": ["col1", "col2"],
-    "index": ["row1", "row2"],
-    "values": [[val1, val2], [val3, val4]],
-    "dtypes": ["int", "float"],
-    "columnNames": ["Columns"],
-    "indexNames": ["Index"]
+    "columns": {
+        "values": ["col1", "col2"],
+        "names": ["Columns"],
+        "dtypes": ["int", "float"],
+        "formatOptions": [null, { "maximumFractionDigits": 1 }]
+    },
+    "index": {
+        "values": ["row1", "row2"],
+        "names": ["Index"],
+        "dtypes": ["str"],
+        "formatOptions": [null]
+    },
+    "values": [[1, 2.5], [3, 4.25]]
 }
 ```
 
-Multi-index uses nested arrays for `columns` and `index`.
+- A multi-index uses arrays as labels in `values` (`["A", "x"]`), with one name per level in `names`.
+- `columns.dtypes` and `columns.formatOptions` have one entry per column; `index.dtypes` and `index.formatOptions` one per level.
+- Dtypes with their own formatting and sorting: `int`, `float`, `date`, `datetime`; anything else is text. `formatOptions` are passed to `Intl.NumberFormat` or `Intl.DateTimeFormat`.
+- Only `values` is required; `names`, `dtypes` and `formatOptions` are optional.
 
 ## Keyboard Shortcuts
 

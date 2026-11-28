@@ -181,14 +181,10 @@ export class DataRecord extends HTMLElement {
             return null
         }
 
-        const originalIndex = this.dataViewer.view.index.sourceIlocs[this._currentRecordIndex]
-        const values = this.dataViewer.view.valuesSlice(this._currentRecordIndex, this._currentRecordIndex + 1)[0]
-        const indexValue = this.dataViewer.view.index.values[this._currentRecordIndex]
-
+        const view = this.dataViewer.view
         return {
-            originalIndex,
-            indexValue,
-            values
+            row: view.index.entry(this._currentRecordIndex),
+            values: view.valuesSlice(this._currentRecordIndex, this._currentRecordIndex + 1)[0]
         }
     }
 
@@ -324,17 +320,19 @@ export class DataRecord extends HTMLElement {
 
         if (!isLabel && !isValue) return
 
-        const label = fieldElement.querySelector(".field-label").textContent.replace(":", "")
-        const value = fieldElement.querySelector(".field-value").textContent
-        const dtype = fieldElement.querySelector(".field-value").dataset.dtype
+        // value and text are the field's value, also when its label is clicked; source says which part
+        const viewCol = Number(fieldElement.dataset.col)
+        const view = this.dataViewer.view
+        const record = this.currentRecord
 
         this.dispatchEvent(new CustomEvent("field-click", {
             detail: {
-                label,
-                value,
-                dtype,
                 source: isLabel ? "field-label" : "field-value",
-                recordIndex: this._currentRecordIndex
+                value: record.values[viewCol],
+                text: fieldElement.querySelector(".field-value").textContent,
+                dtype: view.columns.attrs[viewCol]?.dtype ?? null,
+                row: record.row,
+                column: view.columns.entry(viewCol)
             },
             bubbles: true,
             composed: true

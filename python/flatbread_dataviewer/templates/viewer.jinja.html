@@ -32,11 +32,11 @@ viewer.addEventListener("column-data", event => {
 })
 
 viewer.addEventListener("cell-click", event => {
-  navigator.clipboard.writeText(event.detail.value)
+  navigator.clipboard.writeText(event.detail.text)
 })
 
 viewer.addEventListener("field-click", event => {
-  navigator.clipboard.writeText(event.detail.value)
+  navigator.clipboard.writeText(event.detail.text)
 })
 
 document.getElementById("{{ viewer_id }}").replaceWith(viewer);
