@@ -11,7 +11,7 @@ componentSheet.replaceSync(`
     height: var(--ms-height);
     color: var(--ms-text-color);
     border-radius: var(--ms-border-radius);
-    min-width: 140px;
+    min-width: var(--ms-min-width, 18rem);
     container-type: inline-size;
     container-name: host;
 }
@@ -314,7 +314,8 @@ componentSheet.replaceSync(`
 
 [data-role="group"] > summary {
     display: grid;
-    grid-template-columns: auto 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: .5em;
     padding: .15em;
     align-items: center;
     cursor: pointer;
@@ -324,20 +325,27 @@ componentSheet.replaceSync(`
     border-radius: var(--ms-border-radius);
 }
 
-[data-role="group"] > summary > label {
-    display: inline;
+/* the name truncates; checkbox and count stay in view */
+[data-role="group"] > summary > .checkbox-wrapper,
+[data-role="group"] > summary > .checkbox-wrapper > label {
+    display: flex;
+    align-items: baseline;
+    min-width: 0;
 }
 
-[data-role="group"] > summary > label > span {
-    font-weight: bold;
-    font-variant: small-caps;
+[data-role="group"] > summary > .checkbox-wrapper > label > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-[data-role="group"] > summary > label > code {
+[data-role="group"] > summary > .checkbox-wrapper > label:before,
+[data-role="group"] > summary > .checkbox-wrapper > label > code {
+    flex-shrink: 0;
+}
+
+[data-role="group"] > summary > .checkbox-wrapper > label > code {
     user-select: none;
-    font-size: .65em;
-    margin-left: .5em;
-    vertical-align: middle;
 }
 
 [data-role="group"] > summary:after {
@@ -357,14 +365,13 @@ componentSheet.replaceSync(`
     padding-left: .75rem;
 }
 
-/* Checkbox scaling - when hovering the wrapper */
-[data-role="option"]:hover input[type="checkbox"] + label:before,
-.checkbox-wrapper:hover input[type="checkbox"] + label:before {
+/* Checkbox scaling - when hovering the label, which a click checks */
+input[type="checkbox"] + label:hover:before {
     transform: scale(1.25);
 }
 
-/* Plus/minus scaling - when hovering summary but NOT the checkbox wrapper */
-[data-role="group"] > summary:hover:not(:has(.checkbox-wrapper:hover)):after {
+/* Plus/minus scaling - when hovering the rest of the summary, which a click folds */
+[data-role="group"] > summary:hover:not(:has(label:hover)):after {
     transform: scale(1.25);
 }
 
@@ -382,7 +389,18 @@ input[type="checkbox"] + label:before,
     display: grid;
     padding: .1em;
 
+    /* the text truncates, not the label: the checkbox scales on hover */
     > label {
+        display: flex;
+        align-items: baseline;
+        min-width: 0;
+    }
+
+    > label:before {
+        flex-shrink: 0;
+    }
+
+    > label > span {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -535,6 +553,28 @@ code {
 .tooltip-group-header {
     font-weight: bold;
 }
+
+/* ==========================================================================
+   LABEL TIP
+   ========================================================================== */
+
+.label-tip {
+    position-anchor: --ms-label-tip;
+    position: fixed;
+    top: calc(anchor(bottom) + 0.125rem);
+    left: anchor(left);
+    position-try-fallbacks: flip-block, flip-inline;
+    position-visibility: anchors-visible;
+    max-width: anchor-size(--ms-trigger width);
+    margin: 0;
+    padding: 0.125rem 0.375rem;
+    border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+    border-radius: var(--ms-border-radius);
+    background-color: var(--ms-dropdown-background);
+    color: inherit;
+    font: inherit;
+    pointer-events: none;
+}
 `)
 
 
@@ -583,6 +623,7 @@ function createTemplate(options) {
     <div part="options" class="options"></div>
 </div>
 <div id="tooltip" part="tooltip" popover="manual" class="tooltip"></div>
+<div id="label-tip" part="label-tip" popover="manual" class="label-tip" aria-hidden="true"></div>
     `
 }
 
@@ -630,6 +671,7 @@ class MultiSelector extends HTMLElement {
         this.foldingHandler = new FoldingHandler(this)
         this.navigationHandler = new NavigationHandler(this)
         this.tooltipHandler = new TooltipHandler(this)
+        this.labelTipHandler = new LabelTipHandler(this)
 
         this.handlePopoverToggle = this.handlePopoverToggle.bind(this)
         this.handleExternalScroll = this.handleExternalScroll.bind(this)
@@ -659,6 +701,7 @@ class MultiSelector extends HTMLElement {
         this.foldingHandler.addListener()
         this.navigationHandler.addListener()
         this.tooltipHandler.addListener()
+        this.labelTipHandler.addListener()
 
         if (this.hasAttribute("disabled")) {
             this.getElement("trigger").disabled = true
@@ -866,6 +909,9 @@ class MultiSelector extends HTMLElement {
             case "tooltip":
                 query = "#tooltip"
                 break
+            case "label-tip":
+                query = "#label-tip"
+                break
             default:
                 console.warn(`Unexpected value passed to getElement: ${name}`)
                 return null
@@ -993,6 +1039,7 @@ class MultiSelector extends HTMLElement {
             this.dispatchEvent(new Event('ms-open', { bubbles: true, composed: true }))
         } else {
             this.removeAttribute("open")
+            this.labelTipHandler.hide()
             window.removeEventListener("scroll", this.handleExternalScroll, true)
             this.onClose()
         }
@@ -1075,6 +1122,7 @@ class Renderer {
         let html = this.htmlBuilder.buildHTML(this.ms.data)
         this.optionsContainer.innerHTML += html
         this.ms.checkboxHandler.setAllGroupStates()
+        this.ms.searchHandler.renderValuesOnly()
         this.renderSelected()
         this.ms.getElement("dropdown").addEventListener("toggle", this.ms.handlePopoverToggle)
     }
@@ -1083,6 +1131,7 @@ class Renderer {
         this.ms.shadowRoot.adoptedStyleSheets = [componentSheet]
         this.ms.shadowRoot.innerHTML = createTemplate(this.ms.settings).trim()
         this.ms.getElement("display").innerHTML = `<span>${this.ms.settings.labels.empty}</span>`
+        this.ms.searchHandler.renderValuesOnly()
         this.ms.getElement("dropdown").addEventListener("toggle", this.ms.handlePopoverToggle)
     }
 
@@ -1206,7 +1255,7 @@ class HTMLBuilder {
             name="${itemID}"
             value="${item.value}"
             ${item.selected ? "checked" : ""}>
-        <label for="${itemID}">${item.label}</label>`
+        <label for="${itemID}"><span part="option-label">${item.label}</span></label>`
 
         return `<div
             data-role="option"
@@ -1218,7 +1267,7 @@ class HTMLBuilder {
 
     buildGroupHTML(item, itemID, depth) {
         const childCount = this.countCheckboxes(item.children)
-        const label = `<span>${item.label}</span><code data-role="group-count" data-total="${childCount}">[${childCount}]</code>`
+        const label = `<span part="group-label">${item.label}</span><code part="group-count" data-role="group-count" data-total="${childCount}">[${childCount}]</code>`
 
         const input = `<span class="checkbox-wrapper">
             <input
@@ -1425,9 +1474,14 @@ class SearchHandler {
         this.searchbox.placeholder = this.ms.settings.labels.filter.placeholder
     }
 
+    // The mode outlives the button, which every render rebuilds
+    renderValuesOnly() {
+        this.toggleValuesButton.classList.toggle("active", this.valuesOnlyMode)
+    }
+
     handleToggleValuesOnly() {
         this.valuesOnlyMode = !this.valuesOnlyMode
-        this.toggleValuesButton.classList.toggle("active", this.valuesOnlyMode)
+        this.renderValuesOnly()
         if (this.searchbox.value !== "") {
             this.filterData(this.firstGroup, this.matchPhrase)
             this.updateStateAfterFilter()
@@ -1961,7 +2015,7 @@ class TooltipHandler {
         if (this.isOpen) this.tooltip.hidePopover()
     }
 
-    handleMouseOver() {
+    handleMouseOver(event) {
         if (!event.target.closest(".trigger-bar")) return
         if (event.relatedTarget?.closest(".trigger-bar")) return
         if (this.ms.getElement("dropdown").matches(":popover-open")) return
@@ -1969,9 +2023,95 @@ class TooltipHandler {
         this._timer = setTimeout(() => this.show(), this._delay)
     }
 
-    handleMouseOut() {
+    handleMouseOut(event) {
         if (!event.target.closest(".trigger-bar")) return
         if (event.relatedTarget?.closest(".trigger-bar")) return
+        this.hide()
+    }
+}
+
+// region label tip
+class LabelTipHandler {
+    constructor(multiselector) {
+        this.ms = multiselector
+        this._delay = 400
+        this._timer = null
+        this._anchor = null
+        this.handleMouseOver = this.handleMouseOver.bind(this)
+        this.handleMouseOut = this.handleMouseOut.bind(this)
+        this.handleFocusIn = this.handleFocusIn.bind(this)
+        this.handleFocusOut = this.handleFocusOut.bind(this)
+        this.handleInput = this.handleInput.bind(this)
+    }
+
+    get tip() {
+        return this.ms.getElement("label-tip")
+    }
+
+    get isOpen() {
+        return this.tip?.matches(":popover-open")
+    }
+
+    addListener() {
+        this.ms.shadowRoot.addEventListener("mouseover", this.handleMouseOver)
+        this.ms.shadowRoot.addEventListener("mouseout", this.handleMouseOut)
+        this.ms.shadowRoot.addEventListener("focusin", this.handleFocusIn)
+        this.ms.shadowRoot.addEventListener("focusout", this.handleFocusOut)
+        this.ms.shadowRoot.addEventListener("input", this.handleInput)
+    }
+
+    // A row is a group's summary or an option, the unit a tip belongs to
+    rowOf(element) {
+        return element?.closest?.(`[data-role="group"] > summary, [data-role="option"]`) ?? null
+    }
+
+    // The element that clips the label text: a group's name, an option's label
+    clipOf(row) {
+        return row.querySelector(":scope > .checkbox-wrapper > label > span, :scope > label > span")
+    }
+
+    show(row) {
+        const clip = this.clipOf(row)
+        if (!clip || clip.scrollWidth <= clip.clientWidth) return
+        this.hide()
+        this.tip.textContent = clip.textContent.trim()
+        clip.style.setProperty("anchor-name", "--ms-label-tip")
+        this._anchor = clip
+        this.tip.showPopover()
+    }
+
+    hide() {
+        clearTimeout(this._timer)
+        this._anchor?.style.removeProperty("anchor-name")
+        this._anchor = null
+        if (this.isOpen) this.tip.hidePopover()
+    }
+
+    handleMouseOver(event) {
+        const row = this.rowOf(event.target)
+        if (!row || row.contains(event.relatedTarget)) return
+        this.hide()
+        this._timer = setTimeout(() => this.show(row), this._delay)
+    }
+
+    handleMouseOut(event) {
+        const row = this.rowOf(event.target)
+        if (!row || row.contains(event.relatedTarget)) return
+        this.hide()
+    }
+
+    handleFocusIn(event) {
+        const row = this.rowOf(event.target)
+        if (!row || !event.target.matches(":focus-visible")) return
+        this.show(row)
+    }
+
+    handleFocusOut() {
+        this.hide()
+    }
+
+    // Filtering moves rows away from under the pointer without a mouseout
+    handleInput() {
         this.hide()
     }
 }
