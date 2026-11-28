@@ -57,6 +57,10 @@ viewerSheet.replaceSync(`
     }
 `)
 
+// Before there is data, targets cannot be resolved: equal when they name the same column or level the same way
+const sameTarget = (a, b) => ["column", "level", "ilevel"].some(name =>
+    name in a && name in b && JSON.stringify(a[name]) === JSON.stringify(b[name]))
+
 export class FlatbreadDataViewer extends HTMLElement {
     static get observedAttributes() {
         return [
@@ -94,6 +98,8 @@ export class FlatbreadDataViewer extends HTMLElement {
         this.updateHeight()
 
         this._data = new Data()
+        // State set through the API before there is data, as the host passed it; applied to the first view
+        this._pending = {}
         this._eventCoordinator = new EventCoordinator(this)
         this._navigationController = new NavigationController(this)
         this._formatter = new Formatter(this.options)
@@ -231,10 +237,12 @@ export class FlatbreadDataViewer extends HTMLElement {
         this._data.setData(value)
     }
 
+    // Applying the pending state here covers every order of setting state, data and connecting the element
     get view() {
         if (!this._view || this._viewNeedsUpdate) {
             this._view = new View(this.data, { locale: this.options.locale })
             this._viewNeedsUpdate = false
+            if (this.data.hasColumns) this.applyPendingState()
         }
         return this._view
     }
@@ -287,6 +295,170 @@ export class FlatbreadDataViewer extends HTMLElement {
         return dataRecord ? dataRecord.currentRecord : null
     }
 
+    // MARK: api
+    // Filters, sort and columns by label (see the readme). Before there is data, the state is kept as given
+    // and applied to the first data; the getters return it until then.
+    get filters() {
+        if (!this.data.hasColumns) return this._pending.filters ?? []
+        return [...this.view.filters].map(([key, expression]) => ({ ...this.view.targetOf(key), expression }))
+    }
+
+    set filters(filters) {
+        this.state = { filters }
+    }
+
+    // target: { column: label }, { level: name } or { ilevel: n }; a blank expression removes the filter.
+    // With data the target is resolved, so { level: "id" } and { ilevel: 0 } are the same filter
+    setFilter(target, expression) {
+        if (!this.data.hasColumns) {
+            const others = (this._pending.filters ?? []).filter(filter => !sameTarget(filter, target))
+            this._pending.filters = expression.trim() ? [...others, { ...target, expression }] : others
+            return
+        }
+        const key = this.keyOf(target)
+        if (!key) return
+        this.view.setFilter(key, expression)
+        this.updateRows()
+    }
+
+    clearFilters() {
+        this.filters = []
+    }
+
+    get sort() {
+        if (!this.data.hasColumns) return this._pending.sort ?? null
+        const sort = this.view.sort
+        return sort && { ...this.view.targetOf(sort.key), direction: sort.direction }
+    }
+
+    // { column | level | ilevel, direction: "asc" | "desc" } or null
+    set sort(sort) {
+        this.state = { sort }
+    }
+
+    // Labels of the visible columns, in data order. null before there is data, unless a selection was set
+    get selectedColumns() {
+        if (!this.data.hasColumns) {
+            return this._pending.columnChanges?.length ? null : this._pending.columns ?? null
+        }
+        return [...this.view.columns.values]
+    }
+
+    // Labels; on a multi-index a shorter tuple is a group. A repeated label selects every match. null: all columns
+    set selectedColumns(columns) {
+        this.state = { columns }
+    }
+
+    hideColumns(columns) {
+        this.changeColumns({ hide: columns })
+    }
+
+    showColumns(columns) {
+        this.changeColumns({ show: columns })
+    }
+
+    // { columns, filters, sort }: plain data, so a quick selection or a saved setting is a (partial) state.
+    // Keys left out are kept; one update and one render for the whole set.
+    get state() {
+        if (!this.data.hasColumns) {
+            const { columnChanges, ...pending } = this._pending
+            return pending
+        }
+        return { columns: this.selectedColumns, filters: this.filters, sort: this.sort }
+    }
+
+    set state(state) {
+        if (!this.data.hasColumns) {
+            const { columns, filters, sort } = state
+            if (columns !== undefined) this._pending = { ...this._pending, columns, columnChanges: [] }
+            if (filters !== undefined) this._pending.filters = filters
+            if (sort !== undefined) this._pending.sort = sort
+            return
+        }
+        this.applyState(state)
+        this.commitState({ columns: state.columns !== undefined })
+    }
+
+    changeColumns(change) {
+        if (!this.data.hasColumns) {
+            this._pending.columnChanges = [...this._pending.columnChanges ?? [], change]
+            return
+        }
+        this.applyState({ columnChanges: [change] })
+        this.commitState({ columns: true })
+    }
+
+    applyPendingState() {
+        const pending = this._pending
+        this._pending = {}
+        this.applyState(pending)
+    }
+
+    // Resolves labels and writes the state into the view, without rendering. Unknown labels are warned and left out
+    applyState({ columns, columnChanges = [], filters, sort }) {
+        if (columns !== undefined || columnChanges.length) {
+            let ilocs = columns === undefined ? this.view.columns.sourceIlocs
+                : columns === null ? this.data.columns.ilocs
+                : this.locateColumns(columns)
+            for (const { hide, show } of columnChanges) {
+                if (hide) {
+                    const hidden = new Set(this.locateColumns(hide))
+                    ilocs = ilocs.filter(iloc => !hidden.has(iloc))
+                }
+                if (show) ilocs = [...ilocs, ...this.locateColumns(show)]
+            }
+            this.selectColumns(ilocs)
+        }
+        if (filters !== undefined || sort !== undefined) {
+            this.view.setState({
+                filters: filters && new Map(filters.flatMap(({ expression, ...target }) => {
+                    const key = this.keyOf(target)
+                    return key ? [[key, expression]] : []
+                })),
+                sort: sort === undefined ? undefined : this.sortFor(sort),
+            })
+        }
+    }
+
+    // Renders what changed: a column change rebuilds the table, a filter or sort change the rows
+    commitState({ columns }) {
+        if (!columns) return this.updateRows()
+        this.dataTable?.render()
+        this.updateDataRecord()
+        this.updateControlPanel()
+    }
+
+    // Source ilocs of labels, every match; unknown labels are warned
+    locateColumns(columns) {
+        return columns.flatMap(label => {
+            const ilocs = this.data.columns.locate(label)
+            if (!ilocs.length) console.warn("flatbread-data-viewer: unknown column", label)
+            return ilocs
+        })
+    }
+
+    // Key of a filter or sort target; unknown targets are warned, a repeated column label uses the first match
+    keyOf(target) {
+        const key = this.view.keyOf(target)
+        if (key === null) {
+            console.warn("flatbread-data-viewer: unknown target (or a repeated level name)", target)
+        } else if ("column" in target && this.data.columns.locate(target.column).length > 1) {
+            console.warn("flatbread-data-viewer: repeated column label, using the first", target.column)
+        }
+        return key
+    }
+
+    sortFor(sort) {
+        if (sort === null) return null
+        const { direction, ...target } = sort
+        if (direction !== "asc" && direction !== "desc") {
+            console.warn("flatbread-data-viewer: sort direction must be \"asc\" or \"desc\"", sort)
+            return this.view.sort
+        }
+        const key = this.keyOf(target)
+        return key ? { key, direction } : this.view.sort
+    }
+
     // MARK: render
     render() {
         if (!this.shadowRoot.querySelector("control-panel")) {
@@ -334,30 +506,41 @@ export class FlatbreadDataViewer extends HTMLElement {
         const columnTree = this.buildColumnTree()
         this.controlPanel.dataViewer = this
         this.controlPanel.columnData = columnTree
+        this.controlPanel.selectedColumns = this.view.columns.sourceIlocs
         this.updateControlPanelStatus()
     }
 
     // MARK: @rows
-    // After a change of the filters or the sort in the view
+    // After a change of the filters or the sort in the view; the record view renders only when shown
     updateRows() {
         this.dataTable?.updateRows()
+        this.updateDataRecord()
         this.updateControlPanelStatus()
     }
 
     // MARK: @column
-    applyColumnFilter(selectedColumnIndices) {
-        if (selectedColumnIndices.length === 0) {
-            this.view.filterColumns(null)
-        } else {
-            this.view.filterColumns(selectedColumnIndices)
-        }
-
-        if (this.dataTable) {
-            this.dataTable.render()
-        }
+    // The multi-selector's own change: it shows the new selection already, so only the status is updated
+    applyColumnSelection(ilocs) {
+        this.selectColumns(ilocs)
+        this.dataTable?.render()
         this.updateDataRecord()
+        this.updateControlPanelStatus()
     }
 
+    // Header ✕: by source iloc, so of two columns with the same label only the clicked one is hidden
+    hideColumnsAt(ilocs) {
+        const hidden = new Set(ilocs)
+        this.selectColumns(this.view.columns.sourceIlocs.filter(iloc => !hidden.has(iloc)))
+        this.commitState({ columns: true })
+    }
+
+    // Source ilocs, in any order and with repeats; an empty selection shows only the index
+    selectColumns(ilocs) {
+        const selected = [...new Set(ilocs)].sort((a, b) => a - b)
+        this.view.filterColumns(selected.length === this.data.columns.length ? null : selected)
+    }
+
+    // Structure only: the selection is set separately (updateControlPanel), so the tree changes only with the columns
     buildColumnTree() {
         if (!this.data.columns.isMultiIndex) {
             return this.buildFlatColumnTree()
@@ -369,7 +552,6 @@ export class FlatbreadDataViewer extends HTMLElement {
         return this.data.columns.values.map((value, iloc) => ({
             label: value,
             value: iloc,
-            selected: true,
             children: [],
         }))
     }
@@ -384,7 +566,6 @@ export class FlatbreadDataViewer extends HTMLElement {
                 result.push({
                     label: label,
                     value: iloc,
-                    selected: true,
                     children: []
                 })
             }

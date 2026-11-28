@@ -72,6 +72,11 @@ export class View {
         return this._filters.size > 0
     }
 
+    // key → expression; a copy
+    get filters() {
+        return new Map(this._filters)
+    }
+
     filterFor(key) {
         return this._filters.get(key) ?? ""
     }
@@ -99,6 +104,41 @@ export class View {
 
     sortStateFor(key) {
         return this._sort?.key === key ? this._sort.direction : "none"
+    }
+
+    // Replaces the filters (a Map key → expression) and/or the sort in one update; what is left out is kept
+    setState({ filters, sort } = {}) {
+        if (filters !== undefined) {
+            this._filters = new Map([...filters].filter(([, expression]) => expression.trim()))
+        }
+        if (sort !== undefined) this._sort = sort
+        this.update()
+    }
+
+    // MARK: targets
+    // Key of a target of the public API: { column: label } (the first match), { level: name } or { ilevel: n };
+    // null when unknown
+    keyOf(target) {
+        if ("column" in target) {
+            const [iloc] = this.data.columns.locate(target.column)
+            return iloc === undefined ? null : columnKey(iloc)
+        }
+        if ("level" in target) {
+            const level = this.data.index.levelOf(target.level)
+            return level === -1 ? null : levelKey(level)
+        }
+        if ("ilevel" in target) {
+            return this.data.index.ilevels.includes(target.ilevel) ? levelKey(target.ilevel) : null
+        }
+        return null
+    }
+
+    // Target of a key: a level by its name when that finds it, otherwise by its position
+    targetOf(key) {
+        const [axis, n] = parseKey(key)
+        if (axis === "col") return { column: this.data.columns.values[n] }
+        const name = this.data.index.names?.[n]
+        return this.data.index.levelOf(name) === n ? { level: name } : { ilevel: n }
     }
 
     // The only place that computes the visible rows from the filters and the sort. Always a new array,

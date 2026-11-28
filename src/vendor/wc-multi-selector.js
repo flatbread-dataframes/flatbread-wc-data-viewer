@@ -742,6 +742,18 @@ class MultiSelector extends HTMLElement {
         return [...this.getElements("selected-values")].map(i => i.value)
     }
 
+    // Replaces the selection without a change event: the caller set it, so it needs no notice.
+    // Options only; group states follow from their options. Values are compared as strings.
+    set selectedValues(values) {
+        const selected = new Set(values.map(String))
+        this.getElements("options").forEach(option => {
+            option.querySelector(`[type="checkbox"]`).checked = selected.has(option.dataset.value)
+        })
+        this.checkboxHandler.setAllGroupStates()
+        this.renderer.renderSelected()
+        this.internals_.setFormValue(JSON.stringify(this.selectedValues))
+    }
+
     addSelectedValues(...values) {
         values.forEach(item => {
             const element = this.shadowRoot.querySelector(`input[value="${item}"]`)
@@ -1965,4 +1977,3 @@ class TooltipHandler {
 }
 
 window.customElements.define("multi-selector", MultiSelector)
-

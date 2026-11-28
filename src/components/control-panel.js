@@ -99,6 +99,7 @@ export class ControlPanel extends HTMLElement {
         this.handlePopoverKeydown = this.handlePopoverKeydown.bind(this)
         this.handleMultiSelectorOpen = this.handleMultiSelectorOpen.bind(this)
         this._columnData = []
+        this._selectedColumns = []
     }
 
     // MARK: setup
@@ -172,8 +173,19 @@ export class ControlPanel extends HTMLElement {
         return this._columnData
     }
 
+    // The column tree: structure only
     set columnData(value) {
         this._columnData = value ?? []
+        this.updateMultiSelector()
+    }
+
+    get selectedColumns() {
+        return this._selectedColumns
+    }
+
+    // Source ilocs of the visible columns; set without a change event, as the viewer already has this state
+    set selectedColumns(value) {
+        this._selectedColumns = value
         this.updateMultiSelector()
     }
 
@@ -297,7 +309,8 @@ export class ControlPanel extends HTMLElement {
 
         if (multiSelector && this._columnData.length > 0) {
             customElements.whenDefined("multi-selector").then(() => {
-                multiSelector.data = this._columnData
+                multiSelector.data = this._columnData     // renders only when the tree changed
+                multiSelector.selectedValues = this._selectedColumns
             })
         }
     }

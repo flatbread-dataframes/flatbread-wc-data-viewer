@@ -131,9 +131,7 @@ export class EventCoordinator {
 
     // MARK: @column
     handleColumnSelectionChange(event) {
-        const selectedColumnIndices = event.detail.selectedColumns.map(Number)
-        this.dataViewer.applyColumnFilter(selectedColumnIndices)
-        this.dataViewer.updateControlPanelStatus()
+        this.dataViewer.applyColumnSelection(event.detail.selectedColumns.map(Number))
     }
 
     // MARK: @layout

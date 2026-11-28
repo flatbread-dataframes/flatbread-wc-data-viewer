@@ -82,10 +82,44 @@ A level is identified the same way: `{ loc: name, iloc: level }` (`loc` is `null
 
 `row-data` and `column-data` hold what is shown: the visible columns and the rows under the current filters, in the order on screen. `columns` and `rows` are the identities of the entries in `values`, in the same order. In `field-click`, `value` and `text` are those of the field's value, also when its label is clicked (`source`: `"field-label"` or `"field-value"`).
 
-### Properties
+## API
 
-- `currentRecord` - The record shown in the record view: `{ row, values }`, `values` as shown
-- `currentRecordIndex` - Position of that record in the view (the record view's navigation state; changes with sorting and filtering)
+Filters, sort and columns are set and read by label, like the identities in the events.
+
+- A **column** is its label: a scalar on a flat axis, a tuple on a multi-index (`["2024", "Q1"]`). On a multi-index a shorter tuple is a group (`["2024"]`: every column under 2024).
+- An **index level** is `{ level: name }` or `{ ilevel: n }` (its position; for unnamed levels or repeated names).
+- Labels match exactly: `2024` and `"2024"` are different labels.
+- Unknown labels are left out with a `console.warn`. A filter or sort on a repeated column label uses the first match (warned); a column selection takes every match.
+
+```js
+viewer.selectedColumns = ["naam", "jaar"]          // the visible columns; [] shows only the index, null all columns
+viewer.hideColumns([["organisatie"]])               // a group on a multi-index
+viewer.showColumns(["jaar"])
+
+viewer.filters = [{ column: "jaar", expression: "2023, 2024" }, { level: "land", expression: "NL" }]
+viewer.setFilter({ ilevel: 0 }, "a")                // a blank expression removes the filter
+viewer.clearFilters()
+
+viewer.sort = { column: "jaar", direction: "desc" } // "asc" or "desc"; null for no sort
+
+// All of it as plain data, e.g. for a quick selection or a saved setting
+const saved = viewer.state                          // { columns, filters, sort }
+viewer.state = { columns: ["naam"] }                // partial: keys left out are kept
+viewer.state = saved                                // one update and one render
+```
+
+| Property / method | Value |
+|---|---|
+| `selectedColumns` | Labels of the visible columns, in data order |
+| `hideColumns(labels)`, `showColumns(labels)` | Hide or show columns or groups |
+| `filters` | `[{ column \| level \| ilevel, expression }]`; the getter names a level by its name when the name is unique |
+| `setFilter(target, expression)`, `clearFilters()` | One filter; all filters |
+| `sort` | `{ column \| level \| ilevel, direction }` or `null` |
+| `state` | `{ columns, filters, sort }`; setting it applies the keys that are given |
+| `currentRecord` | The record shown in the record view: `{ row, values }`, `values` as shown |
+| `currentRecordIndex` | Position of that record in the view (the record view's navigation state; changes with sorting and filtering) |
+
+State set before the data arrives is kept and applied to the data when it arrives; until then the getters return it as it was set (`selectedColumns` is `null` when hide or show was called, and `state` has only the keys that were set). New data resets filters, sort and columns.
 
 ## Data Format
 

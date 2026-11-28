@@ -40,17 +40,13 @@ export class ClickHandler {
 
         event.stopPropagation()
 
-        const hideType = hideButton.dataset.hideType
-        const multiSelector = this.dataTable.dataViewer.controlPanel.shadowRoot.querySelector("multi-selector")
-
-        if (hideType === "group") {
-            const level = parseInt(hideButton.dataset.level)
-            const groupIndex = parseInt(hideButton.dataset.group)
-            const span = this.dataTable.dataViewer.view.columns.spans[level][groupIndex]
-            multiSelector.removeSelectedValues(span.value[level])
-        } else if (hideType === "column") {
-            const iloc = Number(hideButton.dataset.col)
-            multiSelector.removeSelectedValues(this.dataTable.view.columns.sourceIlocs[iloc])
+        // Through the viewer, which keeps the multi-selector in step. A group is its prefix tuple, located in the data
+        const { dataViewer, view } = this.dataTable
+        if (hideButton.dataset.hideType === "group") {
+            const span = view.columns.spans[Number(hideButton.dataset.level)][Number(hideButton.dataset.group)]
+            dataViewer.hideColumnsAt(dataViewer.data.columns.locate(span.value))
+        } else {
+            dataViewer.hideColumnsAt([view.columns.sourceIlocs[Number(hideButton.dataset.col)]])
         }
 
         return true
